@@ -1,0 +1,711 @@
+/*
+
+ Author: Remi Matthey-Doret
+
+    MIT License
+
+    Copyright (c) 2017 Remi Matthey-Doret
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+
+Note for Remi of things to do:
+    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
+
+    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
+
+ */
+
+bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
+{
+    assert(SSP->T1_nbChars == T1_Alleles.size());
+    
+    assert(T1_locusTo <= (T1_Alleles.size() * 8));
+    for (int T1_locus = T1_locusFrom ; T1_locus < T1_locusTo ; T1_locus++)
+    {
+        if (this->getT1_Allele(T1_locus) == 1)
+        {
+            return false;
+        }
+    }
+     
+    return true;   
+}
+
+bool Haplotype::isFreeFromMutations()
+{
+    assert(SSP->T1_nbChars == T1_Alleles.size());
+    for (int byte_index = 0 ; byte_index < SSP->T1_nbChars ; byte_index++)
+    {
+        for (int bit_index = 0 ; bit_index < 8 ; bit_index++)   
+        {
+            if (this->getT1_Allele(byte_index, bit_index) == 1)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+double Haplotype::getW_T1(int fitnessMapIndex)
+{
+    assert(fitnessMapIndex < W_T1.size());
+    return W_T1[fitnessMapIndex];
+}
+double Haplotype::getW_T2(int fitnessMapIndex)
+{
+    assert(fitnessMapIndex < W_T2.size());
+    return W_T2[fitnessMapIndex];
+}
+
+void Haplotype::setAllW_T1(double w)
+{
+    for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
+    {
+        this->setW_T1(w, fitnessMapIndex);
+    }
+}
+void Haplotype::setAllW_T2(double w)
+{
+    for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
+    {
+        this->setW_T2(w, fitnessMapIndex);
+    }
+}
+
+void Haplotype::setW_T1(double w, int fitnessMapIndex)
+{
+    assert(W_T1.size() > fitnessMapIndex && fitnessMapIndex >= 0);
+    W_T1[fitnessMapIndex] = w;
+}
+
+void Haplotype::setW_T2(double w, int fitnessMapIndex)
+{
+    assert(W_T2.size() > fitnessMapIndex && fitnessMapIndex >= 0);
+    W_T2[fitnessMapIndex] = w;
+}
+
+unsigned char Haplotype::getT1_char(int& char_index)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    return T1_Alleles[char_index];
+}
+
+bool Haplotype::getT1_Allele(const int T1Locus)
+{
+    const int char_index = T1Locus / EIGHT;
+    const int bit_index  = T1Locus % EIGHT;
+    return (this->getT1_Allele(char_index, bit_index));
+}
+
+bool Haplotype::getT1_Allele(const int char_index, const int bit_index)
+{
+    /*
+    assert(bit_index < EIGHT);
+    assert(bit_index >= 0);
+    assert(char_index >= 0);
+    assert(char_index < SSP->T1_nbChars);
+    */
+    /*if ((T1_Alleles[char_index] >> bit_index) & 1)
+    {
+        std::cout << "got " << char_index << " " << bit_index << "("<<char_index * 8 + bit_index << "). Mut\n";    
+    } else
+    {
+        std::cout << "got " << char_index << " " << bit_index << "("<<char_index * 8 + bit_index << "). No mut\n";
+    }*/
+    
+    return (T1_Alleles[char_index] >> bit_index) & 1;
+}
+
+unsigned char Haplotype::getT2_Allele(const int char_index)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    return T2_Alleles[char_index];
+}
+
+char Haplotype::getT3_Allele(const int char_index)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    return T3_Alleles[char_index];
+}
+
+void Haplotype::setT1_char(int& char_index, unsigned char& c)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    T1_Alleles[char_index] = c;
+}
+
+void Haplotype::setT1_char(int& char_index, unsigned char&& c)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    T1_Alleles[char_index] = c;
+}
+
+void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const int& value)
+{
+    //assert(bit_index < EIGHT);
+    //assert(bit_index >= 0);
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    T1_Alleles[char_index] = (-value ^ T1_Alleles[char_index]) & (1 << bit_index);
+}
+
+
+void Haplotype::setT1_AlleleToOne(int& char_index, int& bit_index)
+{
+    //assert(bit_index < EIGHT);
+    //assert(bit_index >= 0);
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    T1_Alleles[char_index] |= 1 << bit_index;
+}
+
+void Haplotype::setT1_AlleleToZero(int& char_index, int& bit_index)
+{;
+    //assert(bit_index < EIGHT);
+    //assert(bit_index >= 0);
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T1_nbChars);
+    T1_Alleles[char_index] &= ~(1 << bit_index);
+}
+
+void Haplotype::setT2_Allele(const int char_index, const unsigned char value)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    T2_Alleles[char_index] = value;
+}
+
+void Haplotype::setT3_Allele(const int char_index, const char value)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    T3_Alleles[char_index] = value;
+}
+
+
+void Haplotype::toggleT1_Allele(int& MutPosition, int Habitat)
+{
+    #ifdef DEBUG
+    NBT1MUTATIONS++;
+    #endif
+    //std::cout << "mutation at " << MutPosition << "\n";
+    int byte_index = MutPosition / 8;
+    int bit_index  = MutPosition % 8;
+    //assert(bit_index < EIGHT);
+    //assert(bit_index >= 0);
+    //assert(byte_index >= 0);
+    //assert(byte_index < SSP->T1_nbChars);
+    T1_Alleles[byte_index] ^= 1 << bit_index;
+    //std::cout << "line 180\n";
+    SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
+    //std::cout << "line 182\n";
+
+    if (SSP->T1_isSelection)
+    {
+        //std::cout << "line 186\n";
+        //std::cout << "MutPosition = " << MutPosition << "\n";
+        //std::cout << "SSP->FromT1LocusToLocus.size() = " << SSP->FromT1LocusToLocus.size() << "\n";
+        //assert(MutPosition < SSP->FromT1LocusToLocus.size());
+        //std::cout << " SSP->FromT1LocusToLocus[MutPosition] = " << SSP->FromT1LocusToLocus[MutPosition] << "\n";
+        //assert(SSP->FromT1LocusToLocus[MutPosition] < SSP->FromLocusToFitnessMapIndex.size());
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
+        //std::cout << "line 188\n";
+        double w = this->getW_T1(fitnessMapIndex);
+        //std::cout << "line 189\n";
+        if (w != -1.0)
+        {
+            //std::cout << "line 191\n";
+            if (SSP->FitModel_T1_isMultiplicity)
+            {
+                // Note that Toggle already happened. If it is mutant, it is because it just happened!
+                //std::cout << "line 196\n";
+                if ( this->getT1_Allele(byte_index, bit_index) )
+                {
+                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index];
+                    assert(w >= 0.0 && w <= 1.0);
+                } else
+                {
+                    if (SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index] == 0)
+                    {
+                        w = -1.0;
+                    } else
+                    {
+                        w /= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index]; 
+                        assert(w >= 0.0 && w <= 1.0);
+                    }
+                }
+                this->setW_T1( w,   fitnessMapIndex );
+            } else
+            {
+                this->setW_T1(-1.0, fitnessMapIndex );
+            }
+        }
+    }
+}
+
+void Haplotype::toggleT1_Allele(int& MutPosition)
+{
+    std::cout << "Internal error: I don't think I should be using this function Haplotype::toggleT1_Allele(int& MutPosition)!\n";
+    abort();
+    //std::cout << "mutation at " << MutPosition << "\n";
+    int byte_index = MutPosition / 8;
+    int bit_index  = MutPosition % 8;
+    //assert(bit_index < EIGHT);
+    //assert(bit_index >= 0);
+    //assert(byte_index >= 0);
+    //assert(byte_index < SSP->T1_nbChars);
+    T1_Alleles[byte_index] ^= 1 << bit_index;
+    //std::cout << "line 180\n";
+    SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
+    //std::cout << "line 182\n";
+
+    if (SSP->T1_isSelection)
+    {
+        //std::cout << "line 186\n";
+        //std::cout << "MutPosition = " << MutPosition << "\n";
+        //std::cout << "SSP->FromT1LocusToLocus.size() = " << SSP->FromT1LocusToLocus.size() << "\n";
+        //assert(MutPosition < SSP->FromT1LocusToLocus.size());
+        //std::cout << " SSP->FromT1LocusToLocus[MutPosition] = " << SSP->FromT1LocusToLocus[MutPosition] << "\n";
+        //assert(SSP->FromT1LocusToLocus[MutPosition] < SSP->FromLocusToFitnessMapIndex.size());
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
+        //std::cout << "line 189\n";
+        this->setW_T1(-1.0, fitnessMapIndex );
+    }
+}
+
+
+void Haplotype::AddMutT2_Allele(int& char_index)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    // Add one to number of mutations
+    if (T2_Alleles[char_index] >= 250)
+    {
+        assert(SSP != nullptr);
+        if (GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele <= 100)
+        {
+            GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele++;
+            std::cout << "WARNING: The T2_char index " << char_index << " of species " << SSP->speciesName << " contains 250 mutations (at generation"<< GP->CurrentGeneration <<")! Almost no more mutation can be added! SimBit will reset the value of all individuals at this locus by substracting the number of mutations by the individuals that has the lowest number of mutations at this locus (slow process that should not happen too often). If there is too much variance on the block for correcting, then SimBit will just abort.\n";
+            if (GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele == 100)
+            {
+                std::cout << "Further warnings in Haplotype::AddMutT2_Allele for overpassing the maximum number of generation will be silenced.\n";
+            }
+        }
+        Pop::addT2LocusToCorrect(char_index);
+
+        if (T2_Alleles[char_index] == 250)
+        {
+            T2_Alleles[char_index]++;
+        }
+    } else
+    {
+        T2_Alleles[char_index]++;
+    }
+    if (SSP->T2_isSelection)
+    {
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT2LocusToLocus[char_index]];
+        this->setW_T2(-1.0,fitnessMapIndex);
+    }
+}
+
+void Haplotype::AddMutT2_Allele(int& char_index, int Habitat)
+{
+    //assert(char_index >= 0);
+    //assert(char_index < SSP->T2_nbChars);
+    // Add one to number of mutations
+    if (T2_Alleles[char_index] >= 254)
+    {
+        assert(SSP != nullptr);
+        if (GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele <= 100)
+        {
+            GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele++;
+            std::cout << "WARNING: The T2_char index " << char_index << " of species " << SSP->speciesName << " contains 254 mutations (at generation"<< GP->CurrentGeneration <<")! Almost no more mutation can be added! SimBit will reset the value of all individuals at this locus by substracting the number of mutations by the individuals that has the lowest number of mutations at this locus (slow process that should not happen too often). If there is too much variance on the block for correcting, then SimBit will just abort.\n";
+            if (GP->nbWarningsSentFrom_Haplotype_AddMutT2_Allele == 100)
+            {
+                std::cout << "Further warnings in Haplotype::AddMutT2_Allele for overpassing the maximum number of generation will be silenced.\n";
+            }
+        }
+        Pop::addT2LocusToCorrect(char_index);
+
+        if (T2_Alleles[char_index] == 254)
+        {
+            T2_Alleles[char_index]++;
+        }
+    } else
+    {
+        T2_Alleles[char_index]++;
+    }
+
+    // Change Fitness
+    if (SSP->T2_isSelection)
+    {
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT2LocusToLocus[char_index]];
+        if (this->getW_T2(fitnessMapIndex) != -1.0)
+        {
+            //std::cout << "SSP->T2_FitnessEffects[Habitat].size() = " << SSP->T2_FitnessEffects[Habitat].size() << "    char_index = " <<  char_index << "\n";
+            //assert(SSP->T2_FitnessEffects.size() > Habitat);
+            //assert(SSP->T2_FitnessEffects[Habitat].size() > char_index);
+            //std::cout << "this->getW_T2() = " << this->getW_T2() << "     SSP->T2_FitnessEffects[Habitat][char_index] = " << SSP->T2_FitnessEffects[Habitat][char_index] << "\n";
+            this->setW_T2(this->getW_T2(fitnessMapIndex) * SSP->T2_FitnessEffects[Habitat][char_index], fitnessMapIndex);
+        }
+    }
+}
+
+void Haplotype::AddMutT3_Allele(int& char_index)
+{
+    // Add or substract while preventing
+#ifdef DEBUG
+std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
+std::cout << "SSP->T3_nbChars = " << SSP->T3_nbChars << "\n";
+assert(SSP->T3_nbChars == T3_Alleles.size());    
+assert(char_index < T3_Alleles.size());
+assert(char_index > 0);
+#endif
+    if (GP->random_0or1(GP->mt))
+    {
+        if (T3_Alleles[char_index] != CHAR_MAX)
+        {
+            T3_Alleles[char_index]++;
+        }
+    } else
+    {
+        if (T3_Alleles[char_index] != CHAR_MIN)
+        {
+            T3_Alleles[char_index]--;
+        }
+    }
+}
+
+
+void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
+{
+    // copy [first, last)
+    //std::cout << "In copyIntoT1 from = "<< from << "  to = "<< to << std::endl;
+    assert(from >= 0);
+    assert(to > from);
+    
+    int ByteFrom = from / EIGHT; // integer division. It will floor automatically
+    int ByteTo   = to / EIGHT; // integer division. It will floor automatically
+    assert(ByteTo <= SourceChromo.T1_Alleles.size() + 1);
+
+    int bitIndexFrom = from % EIGHT;
+    int bitIndexTo = to % EIGHT;
+
+    if (ByteTo == SSP->T1_nbChars - 1) // This is to deal with the last extra bits. Note that if it copies a few extra bits, it is not an issue.
+    {
+        bitIndexTo = std::max(bitIndexTo, SSP->T1_nbBitsLastByte);
+    }
+
+
+    if (ByteTo == ByteFrom)
+    {
+        assert(bitIndexFrom < bitIndexTo);
+        for (int bit_index = bitIndexFrom ; bit_index < bitIndexTo ; bit_index++)
+        {
+            if (SourceChromo.getT1_Allele(ByteFrom, bit_index))
+            {
+                this->setT1_AlleleToOne(ByteFrom, bit_index);
+            } else
+            {
+                this->setT1_AlleleToZero(ByteFrom, bit_index);
+            }
+        }
+    } else if (ByteTo > ByteFrom)
+    {
+        // Copy first bits
+        for (int bit_index = bitIndexFrom ; bit_index < EIGHT ; bit_index++)
+        {
+            if (SourceChromo.getT1_Allele(ByteFrom, bit_index))
+            {
+                this->setT1_AlleleToOne(ByteFrom, bit_index);
+            } else
+            {
+                this->setT1_AlleleToZero(ByteFrom, bit_index);
+            }
+        }
+        
+        if (ByteFrom + 1 < ByteTo)
+        {
+            // Copy what is in between. Only if there is at least a full byte to be copied
+            std::copy(
+                      SourceChromo.T1_Alleles.begin() + ByteFrom + 1,
+                      SourceChromo.T1_Alleles.begin() + ByteTo,
+                      this->T1_Alleles.begin() + ByteFrom + 1
+                      ); // std::copy is always in the range [from,to)
+        }
+        
+        // Copy last bits
+        for (int bit_index = 0 ; bit_index < bitIndexTo ; bit_index++)
+        {
+            if (SourceChromo.getT1_Allele(ByteTo,bit_index))
+            {
+                this->setT1_AlleleToOne(ByteTo, bit_index);
+            } else
+            {
+                this->setT1_AlleleToZero(ByteTo, bit_index);
+            }
+        }
+    } else
+    {
+        std::cout << "ByteFrom is " << ByteFrom << " ByteTo is " << ByteTo << ". ByteTo must be equal or greater to ByteFrom.\n";
+        abort();
+    }
+}
+
+void Haplotype::copyIntoT2(int from, int to, Haplotype& SourceChromo)
+{
+    // copy [first, last)
+    assert(from >= 0);
+    assert(to > from);
+    //std::cout << "In copyIntoT2: to = " << to << std::endl;
+    //std::cout << "In copyIntoT2: SourceChromo.T2_Alleles.size() = " << SourceChromo.T2_Alleles.size() << std::endl;
+    assert(to <= SourceChromo.T2_Alleles.size() + 1);
+    
+    std::copy(
+              SourceChromo.T2_Alleles.begin() + from,
+              SourceChromo.T2_Alleles.begin() + to,
+              this->T2_Alleles.begin() + from
+              );
+}
+
+void Haplotype::copyIntoT3(int from, int to, Haplotype& SourceChromo)
+{
+    // copy [first, last)
+    assert(from >= 0);
+    assert(to > from);
+    //std::cout << "to = " << to << "  from = " << from << "  SourceChromo.T3_Alleles.size() = " << SourceChromo.T3_Alleles.size() << "\n";
+    assert(to <= SourceChromo.T3_Alleles.size() + 1);
+    
+    std::copy(
+              SourceChromo.T3_Alleles.begin() + from,
+              SourceChromo.T3_Alleles.begin() + to,
+              this->T3_Alleles.begin() + from
+              );
+}
+
+
+Haplotype::Haplotype(){}
+
+void Haplotype::PrintBinaryFile(OutputFile& file)
+{
+    // Print T1_alleles
+    file.writeBinary(reinterpret_cast<const char*>(&T1_Alleles[0]), T1_Alleles.size()*sizeof(unsigned char));
+
+    // Print T2_alleles
+    file.writeBinary(reinterpret_cast<const char*>(&T2_Alleles[0]), T2_Alleles.size()*sizeof(unsigned char));
+
+    // Print T3_alleles
+    file.writeBinary(reinterpret_cast<const char*>(&T3_Alleles[0]), T3_Alleles.size()*sizeof(char));
+}
+
+Haplotype::Haplotype(bool ShouldReadPopFromBinary)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+    std::cout << "Enters in 'Haplotype::Haplotype(bool ShouldReadPopFromBinary)'\n";
+#endif      
+    (void) ShouldReadPopFromBinary;
+
+    //.read T1_alleles
+    T1_Alleles.resize(SSP->T1_nbChars);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T1_Alleles[0]), SSP->T1_nbChars*sizeof(unsigned char));
+
+    //.read T2_alleles
+    T2_Alleles.resize(SSP->T2_nbChars);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T2_Alleles[0]), SSP->T2_nbChars*sizeof(unsigned char));
+
+    //.read T3_alleles
+    T3_Alleles.resize(SSP->T2_nbChars);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->T3_nbChars*sizeof(char));
+
+    // Initiate W_T1 and W_T2
+    if (SSP->T1_isSelection)
+    {
+        this->W_T1.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T1.resize(SSP->NbElementsInFitnessMap,1.0);
+    }
+    if (SSP->T2_isSelection)
+    {
+        this->W_T2.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T2.resize(SSP->NbElementsInFitnessMap, 1.0);
+    }
+
+    /*
+    for (auto& elem : T1_Alleles)
+    {
+        printf("%u ", elem);
+    }
+    std::cout << "\n";
+    */
+}
+
+Haplotype::Haplotype(const int patch_index, char Abiogenesis)
+: T1_Alleles(SSP->T1_nbChars), T2_Alleles(SSP->T2_nbChars), T3_Alleles(SSP->T3_nbChars)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+    std::cout << "Enters in 'Haplotype::Haplotype(const int patch_index, char Abiogenesis)'\n";
+#endif      
+    (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
+    assert(SSP!=nullptr);
+    assert(SSP->T1_nbChars + SSP->T2_nbChars + SSP->T3_nbChars > 0);
+
+    // Initiate W_T1 and W_T2
+    if (SSP->T1_isSelection)
+    {
+        this->W_T1.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T1.resize(SSP->NbElementsInFitnessMap, 1.0);
+    }
+    if (SSP->T2_isSelection)
+    {
+        this->W_T2.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T2.resize(SSP->NbElementsInFitnessMap, 1.0);
+    }
+    
+    // Initiate T1_Alleles
+    
+    if (SSP->T1_nbBits > 0)
+    {        
+        if (SSP->T1_Initial_AlleleFreqs_AllZeros) // The whole chromosome must be 0s
+        {
+            unsigned char c = 0;
+            for (int char_index = 0 ; char_index < SSP->T1_nbChars ; char_index++)
+            {
+                this->setT1_char(char_index,c);
+            }
+        } else if (SSP->T1_Initial_AlleleFreqs_AllOnes) // The whole chromosome must be 1s
+        {
+            unsigned char c = 255;
+            for (int char_index = 0 ; char_index < SSP->T1_nbChars ; char_index++)
+            {
+                this->setT1_char(char_index,c);
+            }
+        } else 
+        {
+            assert(SSP->T1_Initial_AlleleFreqs.size() > patch_index);
+            for (int byte_index = 0 ; byte_index < SSP->T1_nbChars ; byte_index++)
+            {
+                int bit_index_to;
+                if (byte_index == SSP->T1_nbChars - 1)
+                {
+                    bit_index_to = SSP->T1_nbBitsLastByte;
+                } else
+                {
+                    bit_index_to = EIGHT;
+                }
+                for (int bit_index=0 ; bit_index < bit_index_to ; bit_index++ )
+                {
+                    assert(SSP->T1_Initial_AlleleFreqs[patch_index].size() > byte_index * EIGHT + bit_index);
+                    if (SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index] == 1.0)
+                    {
+                        this->setT1_AlleleToOne(byte_index,bit_index);
+                    } else if (SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index] == 0.0)
+                    {
+                        this->setT1_AlleleToZero(byte_index,bit_index);
+                        
+                    } else
+                    {
+                        double rnd = GP->random_0and1(GP->mt);
+                        if (rnd < SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index])
+                        {
+                            this->setT1_AlleleToOne(byte_index,bit_index);
+                        }
+                        else
+                        {
+                            this->setT1_AlleleToZero(byte_index,bit_index);
+                        }
+                    }
+                }
+            }
+        }
+        assert(T1_Alleles.size() == SSP->T1_nbChars);
+    }
+        
+
+    // Initiate T2_Alleles
+    if (SSP->T2_nbChars > 0)
+    {
+        for (int char_index=0 ; char_index < SSP->T2_nbChars ; char_index++)
+        {
+            unsigned char c = 0;
+            this->setT2_Allele(char_index,c);
+        }
+        assert(T2_Alleles.size() == SSP->T2_nbChars);
+    }
+
+    // Initiate T3_Alleles
+    if (SSP->T3_nbChars > 0)
+    {
+        for (int char_index=0 ; char_index < SSP->T3_nbChars ; char_index++)
+        {
+            char c = 0;
+            this->setT3_Allele(char_index,c);
+        }
+        assert(T3_Alleles.size() == SSP->T3_nbChars);
+    }
+}
+
+Haplotype::Haplotype(const Haplotype& other)
+{
+    //std::cout << "copy constructor haplotype\n";
+    T1_Alleles = other.T1_Alleles;
+    T2_Alleles = other.T2_Alleles;
+    T3_Alleles = other.T3_Alleles;
+    W_T1 = other.W_T1;
+    W_T2 = other.W_T2;
+}
+
+Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment operator
+{
+    //std::cout << "copy assignment haplotype\n";
+    T1_Alleles = other.T1_Alleles;
+    T2_Alleles = other.T2_Alleles;
+    T3_Alleles = other.T3_Alleles;
+    W_T1 = other.W_T1;
+    W_T2 = other.W_T2;
+    return *this;
+}
+
+Haplotype& Haplotype::operator=(Haplotype&& other) // move assignment operator
+{
+    //std::cout << "move assignment haplotype\n";
+    T1_Alleles = std::move(other.T1_Alleles);
+    T2_Alleles = std::move(other.T2_Alleles);
+    T3_Alleles = std::move(other.T3_Alleles);
+    W_T1 = std::move(other.W_T1);
+    W_T2 = std::move(other.W_T2);
+    assert(W_T1.size() == other.W_T1.size());
+    return *this;
+}
+
+
+
