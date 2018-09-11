@@ -11,10 +11,7 @@ Michael C. Whitlock was key into the development of SimBit via his participation
 
 ## Getting Started
 
-In the VERSIONS folder, you will find a series of SimBit versions. Download the latest version. If you do not know how to download from GitHub, please have a look at this StackOverflow post: [Fastest way to download a GitHub project
-](https://stackoverflow.com/questions/6466945/fastest-way-to-download-a-github-project).
-
-The folder will contain a user manual, have a look at it and enjoy!
+Download the most recent release! The folder will contain a user manual, have a look at it and enjoy!
 
 
 ### Compilation

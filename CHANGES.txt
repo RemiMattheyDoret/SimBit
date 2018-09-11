@@ -1,0 +1,269 @@
+CHANGES
+
+SimBit_1.1
+	Fix a bug with recombinations. The vector of positions is sorted and duplicates are removed.
+	Security check that files correctly opened.
+
+SimBit_1.6
+	Plenty of small fix and bugs and improvements
+
+SimBit_1.7
+	Uses of two populations which are never deleted -> Big improvement in speed.
+
+SimBit_1.8
+	Split BREEDING_SELECTION_DISPERSAL into smaller functions as ot make profiling easier.
+
+SimBit_1.14
+	Keep improving things. Big add in how arguments can be specified.
+
+SimBit_2.0
+	Add new type of trait and change nomenclature quite a bit.
+
+SimBit_2.5
+	Recombination is much improved. Also, along the way between SimBit_2.0 and SimBit_2.5 I saved fitnesses per chromosome and allow to use them if the user specify (s)he wants to use multiplicity type of dominance for trait 1 (just like trait 2 does).
+
+SimBit_2.10
+	Fix aweful to find bug.
+
+SimBit_2.17
+	LocalEffects is site specific
+	temporal arguments
+	Performance improvement
+
+SimBit_2.18
+	Merge LocalEffect with FitnessEffect. Add flag --Habitat
+
+SimBit_2.23
+	Fitness are now attributes of Chromosome and not of Individual
+	Fix bug. I forgot to set fitness back to -1.0 when changing habitat.
+
+SimBit_2.25
+	Can read arguments from file as well as from the command line
+	class Chromosome has been renamed Haplotype
+
+SimBit_2.27
+	MultiThreading
+
+SimBit_3.0
+	Give up on trying to have a vector of fitness values for each individuals to avoid recalculation. I got back to an old code and just have a single fitness value per haplotype.
+
+SimBit_3.3
+	Just a renaming. TIMBIT stands for Tracking Individual Markers with BITs
+
+SimBit_3.5
+	Fixed an important bug in the recombination process. Copt_into_T1 was making a shift of 8 bits causing mutations to propagate to nearby loci!
+
+SimBit_3.5
+	class SimulationTracker build to speed up 'writeoutput_T1_vcf'.
+	Get rid of 'vcfNeutralOnly'
+
+SimBit_3.8
+	Fixed a compilation issue by overloading operator== in TrackedT1Mutation
+	Tried (but failed) to remove the need of boost by using STL instead
+
+SimBit_3.10
+	When outputting the VCF file, the first element of the header was 'Chrom' instead of 'CHROM'. Also, information line should start with a double #. Fixed now.
+
+SimBit_3.11
+	Allows to specify specific T1 sequence we want vcf output for.
+
+SimBit_3.12
+	Uses more std::string and fewer char* to make future changes easier to deal with.
+	Indicate the name of the log file on the console right above the generation
+
+SimBit_3.13
+	Changes in the design of the standard output
+
+SimBit_3.14
+	Get rid of the need of boost
+
+SimBit_3.15
+	Security to make sure that SimTracker does not end up taking up too much RAM and made generation a global variable
+
+SimBit_3.16
+	Fixed a tiny bug in the production of vcf files
+	Allow ProgrammedMutations
+	CurrentGeneration is now part of Parameters and is therefore global.
+	
+SimBit_3.17
+	When there was no variation in mutation_rate, then the mutation_rate simulated was too high. The bug is fixed now.
+
+SimBit_3.18
+	Allow epistasis
+
+SimBit_3.19
+	Fix a bug with epistasis
+	Allows the number of loci to differ from a multiple of eight.
+
+SimBit_3.20
+	Improve reading initial allele freq for T1
+
+SimBit_3.21
+	Improve default arguments
+	Improve code semantic and readability
+	Allows to subset the loci to be outputted on all T1 loci for all statistics.
+
+SimBit_3.22
+	Better user-interface with temporal parameters
+
+SimBit_3.23
+	Keep trying to improve user-interface for temporal parameters but realize it is shit and consider giving up and coming back to the system used in version 3.21.
+
+SimBit_3.24
+	Works on the template of 3.21, not on 3.23
+	Add time measurement device.
+	
+SimBit_3.28
+	Big improvement in the user interface
+
+SimBit_3.30
+	Ensure not misinterpreting input such as the fake number 31.12.124
+	Fix small bugs
+	
+SimBit_3.33
+	Uses a 1 based counting for the line number when uses ArgumentFile.
+
+SimBit_3.34
+	Changes extension of output files
+	Improves the overwrite option
+	Fix a bug in the Mystoi and Mystod functions
+	
+SimBit_3.35
+	Simplify code for printing the log file
+
+SimBit_3.36
+	Save binary files and reuse them for future simulations
+	Fix bugs in initialization of the Simulation Tracker
+	Improve OverwriteMode
+
+SimBit_3.37
+	Can ask for gamma distributed fitness values
+
+SimBit_3.38
+	Improve error reporting
+	Fix small bug when reading a number of T1 bits that is not a multiple of 8
+
+SimBit_3.39
+	Improving user interface
+
+SimBit_3.40
+	Improving user interface
+
+SimBit_3.41
+	First publicly available version of SimBit
+	Improving user interface
+
+SimBit_3.42
+	Add Option for Initialization
+	Fix tiny bug in LogFileType	
+
+SimBit_3.43
+	Improve error message
+
+SimBit_3.45attempt
+	Attempt to implement various ploidy number and asexualitt. But gave up when realizing the number of decisions when it comes to sexual systems and how ti may affect performance
+	
+SimBit_3.46
+	Implement a new type of trait (T3) that is causing a phenotypic quantitative trait.
+	Phenotype is multidimensional
+	THere is also local seleciton and plasticity on this trait
+
+SimBit_3.47
+	Create InputReader class to improve error handling
+
+SimBit_3.48
+	Fix rare memory allocation issue when allocating strings for outputs
+
+SimBit_3.60
+	Various improvement in user interface
+	fix tiny memory leak when reading arguments from file
+	Performance improvement for Mutate_T1
+
+SimBit_3.64
+	Fixed a bug relating to selection when using multiplicity
+
+SimBit_3.66
+	Avoid the creation of an empty logfile when LogFileType == 0
+
+SimBit_3.67
+	Easier to compile
+
+SimBit_3.69
+	Improve flexibilitt in outputs regarding fitness
+
+SimBit_3.73
+	Small fixies and design details
+
+SimBit_3.74
+	Ease the input of specific patterns of dominance
+
+SimBit_3.75 and SimBit_3.76
+	Improve MeanLD outputs
+	Add 'domA' as a mode of entry of fitness effects
+
+SimBit_3.77
+	Improve Overwrite mode
+
+SimBit_3.78
+	Implement special AllTypeFST outputs
+
+SimBit_3.8x
+	Attempt to add genders and species but got confused and failed to make a decision
+
+SimBit_3.9x
+	Attempt to compute fitness over polymorphic sites only but it is slow for unknown reasons
+
+SimBit_3.130
+	A lot of performance improvement (esp. in terms of CPU time). It includes the options FitnessMapProbOfEvent and FitnessMapCoefficient
+	Possiblility to have the patch size that differ from the patch capacity
+	
+SimBit_3.143
+	Several species
+
+SimBit_3.144
+	SimBit can generate random interactions among species if the user ask for it.	
+	
+SimBit_3.146
+	Fix a bug regarding temporal changes (--T) with several species
+
+SimBit_3.147
+	Allow for correction if T2 block reach more 255 mutations (before it would just send an error message and abort).
+
+SimBit_3.157
+	Minor bug fix and performance increase for small simulations.
+	Fix bug with migration rate that appeared in version 3.143
+	Presence of Genealogy files but they are not used
+
+SimBit_3.158
+	Implementation of Genealogy
+
+SimBit_3.159
+	More flexible epistatic interactions
+
+SimBit_3.163
+	Finally added males and females and not only hermaphrodites
+
+SimBit_3.170
+	fitness file outputs fitness components for each trait (and type of selection)
+	New option resetGenetics. Option T1_addMut is removed.
+
+SimBit_3.171
+	Small correction of migration rate
+
+SimBit_3.172
+	Add gametic dispersal and big update of user manual	
+
+SimBit_3.180
+	Add --resetTrackedT1Muts to improve performance
+
+SimBit_3.182
+	Another small performance tweak
+	
+SimBit_3.184
+	Was made from 182b and not 183. I don't remember what 183 was for!
+	Small fix on the warning messages for when a locus is under both epistatic and normal selection
+	Remove assert(PC > 0) who required that the patchcapacity of each patch was greater than 0.
+
+SimBit_3.185
+	Improvements for binary files
+	Fix a few minor bugs
