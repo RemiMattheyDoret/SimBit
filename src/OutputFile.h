@@ -42,11 +42,12 @@ typedef enum {
     T3_LargeOutputFile = 12,
     fitness = 13,
     fitnessStats = 14,
-    T1_allTypesFST = 15,
+    T1_FST = 15,
     extraGeneticInfo = 16,
     patchSize = 17,
     extinction = 18,
-    genealogy = 19
+    genealogy = 19,
+    fitnessSubsetLoci = 20
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific

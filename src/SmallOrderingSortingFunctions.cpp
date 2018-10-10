@@ -146,3 +146,74 @@ std::string to_string_with_precision(const T a_value, const int n = 6)
     return out.str();
 }
 
+
+/*
+Output code:
+  A. All elements of `y` are present in `x`
+  B. Some but not all elements of `y` are present in `x`
+  C. No element of `y` is present in `x`
+  U. Undefined (because `y` is empty)
+This is a useless function as std::set_intersection does it better with sorted vectors
+*/
+template<typename T>
+char areElementsOfYinX(std::vector<T> x, std::vector<T> y)
+{
+  if (y.size() == 0)
+  {
+    return 'U';
+  }
+
+  bool whereAnyElementFound = false;
+  bool whereAnyElementNotFound = false;
+  for (T& y_element : y)
+  {
+    bool isElementFound = std::find(x.begin(),x.end(),y_element) != x.end();
+    if (isElementFound)
+    {
+      whereAnyElementFound = true;
+      if (whereAnyElementNotFound)
+      {
+        return 'B';
+      }
+    } else
+    {
+      whereAnyElementNotFound = true;
+      if (whereAnyElementFound)
+      {
+        return 'B';
+      }
+    }
+  }
+  if (whereAnyElementFound)
+  {
+    return 'A';
+  } else if (whereAnyElementNotFound)
+  {
+    return 'C';
+  }
+  abort();
+}
+
+template<typename T>
+void remove_a_from_b(std::vector<T>& a, std::vector<T>& b) 
+{
+  // remove from vector b all the elements that also exist in vector a.
+  // Both vectors must be sorted
+  
+  auto ib = std::begin(a);
+  auto iter = std::remove_if (
+       std::begin(b), std::end(b),
+       [&ib,&a](auto& x) -> bool {
+                       while  (ib != std::end(a) && *ib < x) ++ib;
+                       return (ib != std::end(a) && *ib == x);
+                     });
+  (void) iter;
+}
+
+template<typename T>
+void sortAndRemoveDuplicates(std::vector<T>& vec)
+{
+  sort( vec.begin(), vec.end() );
+  vec.erase( unique( vec.begin(), vec.end() ), vec.end() );
+}
+

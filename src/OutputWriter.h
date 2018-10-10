@@ -94,6 +94,8 @@ public:
     void WriteOutputs_patchSize(OutputFile& file); // No need to give Pop here as patchSize info is in GP.
     void WriteOutputs_fitness_header(OutputFile& file);
     void WriteOutputs_fitness(Pop& pop, OutputFile& file);
+    void WriteOutputs_fitnessSubsetLoci_header(OutputFile& file);
+    void WriteOutputs_fitnessSubsetLoci(Pop& pop, OutputFile& file);
     void WriteOutputs_fitnessStats_header(OutputFile& file);
     void WriteOutputs_fitnessStats(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_AlleleFreq_header(OutputFile& file);
@@ -116,8 +118,8 @@ public:
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);
     void WriteOutputs_T3_MeanVar(Pop& pop, OutputFile& file);
     void WriteOutputs_extraGeneticInfo(OutputFile& file);
-    void WriteOutputs_T1_allTypesFST_header(OutputFile& file);
-    void WriteOutputs_T1_allTypesFST(Pop& pop, OutputFile& file);
+    void WriteOutputs_T1_FST_header(OutputFile& file);
+    void WriteOutputs_T1_FST(Pop& pop, OutputFile& file);
     void WriteOutputs_extinction(OutputFile& file);
     void WriteOutputs(Pop& realPop);
     void WriteOutputs_forDefinedPop(Pop& pop);

@@ -15,29 +15,6 @@ public:
         {{"T", "TemporalChanges"}, 		  				{"nbGens"}},   // all species must have temporal change at the same time
         {{"PN","PatchNumber"},                          {"T"}},
         {{"H", "Habitats"},                           	{"S","PN","T"}}, // not all species need to have same habitat distinction
-
-        // Paths and times
-        {{"GP", "GeneralPath"},         		    {}},
-        {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration"}},
-        {{"T1_LargeOutput_file"},           		{"GP", "S", "startAtGeneration"}},
-        {{"T1_AlleleFreq_file"},            		{"GP", "S", "startAtGeneration"}},
-        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration"}},
-        {{"T1_MeanLD_file"},             			{"GP", "S", "startAtGeneration"}},
-        {{"T1_LongestRun_file"},           			{"GP", "S", "startAtGeneration"}},
-        {{"T1_HybridIndex_file"},          			{"GP", "S", "startAtGeneration"}},
-        {{"T1_ExpectiMinRec_file"},         		{"GP", "S", "startAtGeneration"}},
-        {{"T2_LargeOutput_file"},          			{"GP", "S", "startAtGeneration"}},
-        {{"SaveBinary_file"},           			{"GP", "S", "startAtGeneration"}},
-        {{"T3_LargeOutput_file"},          			{"GP", "S", "startAtGeneration"}},
-        {{"T3_MeanVar_file"},        	  			{"GP", "S", "startAtGeneration"}},
-        {{"fitness_file"},         		 			{"GP", "S", "startAtGeneration"}},
-        {{"fitnessStats_file"},          			{"GP", "S", "startAtGeneration"}},
-        {{"T1_allTypesFST_file"},          			{"GP", "S", "startAtGeneration"}},
-        {{"extraGeneticInfo_file"},         		{"GP", "S", "startAtGeneration"}},
-        {{"patchSize_file"},          				{"GP", "S", "startAtGeneration"}},
-        {{"extinction_file"},                       {"GP", "S", "startAtGeneration"}},
-        {{"genealogy_file"},                        {"GP", "S", "startAtGeneration"}},
-        {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration"}},
     
         
         // Dispersal
@@ -59,7 +36,7 @@ public:
 
         // Other stuff about outputs
         {{"LogfileType"},                               {}},
-        {{"T1_SubsetOut","T1_output_sequence"},         {"L"}}, // specify [from, to]
+        {{"T1_SubsetVCFOut","T1_vcfOutput_sequence"},         {"L"}}, // specify [from, to]
         {{"sequencingErrorRate"},                       {}},
         
         // Selection
@@ -86,6 +63,31 @@ public:
         {{"recRateOnMismatch"},                         {"S", "L"}},
         {{"FitnessMapInfo"},           {"S", "T", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}},
         {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}},
+
+        // Paths and times
+        {{"GP", "GeneralPath"},                     {}},
+        {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration"}},
+        {{"T1_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
+        {{"T1_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration"}},
+        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration"}},
+        {{"T1_MeanLD_file"},                        {"GP", "S", "startAtGeneration"}},
+        {{"T1_LongestRun_file"},                    {"GP", "S", "startAtGeneration"}},
+        {{"T1_HybridIndex_file"},                   {"GP", "S", "startAtGeneration"}},
+        {{"T1_ExpectiMinRec_file"},                 {"GP", "S", "startAtGeneration"}},
+        {{"T2_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
+        {{"SaveBinary_file"},                       {"GP", "S", "startAtGeneration"}},
+        {{"T3_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
+        {{"T3_MeanVar_file"},                       {"GP", "S", "startAtGeneration"}},
+        {{"fitness_file"},                          {"GP", "S", "startAtGeneration"}},
+        {{"fitnessSubsetLoci_file"},                {"GP", "S", "startAtGeneration","L"}},
+        {{"fitnessStats_file"},                     {"GP", "S", "startAtGeneration"}},
+        {{"T1_FST_file"},                           {"GP", "S", "startAtGeneration"}},
+        {{"T1_FST_info"},                           {"GP", "S", "startAtGeneration", "T1_FST_file","PN"}},
+        {{"extraGeneticInfo_file"},                 {"GP", "S", "startAtGeneration"}},
+        {{"patchSize_file"},                        {"GP", "S", "startAtGeneration"}},
+        {{"extinction_file"},                       {"GP", "S", "startAtGeneration"}},
+        {{"genealogy_file"},                        {"GP", "S", "startAtGeneration"}},
+        {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration"}},
 
         // Species interaction
         {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}},

@@ -56,6 +56,11 @@ bool T1_locusDescription::operator<(const T1_locusDescription& other) const
     return this->locus < other.locus;
 }
 
+bool T1_locusDescription::operator==(int l) const
+{
+    return this->locus == l;
+}
+
 bool T1_locusDescription::operator>(int l) const
 {
     // useless to compare byte_index or bit_index

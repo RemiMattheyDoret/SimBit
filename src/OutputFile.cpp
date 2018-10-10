@@ -43,11 +43,12 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames =
     "T3_LargeOutputFile",
     "fitness",
     "fitnessStats",
-    "T1_allTypesFST",
+    "T1_FST",
     "extraGeneticInfo",
     "patchSize",
     "extinction",
-    "genealogy"
+    "genealogy",
+    "fitnessSubsetLoci"
 };    
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -153,7 +154,7 @@ void OutputFile::interpretTimeInput(InputReader& input)
 {
     if (!input.IsThereMoreToRead())
     {
-        std::cout << input.GetErrorMessage() << "was expecting time information is missing after file name!\n";
+        std::cout << input.GetErrorMessage() << "was expecting time information after file name!\n";
         abort();
     }    
 
@@ -312,6 +313,10 @@ OutputFile::OutputFile(OutputFile&& f)
 OutputFile::OutputFile(std::string f, OutputFileTypes t)
 :filename(f), OutputFileType(t)
 {
+    if (filename == "NFN" || filename == "nfn")
+    {
+        filename = "";
+    }
 
     if (t == Logfile)
     {
@@ -411,9 +416,9 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T1_allTypesFST)
+    } else if (t == T1_FST)
     {
-        this->extension = std::string(".T1_allTypesFST");
+        this->extension = std::string(".T1_FST");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
@@ -445,6 +450,13 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isGenerationSpecific = true;   // Actually the end result is not. SimBit uses getPathWithoutGenerationDespiteBeingGenerationSpecific to produce the last file.
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+    } else if (t == fitnessSubsetLoci)
+    {
+        this->extension = std::string(".fitSubLoci");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else
     {

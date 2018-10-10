@@ -267,3 +267,15 @@ SimBit_3.184
 SimBit_3.185
 	Improvements for binary files
 	Fix a few minor bugs
+
+SimBit_3.187
+	Add option --fitnessSubsetLoci_file
+
+SimBit_3.188
+	Correct extraGeneticInfo
+
+SimBit_3.190
+	Fix issue with default initialization of the seed
+
+SimBit_3.192
+	Improve the output for FST

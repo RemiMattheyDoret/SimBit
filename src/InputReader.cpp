@@ -421,15 +421,36 @@ std::string InputReader::GetNextElementString()
 InputReader::InputReader(InputReader& fullInput, int from, int to, int speciesIndex)
 : VIndex(0), VIndex_previous_habitat(0), VIndex_previous_generation(0)
 {
-    ErrorMessage = fullInput.ErrorMessage + " for species " + GP->speciesNames[speciesIndex] + " (species index = " + std::to_string(speciesIndex) + "), ";
+    if (speciesIndex != -1)
+    {
+        ErrorMessage = fullInput.ErrorMessage + " for species " + GP->speciesNames[speciesIndex] + " (species index = " + std::to_string(speciesIndex) + "), ";
+    } else
+    {
+        ErrorMessage = fullInput.ErrorMessage;
+    }
+        
 
     this->VIndex = 0;
     this->VIndex_previous_habitat = 0;
     this->VIndex_previous_generation = 0;
 
+    if (from > to)
+    {
+        std::cout << ErrorMessage << " internal error in 'InputReader::InputReader(InputReader& fullInput, int from, int to, int speciesIndex)'. The variable 'from' is greater than the variable 'to' (from = "<<from<<", to = "<<to<<").\n";
+        abort();
+    }
+
     for (int i = from ; i < to ; i++)
     {
         V.push_back(fullInput.V[i]);
+        //std::cout << i << " -> " <<fullInput.V[i] << "\n";
+        //std::cout << V.size() << "\n";
+    }
+
+    if (to - from > V.size())
+    {
+        std::cout << ErrorMessage << " internal error in 'InputReader::InputReader(InputReader& fullInput, int from, int to, int speciesIndex)'. The variable 'to' is greater than the size of V (the number of words in input; from = "<<from<<", to = "<<to<<", V.size() = "<<V.size()<<").\n";
+        abort();
     }
 }
 
@@ -615,4 +636,36 @@ int InputReader::FindHabitatFromString(std::string s_habitat)
     int Habitat = readInt(s_habitat, true); // read the generation
     assert(Habitat > -1 );
     return Habitat;
+}
+
+int InputReader::currentVIndex()
+{
+    return VIndex;
+}
+
+
+int InputReader::FindVIndexOfNextMatchingString(std::string toFind, bool throwErrorIfNotFound)
+{
+    for (int VIndex_tmp = VIndex ; VIndex_tmp < V.size(); VIndex_tmp++)
+    {
+        if (V[VIndex_tmp] == toFind)
+        {
+            return VIndex_tmp;
+        }
+    }
+    // If the keyword has not been found
+    if (throwErrorIfNotFound)
+    {
+        std::cout << "Message from 'InputReader method FindVIndexOfNextMatchingString': " << ErrorMessage << "', expected to find the string '" << toFind << "' after current word index (the current word index is "<< std::to_string(VIndex) <<" and the corresponding word is '"<< V[VIndex] <<"')." << std::endl;
+        abort();
+    } else
+    {
+        return V.size();
+    }
+}
+
+
+int InputReader::numberOfWordsInInput()
+{
+    return V.size();
 }

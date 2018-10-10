@@ -410,8 +410,13 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->__Habitats,"__Habitats");
                 this->ExtendStringForAdvancedLogFile(s, SSP->MaxHabitat,"MaxHabitat");
 
-
+                // Other
                 this->ExtendStringForAdvancedLogFile(s, SSP->centralT1LocusForExtraGeneticInfo,"centralT1LocusForExtraGeneticInfo");
+                this->ExtendStringForAdvancedLogFile(s, SSP->subsetT1LociForfitnessSubsetLoci_file,"subsetT1LociForfitnessSubsetLoci_file");
+                this->ExtendStringForAdvancedLogFile(s, SSP->subsetT2LociForfitnessSubsetLoci_file,"subsetT2LociForfitnessSubsetLoci_file");
+                this->ExtendStringForAdvancedLogFile(s, SSP->subsetT3LociForfitnessSubsetLoci_file,"subsetT3LociForfitnessSubsetLoci_file");
+                this->ExtendStringForAdvancedLogFile(s, SSP->subsetT1epistasisLociForfitnessSubsetLoci_file,"subsetT1epistasisLociForfitnessSubsetLoci_file");
+
             }
             SSP = nullptr;
             s += "###################\n\n";
@@ -669,7 +674,7 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
         B_HudsonKaplan_mean = 0.0;
         B_NordborgEtAl_mean = 0.0;
 
-        for (auto& centralLocusObject : SSP->T1_output_sequenceList)
+        for (auto& centralLocusObject : SSP->T1_vcfOutput_sequenceList)
         {
             int centralLocus = centralLocusObject.locus;
 
@@ -794,7 +799,7 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
                         addToE_HudsonKaplan = 0.0;
                     } else
                     {
-                        addToE_HudsonKaplan = (currentMutationRate * t) / (2 * pow(t + currentDistanceInRate, 2));
+                        addToE_HudsonKaplan = (currentMutationRate * t) / (pow(t + currentDistanceInRate, 2));
                     }
 
                     // E_NordborgEtAl
@@ -818,8 +823,8 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
             B_HudsonKaplan_mean               += exp(-E_HudsonKaplan);
             B_NordborgEtAl_mean               += exp(-E_NordborgEtAl);
         }
-        B_HudsonKaplan_mean                 /= SSP->T1_output_sequenceList.size();
-        B_NordborgEtAl_mean                 /= SSP->T1_output_sequenceList.size();
+        B_HudsonKaplan_mean                 /= SSP->T1_vcfOutput_sequenceList.size();
+        B_NordborgEtAl_mean                 /= SSP->T1_vcfOutput_sequenceList.size();
     }
     
        
@@ -836,61 +841,87 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
     ##################
     */
 
-    double averageMuOverT1_output_sequenceList;
+    double averageMuOverT1_vcfOutput_sequenceList;
     if (SSP->T1_nbBits > 0)
     {
         /*      
-        for (auto& elem : SSP->T1_output_sequenceList)
+        for (auto& elem : SSP->T1_vcfOutput_sequenceList)
         {
             std::cout << "SSP->T1_MutationRate[" << elem.locus << "] = " << SSP->T1_MutationRate[elem.locus] << "\n";
         }
         */
 
-        //std::cout << SSP->T1_MutationRate[SSP->T1_output_sequenceList[SSP->T1_output_sequenceList.size()-2].locus] << "\n";
-        //std::cout << SSP->T1_MutationRate[SSP->T1_output_sequenceList[0].locus] << "\n";
-        averageMuOverT1_output_sequenceList = SSP->T1_MutationRate[SSP->T1_output_sequenceList[SSP->T1_output_sequenceList.size()-2].locus] - SSP->T1_MutationRate[SSP->T1_output_sequenceList[0].locus];
-        averageMuOverT1_output_sequenceList /= SSP->T1_output_sequenceList.size()-2;
-        //std::cout << averageMuOverT1_output_sequenceList << "\n";
+        //std::cout << SSP->T1_MutationRate[SSP->T1_vcfOutput_sequenceList[SSP->T1_vcfOutput_sequenceList.size()-2].locus] << "\n";
+        //std::cout << SSP->T1_MutationRate[SSP->T1_vcfOutput_sequenceList[0].locus] << "\n";
+        averageMuOverT1_vcfOutput_sequenceList = SSP->T1_MutationRate[SSP->T1_vcfOutput_sequenceList[SSP->T1_vcfOutput_sequenceList.size()-2].locus] - SSP->T1_MutationRate[SSP->T1_vcfOutput_sequenceList[0].locus];
+        averageMuOverT1_vcfOutput_sequenceList /= SSP->T1_vcfOutput_sequenceList.size()-2;
+        //std::cout << averageMuOverT1_vcfOutput_sequenceList << "\n";
     } else
     {
-        averageMuOverT1_output_sequenceList = -1.0;
+        averageMuOverT1_vcfOutput_sequenceList = -1.0;
     }   
     
     std::ostringstream s_tmpForPrecision;
-    s_tmpForPrecision << std::setprecision(50) << averageMuOverT1_output_sequenceList;
-    s += std::string("averageMuOverT1_output_sequenceList = ") + s_tmpForPrecision.str() + std::string("\n");
-    //s += std::string("averageMuOverT1_output_sequenceList = ") + std::to_string(averageMuOverT1_output_sequenceList) + std::string("\n");
+    s_tmpForPrecision << std::setprecision(50) << averageMuOverT1_vcfOutput_sequenceList;
+    s += std::string("averageMuOverT1_vcfOutput_sequenceList = ") + s_tmpForPrecision.str() + std::string("\n");
+    //s += std::string("averageMuOverT1_vcfOutput_sequenceList = ") + std::to_string(averageMuOverT1_vcfOutput_sequenceList) + std::string("\n");
 
 
     file.write(s);
     file.close();
 }
 
-void OutputWriter::WriteOutputs_T1_allTypesFST_header(OutputFile& file)
+void OutputWriter::WriteOutputs_T1_FST_header(OutputFile& file)
 {
-    if (SSP->T1_nbBits != 1)
-    {
-        std::cout << "You have asked for 'T1_allTypesFST' and for more than a single locus. For the moment 'T1_allTypesFST' is only defined for a single locus. Sorry!\n";
-        abort();
-    }
+    assert(GP->output_FST_nbPatchesToConsider.size() > 0);
+
     file.open();
 
     std::string s;
+
     
     s += std::string("Generation");
-    for (int nbPatchesToConsider = 2 ; nbPatchesToConsider <= GP->maxEverPatchNumber ;nbPatchesToConsider++)
+
+    for (int nbPatchesToConsider : GP->output_FST_nbPatchesToConsider)
     {
-        s += std::string("\tnbPatch") + std::to_string(nbPatchesToConsider) + std::string("_GST");
-        s += std::string("\tnbPatch") + std::to_string(nbPatchesToConsider) + std::string("_WCstyleST");
-        s += std::string("\tnbPatch") + std::to_string(nbPatchesToConsider) + std::string("_SuperST");
+        std::string patchesToConsider(nbPatchesToConsider,1);   // nbPatchesToConsider leading 1's. nbPatchesToConsider is K in binomial coef
+        patchesToConsider.resize(GP->maxEverPatchNumber,0);     // GP->maxEverPatchNumber-nbPatchesToConsider trailing 0's. GP->maxEverPatchNumber is N in binomial coef
+
+        do
+        {
+            // Get indices of patches to consider
+            std::vector<int> patchesToConsiderIndices;
+            for (int patch_index = 0 ; patch_index < patchesToConsider.size() ;patch_index++)
+            {
+                if (patchesToConsider[patch_index])
+                {
+                    patchesToConsiderIndices.push_back(patch_index);
+                }
+            }
+            assert(patchesToConsiderIndices.size() == nbPatchesToConsider);
+
+            std::string patchCombinationString("\t");
+            for (int patch_index_index =0 ; patch_index_index < (patchesToConsiderIndices.size() - 1); patch_index_index++)
+            {
+                int patch_index = patchesToConsiderIndices[patch_index_index];
+                patchCombinationString += std::string("P") + std::to_string(patch_index) + "_";
+            }
+            patchCombinationString += std::string("P") + std::to_string(patchesToConsiderIndices.back());
+
+            s += patchCombinationString + std::string("_averageOfRatios_GST");
+            s += patchCombinationString + std::string("_averageOfRatios_WCST");
+            s += patchCombinationString + std::string("_ratioOfAverages_GST");
+            s += patchCombinationString + std::string("_ratioOfAverages_WCST");
+        } while (std::prev_permutation(patchesToConsider.begin(), patchesToConsider.end()));
     }
+
     s += std::string("\n");
     
     file.write(s);
     file.close();
 }
 
-void OutputWriter::WriteOutputs_T1_allTypesFST(Pop& pop, OutputFile& file)
+void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
 {
     assert(SSP->T1_nbBits == 1);
 
@@ -901,80 +932,110 @@ void OutputWriter::WriteOutputs_T1_allTypesFST(Pop& pop, OutputFile& file)
 
 
     // compute alleleFreq at each patch
-    std::vector<double> alleleFreq;
-    alleleFreq.resize(GP->PatchNumber,0);
+    std::vector<std::vector<double>> alleleFreqs;  // alleleFreqs[patch][locus]
+    alleleFreqs.resize(GP->PatchNumber);
     
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
-        for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        alleleFreqs[patch_index].resize(SSP->T1_nbBits);
+
+        for (int locus = 0 ; locus < SSP->T1_nbBits; locus++)
         {
-            alleleFreq[patch_index] += pop.getPatch(patch_index).getInd(ind_index).getHaplo(0).getT1_Allele(0,0) + pop.getPatch(patch_index).getInd(ind_index).getHaplo(1).getT1_Allele(0,0);
-        }
-        alleleFreq[patch_index] /= 2 * SSP->patchSize[patch_index];
-        //std::cout << "alleleFreq["<<patch_index<<"] = "<< alleleFreq[patch_index] << "\n" ;
-        assert(alleleFreq[patch_index] >= 0.0 && alleleFreq[patch_index] <= 1.0);
-    }
-    
-
-
-    // Fst measures will be computed as an average of any possible combination of any number of patch from 2 to the total number of patches.
-    for (int nbPatchesToConsider = 2 ; nbPatchesToConsider <= GP->maxEverPatchNumber ; nbPatchesToConsider++)
-    {
-
-        if (nbPatchesToConsider >= GP->PatchNumber)
-        {
-            s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
-        } else
-        {
-            std::string patchesToConsider(nbPatchesToConsider,1); // nbPatchesToConsider leading 1's
-            patchesToConsider.resize(GP->PatchNumber,0); // GP->PatchNumber-nbPatchesToConsider trailing 0's
-
-
-            int nbCombinations = 0;
-            double meanGST = 0.0;
-            double meanWCstyleST = 0.0;
-            double meanSuperST = 0.0;
-            // do-while loop through each possible combination (it is using a bitmask technic as explained at the second answer of https://stackoverflow.com/questions/12991758/creating-all-possible-k-combinations-of-n-items-in-c)
-            do
+            if (SSP->patchSize[patch_index] == 0)
             {
-                nbCombinations++;
-
-                // Get indices of patches to consider
-                std::vector<int> patchesToConsiderIndices;
-                for (int patch_index = 0 ; patch_index < GP->PatchNumber ;patch_index++)
+                alleleFreqs[patch_index][locus] += std::numeric_limits<double>::quiet_NaN();
+            } else
+            {
+                alleleFreqs[patch_index][locus] = 0.0;
+                for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
                 {
-                    if (patchesToConsider[patch_index])
-                    {
-                        patchesToConsiderIndices.push_back(patch_index);
-                    }
+                    alleleFreqs[patch_index][locus] += pop.getPatch(patch_index).getInd(ind_index).getHaplo(0).getT1_Allele(0,0);
+                    alleleFreqs[patch_index][locus] += pop.getPatch(patch_index).getInd(ind_index).getHaplo(1).getT1_Allele(0,0);
                 }
-                assert(patchesToConsiderIndices.size() == nbPatchesToConsider);
+                alleleFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+                assert(alleleFreqs[patch_index][locus] >= 0.0 && alleleFreqs[patch_index][locus] <= 1.0);
+            }
+        }
+    }
+    assert(alleleFreqs.size() == GP->PatchNumber);
 
+
+    // Compute all FSTs
+    for (int nbPatchesToConsider : GP->output_FST_nbPatchesToConsider)
+    {
+        std::string patchesToConsider(nbPatchesToConsider,1);   // nbPatchesToConsider leading 1's. nbPatchesToConsider is K in binomial coef
+        patchesToConsider.resize(GP->maxEverPatchNumber,0);     // GP->maxEverPatchNumber-nbPatchesToConsider trailing 0's. GP->maxEverPatchNumber is N in binomial coef
+
+        do
+        {
+            /////////////////
+            //// Get indices of patches to consider
+            /////////////////
+            std::vector<int> patchesToConsiderIndices;
+            for (int patch_index = 0 ; patch_index < patchesToConsider.size() ;patch_index++)
+            {
+                if (patchesToConsider[patch_index])
+                {
+                    patchesToConsiderIndices.push_back(patch_index);
+                }
+            }
+            assert(patchesToConsiderIndices.size() == nbPatchesToConsider);
+
+            /////////////////
+            //// Compute FSTs
+            /////////////////
+            // Initialize variables
+            double averageOfRatios_GST  = 0.0;
+            double averageOfRatios_WCST = 0.0;
+
+            double ratioOfAverages_GST_NUMERATOR   = 0.0;
+            double ratioOfAverages_GST_DENOMINATOR  = 0.0;
+            double ratioOfAverages_WCST_NUMERATOR   = 0.0;
+            double ratioOfAverages_WCST_DENOMINATOR  = 0.0;
+
+            // Loop through loci
+            for (int locus = 0 ; locus < SSP->T1_nbBits; locus++)
+            {
                 // Compute meanAlleleFreq
                 double meanAlleleFreq = 0.0;
                 for (int patch_index : patchesToConsiderIndices)
                 {
-                    meanAlleleFreq += alleleFreq[patch_index]; 
+                    meanAlleleFreq += alleleFreqs[patch_index][locus];
                 }
-                meanAlleleFreq /= nbPatchesToConsider;
-                //std::cout << "meanAlleleFreq = " << meanAlleleFreq << "\n";
-
+                meanAlleleFreq /= patchesToConsiderIndices.size();
 
                 // Compute SS (Sum Of Square, the numerator of a variance calculation)
                 double SS = 0.0;
                 for (int patch_index : patchesToConsiderIndices)
                 {
-                    SS += pow(alleleFreq[patch_index] - meanAlleleFreq,2);
+                    SS += pow(alleleFreqs[patch_index][locus] - meanAlleleFreq,2);
                 }
-                //std::cout << "SS = " << SS << "\n";
+                
 
                 // Handy variables
-                int r = nbPatchesToConsider;  // Number of sampled patches
-                int d = GP->PatchNumber;        // True number of patches
-                double s_square = SS / (r - 1);
+                int r = 2;    // Number of sampled patches
                 double pbar = meanAlleleFreq;
+                double GSTnum = SS / r;
+                double GSTden = pbar - pow(pbar,2);
+                double s_square = SS / (r-1);
+                double WCSTnum = s_square;
+                double WCSTden = GSTden + s_square / r;
             
-    /*            std::cout << "d = " << d << "\n";            
+                
+            
+                // GST
+                ratioOfAverages_GST_NUMERATOR += GSTnum;
+                ratioOfAverages_GST_DENOMINATOR += GSTden;
+                averageOfRatios_GST += GSTnum / GSTden;
+
+                // WCST
+                ratioOfAverages_WCST_NUMERATOR += WCSTnum;
+                ratioOfAverages_WCST_DENOMINATOR += WCSTden;
+                averageOfRatios_WCST += WCSTnum / WCSTden;
+
+
+                /*          
+                std::cout << "d = " << d << "\n";            
                 std::cout << "r = " << r << "\n";            
                 std::cout << "s_square = " << s_square << "\n";            
                 std::cout << "pbar = " << pbar << "\n";
@@ -984,37 +1045,28 @@ void OutputWriter::WriteOutputs_T1_allTypesFST(Pop& pop, OutputFile& file)
                 std::cout << "s_square / r = " << s_square / r << "\n";            
 
                 std::cout << "meanGST = " << meanGST << "\n";
-                std::cout << "meanWCstyleST = " << meanWCstyleST << "\n";
-                std::cout << "meanSuperST = " << meanSuperST << "\n";*/
-                // GST
-                meanGST += (SS / r)   /   (pbar - pow(pbar,2));
+                std::cout << "meanWCST = " << meanWCST << "\n";
+                */
+            }
 
-                // WCstyleST
-                meanWCstyleST += s_square   /    (pbar - pow(pbar,2) + s_square / r);
+            averageOfRatios_GST  /= SSP->T1_nbBits;
+            averageOfRatios_WCST /= SSP->T1_nbBits;
+            
+            double ratioOfAverages_GST = ratioOfAverages_GST_NUMERATOR / ratioOfAverages_GST_DENOMINATOR;
+            double ratioOfAverages_WCST = ratioOfAverages_WCST_NUMERATOR / ratioOfAverages_WCST_DENOMINATOR;
 
-                // SuperST
-                meanSuperST += (s_square * (d - 1) / d)   /    (pbar - pow(pbar,2) + (s_square / r) * (1 - r/d));
+            s += s_tab + std::to_string(averageOfRatios_GST) + s_tab + std::to_string(averageOfRatios_WCST) + s_tab + std::to_string(ratioOfAverages_GST) + s_tab + std::to_string(ratioOfAverages_WCST);
 
-
-            } while (std::prev_permutation(patchesToConsider.begin(), patchesToConsider.end()));
-            //std::cout << "nbCombinations = " << nbCombinations << "\n";
-            meanGST /= nbCombinations;
-            meanWCstyleST /= nbCombinations;
-            meanSuperST /= nbCombinations;
-
-            //std::cout << "meanGST = " << meanGST << "\n";
-            //std::cout << "meanWCstyleST = " << meanWCstyleST << "\n";
-            //std::cout << "meanSuperST = " << meanSuperST << "\n";
-
-            s += s_tab + std::to_string(meanGST) + s_tab + std::to_string(meanWCstyleST) + s_tab + std::to_string(meanSuperST);
-        }
+        } while (std::prev_permutation(patchesToConsider.begin(), patchesToConsider.end()));
     }
+
 
     s += std::string("\n");
     file.write(s);
     file.close();
 
 }
+
 
 void OutputWriter::WriteOutputs_fitnessStats_header(OutputFile& file)
 {
@@ -1033,6 +1085,7 @@ void OutputWriter::WriteOutputs_fitnessStats_header(OutputFile& file)
     file.write(s);
     file.close();
 }
+
 
 void OutputWriter::WriteOutputs_fitnessStats(Pop& pop, OutputFile& file)
 {
@@ -1117,6 +1170,75 @@ void OutputWriter::WriteOutputs_patchSize(OutputFile& file)
 }
 
 
+void OutputWriter::WriteOutputs_fitnessSubsetLoci_header(OutputFile& file)
+{
+    file.open();
+    assert(SSP->subsetT1LociForfitnessSubsetLoci_file.size() == SSP->subsetT2LociForfitnessSubsetLoci_file.size());
+    assert(SSP->subsetT1LociForfitnessSubsetLoci_file.size() == SSP->subsetT3LociForfitnessSubsetLoci_file.size());
+    assert(SSP->subsetT1LociForfitnessSubsetLoci_file.size() == SSP->subsetT1epistasisLociForfitnessSubsetLoci_file.size());
+
+    std::string s;
+    
+    s += std::string("Generation");
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int lociSetIndex = 0 ; lociSetIndex < SSP->subsetT1LociForfitnessSubsetLoci_file.size() ; lociSetIndex++)
+            {
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_totalFit";
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T1Fit";
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T1EpistasisFit";
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T2Fit";
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T3Fit";
+            }
+        }
+    }
+    s += std::string("\n");
+    
+    file.write(s);
+    file.close();
+}
+
+void OutputWriter::WriteOutputs_fitnessSubsetLoci(Pop& pop, OutputFile& file)
+{
+    file.open();
+    file.write(std::to_string(GP->CurrentGeneration));
+
+    std::string s;
+    std::string s_tab("\t");
+
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int lociSetIndex = 0 ; lociSetIndex < SSP->subsetT1LociForfitnessSubsetLoci_file.size() ; lociSetIndex++)
+            {
+                if (shouldNABePrinted(patch_index,ind_index))
+                {
+                    s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
+                } else
+                {
+                    auto fitnessComponents = pop.getPatch(patch_index).getInd(ind_index, patch_index).CalculateFitnessComponentsOnSubsetOfLoci(SSP->Habitats[patch_index], lociSetIndex);
+                    assert(fitnessComponents.size() == 4);
+
+                    std::string T1Fit =             std::to_string(fitnessComponents[0]);
+                    std::string T2Fit =             std::to_string(fitnessComponents[1]);
+                    std::string T1EpistasisFit =    std::to_string(fitnessComponents[2]);
+                    std::string T3Fit =             std::to_string(fitnessComponents[3]);
+                    std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3]);
+
+                    s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit;
+                }
+            }
+        }
+    }
+    s += std::string("\n");
+    
+    file.write(s);
+    file.close();
+}
+
 void OutputWriter::WriteOutputs_fitness_header(OutputFile& file)
 {
     file.open();
@@ -1186,7 +1308,7 @@ void OutputWriter::WriteOutputs_T1_AlleleFreq_header(OutputFile& file)
     s += std::string("Generation");
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
-        for (auto& T1_locus : SSP->T1_output_sequenceList)
+        for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
         {
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_L") + std::to_string(T1_locus.locus);
         }
@@ -1208,7 +1330,7 @@ void OutputWriter::WriteOutputs_T1_AlleleFreq(Pop& pop, OutputFile& file)
     
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
-        for (auto& T1_locus : SSP->T1_output_sequenceList)
+        for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
         {
             std::string s;
             if (shouldNABePrinted(patch_index))
@@ -1637,7 +1759,7 @@ void OutputWriter::WriteOutputs_T1_LongestRun(Pop& pop, OutputFile& file)
                     RunZeros        = 0;
                     RunOnes         = 0;
                     PreviousT1_Allele  =-1;
-                    for (auto& T1_locus : SSP->T1_output_sequenceList)
+                    for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
                     {
                         CurrentT1_Allele = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(T1_locus.byte_index,T1_locus.bit_index);
                         if (CurrentT1_Allele)
@@ -1743,7 +1865,7 @@ void OutputWriter::WriteOutputs_T1_LargeOutput_header(OutputFile& file)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
             {
-                for (auto& T1_locus : SSP->T1_output_sequenceList)
+                for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
                 {
                     s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + std::string("_H") + std::to_string(haplo_index) + std::string("_L") + std::to_string(T1_locus.locus);
                 }
@@ -1768,7 +1890,7 @@ void OutputWriter::WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file)
         {
             for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
             {
-                for (auto& T1_locus : SSP->T1_output_sequenceList)
+                for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
                 {
                     if (shouldNABePrinted(patch_index,ind_index))
                     {
@@ -1825,12 +1947,12 @@ void OutputWriter::WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file)
                 double nbOnes = 0.0;
                 for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
                 {
-                    for (auto& T1_locus : SSP->T1_output_sequenceList)
+                    for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
                     {
                         nbOnes+=pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(T1_locus.byte_index,T1_locus.bit_index);
                     }   
                 }
-                double r =  nbOnes / (double)(SSP->T1_output_sequenceList.size() * SSP->ploidy);
+                double r =  nbOnes / (double)(SSP->T1_vcfOutput_sequenceList.size() * SSP->ploidy);
                 assert(r>=0 && r<=1);
                 s += s_tab + std::to_string(r);
             }   
@@ -1872,7 +1994,7 @@ void OutputWriter::WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file)
             for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
             {
                 bool PreviousT1_Allele = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(0,0);
-                for (auto& T1_locus : SSP->T1_output_sequenceList)
+                for (auto& T1_locus : SSP->T1_vcfOutput_sequenceList)
                 {
                     bool CurrentT1_Allele = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(T1_locus.byte_index,T1_locus.bit_index);
                     if (CurrentT1_Allele != PreviousT1_Allele)
@@ -1905,6 +2027,8 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
 
     // Find Polymorphic Sites
     auto polymorphicLoci = SSP->simTracker.listAllPolymorphicT1Sites(pop);
+    remove_a_from_b(SSP->T1_vcfOutput_sequenceList, polymorphicLoci);
+
 
     std::string s_tab = "\t";
     std::string s_P   = "P";
@@ -1946,7 +2070,7 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
     
     // Write Data
     std::string s_vert = "|";
-    for (auto& TrackedMutation : polymorphicLoci) // SSP->simTracker.PolymorphicT1Sites contain only the sites in  SSP->T1_output_sequenceList
+    for (auto& TrackedMutation : polymorphicLoci) // SSP->simTracker.PolymorphicT1Sites contain only the sites in  SSP->T1_vcfOutput_sequenceList
     {
         std::string s;
         s.reserve(SSP->TotalpatchCapacity * 6);
@@ -2349,6 +2473,27 @@ std::cout << "Enters in 'WriteOutputs'\n";
     }
 
     /*
+     #########################
+     ### fitnessSubsetLoci ###
+     #########################
+     */
+    if (outputWriter.isFile(fitnessSubsetLoci))
+    {
+        OutputFile& file = outputWriter.get_OutputFile(fitnessSubsetLoci);
+        if ( GP->CurrentGeneration == GP->startAtGeneration)
+        {
+            outputWriter.WriteOutputs_fitnessSubsetLoci_header(file);
+        }
+        if (file.isTime())
+        {
+            #ifdef DEBUG
+            std::cout << "Write fitnessSubsetLoci\n";
+            #endif
+            outputWriter.WriteOutputs_fitnessSubsetLoci(pop, file);
+        }
+    }
+
+    /*
      ####################
      ### fitnessStats ###
      ####################
@@ -2643,21 +2788,21 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1 allTypesFST ####
      ########################
      */
-    if (outputWriter.isFile(T1_allTypesFST))
+    if (outputWriter.isFile(T1_FST))
     {
         if (SSP->T1_nbBits)
         {
-            OutputFile& file = outputWriter.get_OutputFile(T1_allTypesFST);
+            OutputFile& file = outputWriter.get_OutputFile(T1_FST);
             if ( GP->CurrentGeneration == GP->startAtGeneration)
             {
-                outputWriter.WriteOutputs_T1_allTypesFST_header(file);
+                outputWriter.WriteOutputs_T1_FST_header(file);
             }
             if (file.isTime())
             {
                 #ifdef DEBUG
-                std::cout << "Write T1_allTypesFST\n";
+                std::cout << "Write T1_FST\n";
                 #endif
-                outputWriter.WriteOutputs_T1_allTypesFST(pop, file);
+                outputWriter.WriteOutputs_T1_FST(pop, file);
             }
         }
     }

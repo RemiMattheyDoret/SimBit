@@ -664,6 +664,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     if (flag == "seed")
     {
         InputReader input("default", "In Default value for --seed,");
+        GP->readSeed(input);
     }
     else if (flag == "S")
     {
@@ -765,6 +766,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
+    else if (flag == "fitnessSubsetLoci_file")
+    {
+        // Nothing to do
+    }
     else if (flag == "fitness_file")
     {
         // Nothing to do
@@ -773,9 +778,13 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
-    else if (flag == "T1_allTypesFST_file")
+    else if (flag == "T1_FST_file")
     {
         // Nothing to do
+    } else if (flag == "T1_FST_info")
+    {
+        InputReader input("default", std::string("In default value for '--") + flag + std::string("', "));
+        GP->readT1_FST_info(input);
     }
     else if (flag == "extraGeneticInfo_file")
     {
@@ -811,7 +820,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         outputWriter.LogfileType = 1;
     }
-    else if (flag == "T1_SubsetOut")
+    else if (flag == "T1_SubsetVCFOut")
     {
         for (auto& SSPi : this->SSPs)
         {
@@ -819,9 +828,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
             {
                 std::string s("range 0 ");
                 s += std::to_string(SSPi.T1_nbBits - 1);
-                InputReader input(s, "In Default value for --T1_output_sequence,");
-                SSPi.readT1_output_sequence(input);
-                assert(SSPi.T1_output_sequenceList.size() == SSPi.T1_nbBits);   
+                InputReader input(s, "In Default value for --T1_vcfOutput_sequence,");
+                SSPi.readT1_vcfOutput_sequence(input);
+                assert(SSPi.T1_vcfOutput_sequenceList.size() == SSPi.T1_nbBits);   
             }
         }
     } else if (flag == "sequencingErrorRate")
@@ -1220,7 +1229,52 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
-    }  else if (flag == "fitnessStats_file" )
+    }  else if (flag == "fitnessSubsetLoci_file" )
+    {
+
+        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+        OutputFile file(input.GetNextElementString(), fitnessSubsetLoci);
+
+        // Find out the separation between time arguments and the loci to subset
+        int VIndexFirstWordOfSSP;
+        {
+            // false means do not throw error message if word cannot be found. 
+            // true means throw error message if word cannot be found. 
+            int FirstLociSet = input.FindVIndexOfNextMatchingString("LociSet",true); 
+            int FirstSpeciesSpecificIndication = input.FindVIndexOfNextMatchingString("@S",false);
+
+            if (FirstSpeciesSpecificIndication != input.numberOfWordsInInput())
+            {
+                if (FirstSpeciesSpecificIndication != FirstLociSet - 1)
+                {
+                    std::cout << "For option --fitnessSubsetLoci_file, received the first species specific marker at word index "<<FirstSpeciesSpecificIndication<<" and the first LociSet at word index " << FirstLociSet << ". Note that if a species specific marker is used, then the keyword 'LociSet' should directly follow it, which is not the case here. Hence SimBit fails to understand this input. Sorry!\n";
+                    abort();
+                }
+                VIndexFirstWordOfSSP = FirstSpeciesSpecificIndication;
+            } else
+            {
+                VIndexFirstWordOfSSP = FirstLociSet;
+            }
+        } 
+
+        // Subset the inputs
+        // -1 indicates this is not specific to a single species (yet)
+        //std::cout << "VIndexFirstWordOfSSP = " << VIndexFirstWordOfSSP << "\n";
+        InputReader inputForTime(input, input.currentVIndex(), VIndexFirstWordOfSSP, -1);
+        InputReader inputForSpeciesSpecificLociSets(input, VIndexFirstWordOfSSP, input.numberOfWordsInInput(), -1);
+        //std::cout << "inputForTime = " << inputForTime.print() << "\n";
+        //std::cout << "inputForSpeciesSpecificLociSets = " << inputForSpeciesSpecificLociSets.print() << "\n";
+
+        // time
+        file.interpretTimeInput(inputForTime);
+
+        // LociSet
+        wrapperOverSpecies(inputForSpeciesSpecificLociSets, &SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file);
+
+        // input.workDone(); Do not call work Done because input is not read itself but only the subset of it
+        outputWriter.insertOutputFile(std::move(file));
+
+    } else if (flag == "fitnessStats_file" )
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitnessStats);
@@ -1228,15 +1282,19 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
-    }  else if (flag == "T1_allTypesFST_file" )
+    } else if (flag == "T1_FST_file" )
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        OutputFile file(input.GetNextElementString(), T1_allTypesFST);
+        OutputFile file(input.GetNextElementString(), T1_FST);
         file.interpretTimeInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
-    }  else if (flag == "extraGeneticInfo_file" )
+    }  else if (flag == "T1_FST_info")
+    {
+        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+        GP->readT1_FST_info(input);
+    } else if (flag == "extraGeneticInfo_file" )
     {        
         OutputFile file(entry, extraGeneticInfo);
         outputWriter.insertOutputFile(std::move(file));
@@ -1294,12 +1352,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
             std::cout << "LogfileType received is " << outputWriter.LogfileType << ". Only 0, 1 and 2 are accepted for the moment.\n";
             abort();
         }
-    } else if (flag == "T1_output_sequence" || flag == "T1_SubsetOut")
+    } else if (flag == "T1_vcfOutput_sequence" || flag == "T1_SubsetVCFOut")
     {
         
 
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_output_sequence);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_vcfOutput_sequence);
     } else if (flag == "sequencingErrorRate")
     {
 
@@ -1580,7 +1638,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
                 std::string sN(input.GetNextElementString());
                 if (sN == "seed")
                 {
-                    std::cout << "You choose to call a species 'seed'. This is literally the only species name that you cannot choose! Bad luck! The reason is that if you were to print the population to a binary file, then there would be conflict between the paths of the file saving the random seed with the file saving the species 'seed'. Here are some ideas for you on how to name your species; 'Seed', 'SEED', 'nut', 'berry' :D. Note that this error message is printed whether or not you asked to print populations to a binary file.\n";
+                    std::cout << "You choose to call a species 'seed'. This is the only species name that you cannot choose! Bad luck! The reason is that if you were to print the population to a binary file, then there would be conflict between the paths of the file saving the random seed with the file saving the species 'seed'. Here are some ideas for you on how to name your species; 'Seed', 'SEED', 'nut', 'berry' :D. Note that this error message is printed whether or not you asked to print populations to a binary file.\n";
                     abort();
                 }
                 SpeciesSpecificParameters ssp(sN, GP->nbSpecies);

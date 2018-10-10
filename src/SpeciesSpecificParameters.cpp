@@ -1453,8 +1453,8 @@ bool SpeciesSpecificParameters::isLocusInT1_outputs_sequenceList(int locus)
 {
     T1_locusDescription L(locus);
     bool x = std::binary_search( 
-                T1_output_sequenceList.begin(),
-                T1_output_sequenceList.end(),
+                T1_vcfOutput_sequenceList.begin(),
+                T1_vcfOutput_sequenceList.end(),
                 L,
                 [](const T1_locusDescription& right, const T1_locusDescription& left){return right.locus < left.locus;}
             );
@@ -2830,10 +2830,10 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
 }
 
 
-void SpeciesSpecificParameters::readT1_output_sequence(InputReader& input)
+void SpeciesSpecificParameters::readT1_vcfOutput_sequence(InputReader& input)
 {
 #ifdef DEBUG
-    std::cout << "For option 'T1_output_sequence', the std::string that is read is: " << input.print() << std::endl;
+    std::cout << "For option 'T1_vcfOutput_sequence', the std::string that is read is: " << input.print() << std::endl;
 #endif
 
     std::string Mode = input.GetNextElementString();
@@ -2843,73 +2843,73 @@ void SpeciesSpecificParameters::readT1_output_sequence(InputReader& input)
         int to = input.GetNextElementInt();
         if (from > to)
         {
-            std::cout << "In option 'T1_output_sequence', 'from' is greater than 'to' from = " << from << ", to = " << to << ".\n";
+            std::cout << "In option 'T1_vcfOutput_sequence', 'from' is greater than 'to' from = " << from << ", to = " << to << ".\n";
             abort();
         }
         if (from < 0)
         {
-            std::cout << "In option 'T1_output_sequence', 'from' is lower than zero from = " << from << ", to = " << to << ".\n";
+            std::cout << "In option 'T1_vcfOutput_sequence', 'from' is lower than zero from = " << from << ", to = " << to << ".\n";
             abort();   
         }
         if (to >= this->T1_nbBits)
         {
-            std::cout << "In option 'T1_output_sequence', 'to' is greater or equal to the number of T1 loci from = " << from << ", to = " << to << ", number of T1 loci = " <<  this->T1_nbBits << ".\n";
+            std::cout << "In option 'T1_vcfOutput_sequence', 'to' is greater or equal to the number of T1 loci from = " << from << ", to = " << to << ", number of T1 loci = " <<  this->T1_nbBits << ".\n";
             abort();   
         }
         for (int locus = from ; locus <= to ; locus++)
         {
 
             T1_locusDescription T1_locus(locus / EIGHT, locus % EIGHT, locus);
-            T1_output_sequenceList.push_back(T1_locus);
+            T1_vcfOutput_sequenceList.push_back(T1_locus);
         }
 
-        T1_output_sequenceIsRange = true;
+        T1_vcfOutput_sequenceIsRange = true;
     } else if (Mode.compare("A") == 0)
     {
         std::string sub;
-        T1_output_sequenceIsRange = true; // will be set to false if loci dont follow in a range
+        T1_vcfOutput_sequenceIsRange = true; // will be set to false if loci dont follow in a range
         while (input.IsThereMoreToRead())
         {
             int locus = input.GetNextElementInt();
             if (locus < 0)
             {
-                std::cout << "In option 'T1_output_sequence', 'locus' is lower than zero. locus = " << locus << ".\n";
+                std::cout << "In option 'T1_vcfOutput_sequence', 'locus' is lower than zero. locus = " << locus << ".\n";
                 abort();   
             }
             if (locus >= this->T1_nbBits)
             {
-                std::cout << "In option 'T1_output_sequence', 'locus' is equal or greater than the number the T1 loci. locus = " << locus << ". Number of T1 loci = " << this->T1_nbBits << ". Please note that the loci indices here must be zero-based counting. The first locus has index '0'. The last locus has index 'Number of T1 loci - 1'\n";
+                std::cout << "In option 'T1_vcfOutput_sequence', 'locus' is equal or greater than the number the T1 loci. locus = " << locus << ". Number of T1 loci = " << this->T1_nbBits << ". Please note that the loci indices here must be zero-based counting. The first locus has index '0'. The last locus has index 'Number of T1 loci - 1'\n";
                 abort();   
             }
             T1_locusDescription T1_locus(locus / EIGHT, locus % EIGHT, locus);
             // Test if it is in a range
-            if (T1_output_sequenceList.size() > 0)
+            if (T1_vcfOutput_sequenceList.size() > 0)
             {
-                if (T1_output_sequenceList.back().locus !=  T1_locus.locus - 1)
+                if (T1_vcfOutput_sequenceList.back().locus !=  T1_locus.locus - 1)
                 {
-                    T1_output_sequenceIsRange = false;
+                    T1_vcfOutput_sequenceIsRange = false;
                 }
             }
-            // Add to T1_output_sequenceList
-            T1_output_sequenceList.push_back(T1_locus);     
+            // Add to T1_vcfOutput_sequenceList
+            T1_vcfOutput_sequenceList.push_back(T1_locus);     
         }
     } else
     {
-        std::cout << "In option '--T1_output_sequence', the only two Modes accepted are 'range' and 'A'. Mode received is '" << Mode << "\n";
+        std::cout << "In option '--T1_vcfOutput_sequence', the only two Modes accepted are 'range' and 'A'. Mode received is '" << Mode << "\n";
         abort();
     }
     std::sort(
-        T1_output_sequenceList.begin(),
-        T1_output_sequenceList.end(),
+        T1_vcfOutput_sequenceList.begin(),
+        T1_vcfOutput_sequenceList.end(),
         [](const T1_locusDescription& left, const T1_locusDescription& right)
         {
           return left.locus < right.locus;
         }
     );
 
-    if (T1_output_sequenceList.size() > 1)
+    if (T1_vcfOutput_sequenceList.size() > 1)
     {
-        assert(T1_output_sequenceList[0].locus < T1_output_sequenceList[1].locus);
+        assert(T1_vcfOutput_sequenceList[0].locus < T1_vcfOutput_sequenceList[1].locus);
     }
 
     input.workDone();
@@ -3303,6 +3303,188 @@ void SpeciesSpecificParameters::readReadPopFromBinary(InputReader& input)
 
 
     input.workDone();
+}
+
+
+
+void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input)
+{
+    // Make sure it starts by LociSet!
+    if (input.PeakNextElementString() != "LociSet")
+    {
+        std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), the very first word expected (after the time information and species specific marker) was the keyword 'LociSet'. Instead, SimBit received received "<<input.PeakNextElementString()<<".\n";
+        abort();
+    }
+
+    int nbLociSets = 0;
+    std::string whichT;
+    while (input.IsThereMoreToRead())
+    {
+        if (input.PeakNextElementString() == "LociSet")
+        {
+            input.skipElement();
+            std::string whichTstring = input.PeakNextElementString();
+            if (whichTstring != "T1" && whichTstring != "T2" && whichTstring != "T3" && whichTstring != "T1epistasis")
+            {
+                std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), expected a description of the type of locus (T1, T2, T3 or T1epistasis) after the keyword 'LociSet' but instead it received "<<whichTstring<<".\n";
+                abort();
+            }
+            nbLociSets++;
+
+             // prepare vectors
+            subsetT1LociForfitnessSubsetLoci_file.push_back({});
+            subsetT2LociForfitnessSubsetLoci_file.push_back({});
+            subsetT3LociForfitnessSubsetLoci_file.push_back({});
+            subsetT1epistasisLociForfitnessSubsetLoci_file.push_back({});
+            assert(subsetT1LociForfitnessSubsetLoci_file.size() == nbLociSets);
+            assert(subsetT2LociForfitnessSubsetLoci_file.size() == nbLociSets);
+            assert(subsetT3LociForfitnessSubsetLoci_file.size() == nbLociSets);
+            assert(subsetT1epistasisLociForfitnessSubsetLoci_file.size() == nbLociSets);
+
+        } else
+        {
+            std::string eventualTstring = input.PeakNextElementString();
+            if (eventualTstring.at(0) == 'T')
+            {
+                input.skipElement();
+                whichT = eventualTstring;
+                
+                if (whichT != "T1" && whichT != "T2" && whichT != "T3" && whichT != "T1epistasis")
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received a type of locus descriptor starting with the letter 'T', however it was not followed by '1', '2', '3' or '1epistasis'. The type of locus descriptor received is "<<whichT<<".\n";
+                    abort();
+                }
+            }
+            
+
+            int locus = input.GetNextElementInt();
+            if (whichT == "T1")
+            {
+                //std::cout << "locus = " << locus << "\n";
+                //std::cout << "T1_nbBits = " << T1_nbBits << "\n";
+                if (locus < 0 || locus >= T1_nbBits)
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<")\n";
+                    abort();
+                }
+                if (
+                    std::find(
+                        subsetT1LociForfitnessSubsetLoci_file.back().begin(),
+                        subsetT1LociForfitnessSubsetLoci_file.back().end(),
+                        locus
+                    ) != subsetT1LociForfitnessSubsetLoci_file.back().end()
+                )
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait type "<<whichT<<" several times within a single LociSet.\n";
+                    abort();
+                }
+                subsetT1LociForfitnessSubsetLoci_file.back().push_back(locus);
+            } else if (whichT == "T2")
+            {
+                if (locus < 0 || locus >= T2_nbChars)
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<")\n";
+                    abort();
+                }
+                if (
+                    std::find(
+                        subsetT2LociForfitnessSubsetLoci_file.back().begin(),
+                        subsetT2LociForfitnessSubsetLoci_file.back().end(),
+                        locus
+                    ) != subsetT2LociForfitnessSubsetLoci_file.back().end()
+                )
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait type "<<whichT<<" several times within a single LociSet.\n";
+                    abort();
+                }
+                subsetT2LociForfitnessSubsetLoci_file.back().push_back(locus);
+            } else if (whichT == "T3")
+            {
+                if (locus < 0 || locus >= T3_nbChars)
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<")\n";
+                    abort();
+                }  
+                if (
+                    std::find(
+                        subsetT3LociForfitnessSubsetLoci_file.back().begin(),
+                        subsetT3LociForfitnessSubsetLoci_file.back().end(),
+                        locus
+                    ) != subsetT3LociForfitnessSubsetLoci_file.back().end()
+                )
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait type "<<whichT<<" several times within a single LociSet.\n";
+                    abort();
+                }
+                subsetT3LociForfitnessSubsetLoci_file.back().push_back(locus); 
+            } else if (whichT == "T1epistasis")
+            {
+                if (locus < 0 || locus >= T1_nbBits)
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<")\n";
+                    abort();
+                }
+                if (
+                    std::find(
+                        subsetT1epistasisLociForfitnessSubsetLoci_file.back().begin(),
+                        subsetT1epistasisLociForfitnessSubsetLoci_file.back().end(),
+                        locus
+                    ) != subsetT1epistasisLociForfitnessSubsetLoci_file.back().end()
+                )
+                {
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait type "<<whichT<<" several times within a single LociSet.\n";
+                    abort();
+                }
+                subsetT1epistasisLociForfitnessSubsetLoci_file.back().push_back(locus);
+            } else
+            {
+                std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received a type of locus descriptor starting with the letter 'T', however it was not followed by '1', '2', '3' or '1epistasis'. The type of locus descriptor received is "<<whichT<<". Note that this error message comes at a bit of an unexpected time and might therefore be due to an internal error. You might want to check your input nevertheless.\n";
+                abort();
+            }
+        }
+    }
+
+    // Make sure at least one set has been received
+    assert(subsetT1LociForfitnessSubsetLoci_file.size() == nbLociSets);
+    assert(subsetT2LociForfitnessSubsetLoci_file.size() == nbLociSets);
+    assert(subsetT3LociForfitnessSubsetLoci_file.size() == nbLociSets);
+    assert(subsetT1epistasisLociForfitnessSubsetLoci_file.size() == nbLociSets);
+    if (nbLociSets == 0)
+    {
+        std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received 0 LociSet.\n";
+        abort();
+    }
+
+    // Make sure there is not empty set and also just sort them for fun!
+    for (int lociSetIndex = 0 ; lociSetIndex < nbLociSets; lociSetIndex++)
+    {
+        if (
+            subsetT1LociForfitnessSubsetLoci_file[lociSetIndex].size() == 0 &&
+            subsetT2LociForfitnessSubsetLoci_file[lociSetIndex].size() == 0 &&
+            subsetT3LociForfitnessSubsetLoci_file[lociSetIndex].size() == 0 &&
+            subsetT1epistasisLociForfitnessSubsetLoci_file[lociSetIndex].size() == 0
+        )
+        {
+            std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), the "<<lociSetIndex<<"th LociSet seem to contain no locus of any type! Maybe the keyword 'LociSet' has been repeated twice (or more times) without indicating loci indices in between. Maybe the option argument ends with the keyword 'LociSet'.\n";
+            abort();
+        }
+        std::sort(
+            subsetT1LociForfitnessSubsetLoci_file[lociSetIndex].begin(),
+            subsetT1LociForfitnessSubsetLoci_file[lociSetIndex].end()
+        );
+        std::sort(
+            subsetT2LociForfitnessSubsetLoci_file[lociSetIndex].begin(),
+            subsetT2LociForfitnessSubsetLoci_file[lociSetIndex].end()
+        );
+        std::sort(
+            subsetT3LociForfitnessSubsetLoci_file[lociSetIndex].begin(),
+            subsetT3LociForfitnessSubsetLoci_file[lociSetIndex].end()
+        );
+        std::sort(
+            subsetT1epistasisLociForfitnessSubsetLoci_file[lociSetIndex].begin(),
+            subsetT1epistasisLociForfitnessSubsetLoci_file[lociSetIndex].end()
+        );
+    }
 }
 
 

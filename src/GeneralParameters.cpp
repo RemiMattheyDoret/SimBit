@@ -62,6 +62,62 @@ void GeneralParameters::saveSSPPatchSize_toGP_lowerSecurity()
 }
 */
 
+void GeneralParameters::readT1_FST_info(InputReader input)
+{
+#ifdef DEBUG
+    std::cout << "For option '--T1_FST_info', the std::string that is read is: " << input.print() << std::endl;
+#endif
+    if (!input.IsThereMoreToRead())
+    {
+        std::cout << "For option '--T1_FST_info', an empty string has been received!\n";
+        abort();
+    }
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        if (input.IsThereMoreToRead())
+        {
+            std::cout << "For option '--T1_FST_info', received 'default' followed by some other stuff. The entire input received for this option is: "<<input.print()<<" \n";
+            abort();       
+        }
+        if (outputWriter.isFile(T1_FST))
+        {
+            if (GP->maxEverPatchNumber < 2)
+            {
+                std::cout << "You seem to be asking for FST outputs but you never have more than 1 patch in the population as indicated in --PatchNumber (--PN).\n";
+                abort();           
+            }
+            output_FST_nbPatchesToConsider.push_back( 2 );
+        }
+    } else
+    {
+        if (!outputWriter.isFile(T1_FST))
+        {
+            std::cout << "For option '--T1_FST_info', received an input different than 'default' but you have not indicated a file with the option '--T1_FST_file'.\n";
+            abort();
+        }
+        while (input.IsThereMoreToRead())
+        {
+            int nbPatchesToConsider = input.GetNextElementInt();
+            if (nbPatchesToConsider < 2)
+            {
+                std::cout << "For option '--T1_FST_info', received the value '" << nbPatchesToConsider << "'. This number is lower than 2 and no FST can hence be computed.\n";
+                abort();
+            }
+            if (nbPatchesToConsider > GP->maxEverPatchNumber)
+            {
+                std::cout << "For option '--T1_FST_info', received the value '" << nbPatchesToConsider << "'. This number is greater than the 'GP->maxEverPatchNumber' (the greatest number of patches at any point during the simulation as indiciated in '--PatchNumber (--PN)'; GP->maxEverPatchNumber = "<<GP->maxEverPatchNumber<<").\n";
+                abort();
+            }
+
+            output_FST_nbPatchesToConsider.push_back( nbPatchesToConsider );
+        }
+        sortAndRemoveDuplicates(output_FST_nbPatchesToConsider);
+    }
+        
+
+    input.workDone();
+}
 
 void GeneralParameters::readPatchNumber(InputReader input)
 {
@@ -170,8 +226,9 @@ void GeneralParameters::readSeed(InputReader input)
     {
         if (input.PeakNextElementString() == "default")
         {
-            GP->random_seed = time(NULL);
-            
+            input.skipElement();
+            std::mt19937 tmp(time(NULL));
+            GP->mt = tmp;
         } else
         {
             random_seed = input.GetNextElementInt();

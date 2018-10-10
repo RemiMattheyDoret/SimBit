@@ -44,8 +44,8 @@ public:
     bool                                            readPopFromBinary;
 
     // T1 output sequence
-    std::vector<T1_locusDescription>                T1_output_sequenceList; 
-    bool                                            T1_output_sequenceIsRange;
+    std::vector<T1_locusDescription>                T1_vcfOutput_sequenceList; 
+    bool                                            T1_vcfOutput_sequenceIsRange;
 
 
     // Basic Demography
@@ -166,6 +166,11 @@ public:
     // Other
     int                                              centralT1LocusForExtraGeneticInfo;
     
+    std::vector<std::vector<int>>                    subsetT1LociForfitnessSubsetLoci_file;
+    std::vector<std::vector<int>>                    subsetT2LociForfitnessSubsetLoci_file;
+    std::vector<std::vector<int>>                    subsetT3LociForfitnessSubsetLoci_file;
+    std::vector<std::vector<int>>                    subsetT1epistasisLociForfitnessSubsetLoci_file;
+    
     // methods
     void readLoci(InputReader& input);
     void readT1_Initial_AlleleFreqs(InputReader& input);
@@ -188,7 +193,7 @@ public:
     void readResetTrackedT1Muts(InputReader& input);
     void readGameteDispersal(InputReader& input);
     void readpatchCapacity(InputReader& input);
-    void readT1_output_sequence(InputReader& input);
+    void readT1_vcfOutput_sequence(InputReader& input);
     void readDispMat(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
     void readInitialpatchSize(InputReader& input);
@@ -200,6 +205,7 @@ public:
     void readfecundityForFitnessOfOne(InputReader& input);
     void readMatingSystem(InputReader& input);
     void readReadPopFromBinary(InputReader& input);
+    void readSubsetLociForfitnessSubsetLoci_file(InputReader& input);
     int selectNonEmptyPatch(int firstPatchToLookAt, std::vector<int>& PSs, bool increasingOrder);
 
     void IsThereSelection();

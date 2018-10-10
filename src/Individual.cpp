@@ -560,6 +560,8 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
     return W;
 }
 
+
+
 std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
 {
     double rT1 = 1.0;
@@ -703,3 +705,287 @@ Individual::Individual(const Haplotype& knownHaplotype)
     haplo1 = knownHaplotype;   
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////// Fitness On Subset Of Loci
+
+bool Individual::isLocusIsInSet(const int locus, const std::vector<int>& LociSet)
+{
+    return std::find(LociSet.begin(), LociSet.end(), locus) != LociSet.end();
+}
+
+std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex)
+{
+    double rT1 = 1.0;
+    double rT2 = 1.0;
+
+    double rT1epistasis = 1.0;
+    double rT3 = 1.0;
+
+    // Trait 1 if multiplicity (excluding epistasis) and Trait 2
+    if ((SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection) || SSP->T2_isSelection)
+    {    
+        // Trait 1
+        if (SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+        {
+            rT1 *= this->CalculateT1FitnessMultiplicityOnSubsetOfLoci(
+                Habitat,
+                SSP->subsetT1LociForfitnessSubsetLoci_file[lociSetIndex]
+            );
+        }
+
+        // Trait 2
+        if (SSP->T2_isSelection)
+        {
+            rT2 *= this->CalculateT2FitnessOnSubsetOfLoci(
+                Habitat,
+                SSP->subsetT2LociForfitnessSubsetLoci_file[lociSetIndex]
+            );
+        }
+    }
+      
+    // Trait 1 no multiplicity (excluding epistasis) 
+    if (!SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+    {
+        assert(rT1 == 1.0);
+        rT1 = this->CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(
+            Habitat,
+            SSP->subsetT1LociForfitnessSubsetLoci_file[lociSetIndex]
+        );
+    }
+
+
+    // Trait 1 epistasis
+    if (SSP->T1_isEpistasis)
+    {
+        rT1epistasis = this->CalculateT1EpistaticFitnessOnSubsetOfLoci(
+            Habitat,
+            SSP->subsetT1epistasisLociForfitnessSubsetLoci_file[lociSetIndex]
+        );
+    }
+
+    // Trait 3
+    if (SSP->T3_isSelection)
+    {
+        this->CalculateT3PhenotypeOnSubsetOfLoci(
+            Habitat,
+            SSP->subsetT3LociForfitnessSubsetLoci_file[lociSetIndex]
+        ); // save phenotype in the static attribute 'T3_IndPhenotype'
+        rT3 = Individual::CalculateT3Fitness(Habitat); // calculate fitness associated to teh phenotype saved in the static attribute 'T3_IndPhenotype'
+    }
+    //std::cout << "rT1 = "<<rT1<< " rT2 = " <<rT2<<" rT1epistasis = "<<rT1epistasis<< " rT3 = " <<rT3<<"\n";
+
+    return {rT1, rT2, rT1epistasis, rT3};
+}
+
+
+
+
+double Individual::CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
+#endif   
+
+    assert(SSP->FitModel_T1_isMultiplicity);
+
+    // Get the right fitness array
+    auto& fits = SSP->T1_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T1_nbBits);
+
+
+    double r = 1.0;
+    for (const int& locus : LociSet)
+    {
+        int byte_index = locus / 8;
+        int bit_index = locus % 8;
+
+        //assert(polymorphicLocus.locus >= T1_locusFrom && polymorphicLocus.locus < T1_locusTo);
+        if (haplo0.getT1_Allele(byte_index,bit_index))
+        {
+            r *= fits[locus];
+        }
+        if (haplo1.getT1_Allele(byte_index,bit_index))
+        {
+            r *= fits[locus];
+        }
+    }
+
+    assert(r<=1.0 && r>=0.0);
+
+    return r;
+}
+
+double Individual::CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
+#endif   
+    auto& fits = SSP->T1_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T1_nbBits * THREE);
+
+
+    double W_T1_WholeIndividual = 1.0;
+
+    for (const int locus : LociSet)
+    {
+        int byte_index = locus / 8;
+        int bit_index = locus % 8;
+        //std::cout << "locus = " << locus << "\n";
+        assert(locus >= 0 && locus < SSP->T1_nbBits);
+
+        W_T1_WholeIndividual *= 
+            fits[
+                THREE * locus + 
+                haplo0.getT1_Allele(byte_index,bit_index) +
+                haplo1.getT1_Allele(byte_index,bit_index)
+            ];
+    }
+    //std::cout << "W_T1_WholeIndividual = " << W_T1_WholeIndividual << "\n";
+    assert(W_T1_WholeIndividual >= 0.0 && W_T1_WholeIndividual <= 1.0);
+    
+
+    return W_T1_WholeIndividual;
+}
+
+double Individual::CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
+#endif
+    double r = 1.0;
+
+    assert(SSP->T1_Epistasis_FitnessEffects.size() > Habitat);
+    for (int groupOfLociIndex = 0 ; groupOfLociIndex < SSP->T1_Epistasis_FitnessEffects[Habitat].size() ; groupOfLociIndex++)
+    {
+        auto& fits = SSP->T1_Epistasis_FitnessEffects[Habitat][groupOfLociIndex];
+        auto& loci = SSP->T1_Epistasis_LociIndices[Habitat][groupOfLociIndex];
+
+        // check if all are in LociSet, if some are but not all or if none are. This process could be done only once in SSP for better perfromance
+
+        class comparatorsForSetIntersection
+        {
+        public:
+            bool operator()(int lhs, T1_locusDescription rhs) {return lhs + rhs.locus;}
+            bool operator()(T1_locusDescription lhs, int rhs) {return lhs.locus + rhs;}
+        };
+        comparatorsForSetIntersection comps;
+
+        std::vector<T1_locusDescription> intersection;
+        std::set_intersection(
+            loci.begin(), loci.end(),
+            LociSet.begin(), LociSet.end(),
+            std::back_inserter(intersection),
+            comps
+        );
+
+        if (intersection.size() == LociSet.size() && LociSet.size() > 0)
+        {
+            // Then all loci of 'LociSet' are in 'loci'
+            // -> compute fitness
+            int FitnessValueIndex = 0;
+            int nbLociUnderEpistasis = loci.size();
+            for (int i = 0 ; i < nbLociUnderEpistasis ; i++)
+            {
+                /*
+                Organization of SSP->T1_Epistasis_FitnessEffects[Habitat] example with 3 loci where the first line is the locus SSP->T1_Epistasis_LociIndices[Habitat][0].
+                locus 1:    00 00 00 00 00 00 00 00 00 01 01 01 01 01 01 01 01 01 11 11 11 11 11 11 11 11 11
+                locus 2:    00 00 00 01 01 01 11 11 11 00 00 00 01 01 01 11 11 11 00 00 00 01 01 01 11 11 11
+                locus 3:    00 01 11 00 01 11 00 01 11 00 01 11 00 01 11 00 01 11 00 01 11 00 01 11 00 01 11
+                Index:      0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 
+
+                Tiny R code to create this kind of sequence
+                    cat(paste0(
+                        rep(paste0("A",rep(c("0|0", "0|1","1|1"), each=3)), each=3),
+                        "_",
+                        rep(paste0("B",rep(c("0|0", "0|1","1|1"), 3)), each=3),
+                        "_",
+                        paste0("B",rep(c("0|0", "0|1","1|1"), 9))
+                    ))
+                */
+                
+                T1_locusDescription& T1_locus = loci[i];
+                FitnessValueIndex += (haplo0.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index) + haplo1.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index)) * pow(THREE,nbLociUnderEpistasis - i - 1);
+            }
+            assert(FitnessValueIndex >= 0 && FitnessValueIndex < pow(THREE,nbLociUnderEpistasis));
+            assert(fits[FitnessValueIndex] >= 0.0 && fits[FitnessValueIndex] <= 1.0);
+            //std::cout << "SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] = " << SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] << std::endl;
+            r *= fits[FitnessValueIndex];
+
+        } else if (intersection.size() > 0)
+        {
+            // Then some but not all loci of 'LociSet' are in 'loci'
+            return std::numeric_limits<double>::quiet_NaN();
+        } else if (intersection.size() == 0 && LociSet.size() > 0)
+        {
+            // Then no elements of 'LociSet' are in 'loci'
+            // -> Nothing to do (or only 'r *= 1.0;')
+        } else
+        {
+            // Nothing in LociSet
+            // -> Nothing to do (or only 'r *= 1.0;')
+            assert(LociSet.size() == 0);
+        }
+    }
+        
+    return r;
+}
+
+double Individual::CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
+#endif          
+    assert(SSP->T2_FitnessEffects.size() > Habitat);
+    auto& fits = SSP->T2_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T2_nbChars);
+
+    double r = 1.0;
+    for (const int locus : LociSet)
+    {
+        r *= pow(fits[locus], haplo0.getT2_Allele(locus));
+        r *= pow(fits[locus], haplo1.getT2_Allele(locus));
+    }
+
+    //if (r!=1.0)  std::cout << "T2 fit: = " << r << " ";
+    assert(r<=1.0 && r>=0.0);
+    return r;
+}
+
+void Individual::CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
+#endif      
+    // Directly write the phenotype in the stat 'T3_IndPhenotype'. 
+    // Habitat is used here to allow plasticity. One must not confound plasticity on phenotypes and local selection!
+
+    // set T3_IndPhenotype zero for all dimensions
+    T3_IndPhenotype.resize(SSP->T3_PhenoNbDimensions);
+    for (auto& DimPheno : T3_IndPhenotype)
+    {
+        DimPheno = 0.0;
+    }
+
+    // Calculate phenotype
+    for (const int locus : LociSet)
+    {
+        double allele = (double) haplo0.getT3_Allele(locus);
+        for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
+        {
+            std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
+            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][locus * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->mt);
+        }
+    }
+}

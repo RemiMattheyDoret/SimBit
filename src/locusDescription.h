@@ -26,26 +26,9 @@
 
  */
 
-
-
-class T1_locusDescription
+class locusDescription
 {
-public:
-    int byte_index;
-    int bit_index;
-    int locus; // locus = byte_index * EIGHT + bit_index
 
-    T1_locusDescription(int byteIndex, int bitIndex, int Locus);
-    T1_locusDescription(int Locus);
-    T1_locusDescription();
-
-    bool operator==(const T1_locusDescription& other) const;
-    bool operator>(const T1_locusDescription& other) const;
-    bool operator<(const T1_locusDescription& other) const;
-    bool operator==(int l) const;
-    bool operator>(int l) const;
-    bool operator<(int l) const;
-    bool operator==(std::pair<int,int>& pa) const;
-    std::string toString();
 };
+
 

@@ -68,6 +68,9 @@ public:
     bool isNextRKeyword();
     std::string print();
     std::string toString();
+    int currentVIndex();
+    int FindVIndexOfNextMatchingString(std::string toFind, bool throwErrorIfNotFound);
+    int numberOfWordsInInput();
 
 };
 

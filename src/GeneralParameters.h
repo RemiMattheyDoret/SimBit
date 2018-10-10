@@ -78,10 +78,12 @@ public:
 
     // Manage outputs
     int                                             nbWarningsSentFrom_Haplotype_AddMutT2_Allele = 0;
+    std::vector<int>                                output_FST_nbPatchesToConsider;
 
     // methods
     void readTemporalChanges(InputReader input);
     void readPatchNumber(InputReader input);
+    void readT1_FST_info(InputReader input);
     void readSeed(InputReader input);
     void saveSSPPatchSize_toGP();
     //void saveSSPPatchSize_toGP_lowerSecurity();

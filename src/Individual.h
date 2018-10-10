@@ -46,6 +46,7 @@ public:
     Haplotype& getHaplo(const int& haplo_index);
 
     std::vector<double> CalculateFitnessComponents(const int& Habitat);
+    
     double CalculateFitness(const int& patch_index);
     double CalculateT1FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T1_locusFrom, int T1_locusTo);
     double CalculateT1FitnessNoMultiplicity(const int& Habitat);
@@ -53,6 +54,15 @@ public:
     double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
     void CalculateT3Phenotype(const int& Habitat);
     static double CalculateT3Fitness(const int& Habitat);
+
+
+    static bool isLocusIsInSet(const int locus, const std::vector<int>& LociSet);
+    std::vector<double> CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex);
+    double CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    double CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    double CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    void CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
     Individual(Haplotype& matChrom, Haplotype& patChrom);
@@ -66,4 +76,3 @@ public:
     //Individual(Individual&&) = default;
     //Individual& operator=(Individual&& ) = default;
 };
-
