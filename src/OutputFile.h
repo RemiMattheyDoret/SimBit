@@ -68,6 +68,7 @@ private:
     bool isSpeciesSpecific;
     bool isNbLinesEqualNbOutputTimes;
     bool doesTimeNeedsToBeSet;
+    std::vector<std::vector<T1_locusDescription>> subset;
 
     static const std::vector<std::string> OutputFileTypesNames; // initialized in .cpp
 
@@ -99,7 +100,8 @@ public:
     bool DoesFileExist(int generation);
     bool DoesAtLeastOneFileOfTypeAlreadyExist();
     bool DoAllFilesOfTypeAlreadyExist();
-    void interpretTimeInput(InputReader& input);
+    void interpretTimeAndSubsetInput(InputReader& input);
+    void interpretSubsetInput(InputReader& input);
     std::string getPathForSeed();
     std::string getPath();
     std::string getPath(int generation);
@@ -109,5 +111,10 @@ public:
     void openAndReadLine(std::string& line, int generation);
     void mergeFiles(std::vector<std::string> listOfFiles);
     std::string getFileTypeName(int fileTypeIndex);
+    template<typename T> std::vector<T> removeSitesWeDontWant(std::vector<T> sites, int speciesIndex);
+    std::vector<T1_locusDescription> getSubsetToConsider(int speciesIndex);
+    bool isLocusInSubset(T1_locusDescription L, int speciesIndex);
+    bool isLocusInSubset(int locus, int speciesIndex);
+
 };
 

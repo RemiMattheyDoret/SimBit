@@ -23,7 +23,7 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-
+OutputFileTypes
  */
 
 
@@ -31,7 +31,7 @@ class OutputWriter
 {
 private:
     // attributes
-    std::map<const OutputFileTypes, OutputFile> TypesToPrintOn;
+    std::map<const OutputFileTypes, std::vector<OutputFile>> TypesToPrintOn;
 
     std::vector<int> AllTimes;
     
@@ -87,7 +87,7 @@ public:
 
     // Get OutputFile
     bool isFile(OutputFileTypes type);
-    OutputFile& get_OutputFile(OutputFileTypes type);
+    std::vector<OutputFile>& get_OutputFiles(OutputFileTypes type);
 
     // WriteOutputs
     void WriteOutputs_patchSize_header(OutputFile& file);

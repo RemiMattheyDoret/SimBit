@@ -4,101 +4,101 @@ class OptionContainer
 public:
 	std::vector<Option> options =
     {
-        {{"seed", "random_seed"},                       {}},
+        {{"seed", "random_seed"},                       {}, false},
 
     	// Basics simulations
-        {{"nbGens","nbGenerations"},                    {}},
-        {{"startAtGeneration"},                         {"nbGens"}},
-        {{"nbThreads"},                                 {}},
-        {{"S", "species"},                              {}},
-        {{"nbSubGens","nbSubGenerations"},              {"nbGens", "S"}},
-        {{"T", "TemporalChanges"}, 		  				{"nbGens"}},   // all species must have temporal change at the same time
-        {{"PN","PatchNumber"},                          {"T"}},
-        {{"H", "Habitats"},                           	{"S","PN","T"}}, // not all species need to have same habitat distinction
+        {{"nbGens","nbGenerations"},                    {}, false},
+        {{"startAtGeneration"},                         {"nbGens"}, false},
+        {{"nbThreads"},                                 {}, false},
+        {{"S", "species"},                              {}, false},
+        {{"nbSubGens","nbSubGenerations"},              {"nbGens", "S"}, false},
+        {{"T", "TemporalChanges"}, 		  				{"nbGens"}, false},   // all species must have temporal change at the same time
+        {{"PN","PatchNumber"},                          {"T"}, false},
+        {{"H", "Habitats"},                           	{"S","PN","T"}, false}, // not all species need to have same habitat distinction
     
         
-        // Dispersal
-        {{"m", "DispMat"},                          	{"PN","S"}},
-        {{"DispWeightByFitness"},         				{"S"}},
-        {{"gameteDispersal"},                           {"S"}},
-        
         // Genetics and Selection Both T1, T2 and T3 (first part)
-        {{"L","Loci"},                           		{"S"}},
-        {{"ploidy"},                      				{"S"}},
-        {{"fec","fecundityForFitnessOfOne"},            {"S"}},
+        {{"L","Loci"},                           		{"S"}, false},
+        {{"ploidy"},                      				{"S"}, false},
+        {{"fec","fecundityForFitnessOfOne"},            {"S"}, false},
+
+        // Dispersal
+        {{"m", "DispMat"},                              {"PN","S"}, false},
+        {{"DispWeightByFitness"},                       {"S","fec"}, false},
+        {{"gameteDispersal"},                           {"S"}, false},
 
         // Basics Demography
-        {{"N", "patchCapacity"},                        {"PN","S","T"}},
-        {{"InitialpatchSize"},                          {"PN","S","N","fec"}},
-        {{"cloningRate"},                               {"S"}},
-        {{"selfingRate"},                               {"S"}},
-        {{"matingSystem"},                              {"S","T","fec","N","PN"}}, // if fec != -1.0, then I must make sure that there will be at least one male and one female in every patch at all times. This assumption might be relaxed later
+        {{"N", "patchCapacity"},                        {"PN","S","T"}, false},
+        {{"InitialpatchSize"},                          {"PN","S","N","fec"}, false},
+        {{"cloningRate"},                               {"S"}, false},
+        {{"selfingRate"},                               {"S"}, false},
+        {{"matingSystem"},                              {"S","T","fec","N","PN"}, false}, // if fec != -1.0, then I must make sure that there will be at least one male and one female in every patch at all times. This assumption might be relaxed later
 
         // Other stuff about outputs
-        {{"LogfileType"},                               {}},
-        {{"T1_SubsetVCFOut","T1_vcfOutput_sequence"},         {"L"}}, // specify [from, to]
-        {{"sequencingErrorRate"},                       {}},
+        {{"LogfileType"},                               {}, false},
+        {{"T1_SubsetFST"},                              {"L"}, false}, // specify [from, to]
+        {{"sequencingErrorRate"},                       {}, false},
         
         // Selection
-        {{"additiveEffectAmongLoci"},                   {"S"}},
+        {{"additiveEffectAmongLoci"},                   {"S"}, false},
 
         // Genetics and Selection T1
-        {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}},
-        {{"T1_fit", "T1_FitnessEffects"},               {"H","S", "seed", "L"}},
-        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L"}},
-        {{"T1_epistasis","T1_EpistaticFitnessEffects"}, {"H","S", "L"}},
+        {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}, false},
+        {{"T1_fit", "T1_FitnessEffects"},               {"H","S", "seed", "L"}, false},
+        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L"}, false},
+        {{"T1_epistasis","T1_EpistaticFitnessEffects"}, {"H","S", "L"}, false},
         
         // Genetics and Selection T2
-        {{"T2_mu","T2_MutationRate"},                   {"S", "L"}},
-        {{"T2_fit", "T2_FitnessEffects"},               {"S","H", "L"}},
+        {{"T2_mu","T2_MutationRate"},                   {"S", "L"}, false},
+        {{"T2_fit", "T2_FitnessEffects"},               {"S","H", "L"}, false},
 
         // Genetics and Selection T3
-        {{"T3_mu","T3_MutationRate"},                   {"S", "L"}},
-        {{"T3_pheno", "T3_PhenotypicEffects"},          {"S", "H", "L"}},
-        {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}},
-        {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}},
+        {{"T3_mu","T3_MutationRate"},                   {"S", "L"}, false},
+        {{"T3_pheno", "T3_PhenotypicEffects"},          {"S", "H", "L"}, false},
+        {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
+        {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},
 
         // Genetics and Selection Both T1, T2 and T3 (second part)
-        {{"r","RecombinationRate"},                     {"S", "L"}},
-        {{"recRateOnMismatch"},                         {"S", "L"}},
-        {{"FitnessMapInfo"},           {"S", "T", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}},
-        {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}},
+        {{"r","RecombinationRate"},                     {"S", "L"}, false},
+        {{"recRateOnMismatch"},                         {"S", "L"}, false},
+        {{"FitnessMapInfo"},           {"S", "T", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
+        {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
-        // Paths and times
-        {{"GP", "GeneralPath"},                     {}},
-        {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration"}},
-        {{"T1_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
-        {{"T1_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration"}},
-        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration"}},
-        {{"T1_MeanLD_file"},                        {"GP", "S", "startAtGeneration"}},
-        {{"T1_LongestRun_file"},                    {"GP", "S", "startAtGeneration"}},
-        {{"T1_HybridIndex_file"},                   {"GP", "S", "startAtGeneration"}},
-        {{"T1_ExpectiMinRec_file"},                 {"GP", "S", "startAtGeneration"}},
-        {{"T2_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
-        {{"SaveBinary_file"},                       {"GP", "S", "startAtGeneration"}},
-        {{"T3_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}},
-        {{"T3_MeanVar_file"},                       {"GP", "S", "startAtGeneration"}},
-        {{"fitness_file"},                          {"GP", "S", "startAtGeneration"}},
-        {{"fitnessSubsetLoci_file"},                {"GP", "S", "startAtGeneration","L"}},
-        {{"fitnessStats_file"},                     {"GP", "S", "startAtGeneration"}},
-        {{"T1_FST_file"},                           {"GP", "S", "startAtGeneration"}},
-        {{"T1_FST_info"},                           {"GP", "S", "startAtGeneration", "T1_FST_file","PN"}},
-        {{"extraGeneticInfo_file"},                 {"GP", "S", "startAtGeneration"}},
-        {{"patchSize_file"},                        {"GP", "S", "startAtGeneration"}},
-        {{"extinction_file"},                       {"GP", "S", "startAtGeneration"}},
-        {{"genealogy_file"},                        {"GP", "S", "startAtGeneration"}},
-        {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration"}},
+        // Outputs
+        {{"GP", "GeneralPath"},                     {}, false},
+        {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration"}, true},
+        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration"}, false},
+        {{"T1_MeanLD_file"},                        {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_LongestRun_file"},                    {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_HybridIndex_file"},                   {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_ExpectiMinRec_file"},                 {"GP", "S", "startAtGeneration"}, true},
+        {{"T2_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}, false},
+        {{"SaveBinary_file"},                       {"GP", "S", "startAtGeneration"}, false},
+        {{"T3_LargeOutput_file"},                   {"GP", "S", "startAtGeneration"}, false},
+        {{"T3_MeanVar_file"},                       {"GP", "S", "startAtGeneration"}, false},
+        {{"fitness_file"},                          {"GP", "S", "startAtGeneration"}, false},
+        {{"fitnessSubsetLoci_file"},                {"GP", "S", "startAtGeneration","L"}, false},
+        {{"fitnessStats_file"},                     {"GP", "S", "startAtGeneration"}, false},
+        {{"T1_FST_file"},                           {"GP", "S", "startAtGeneration"}, true},
+        {{"T1_FST_info"},                           {"GP", "S", "startAtGeneration", "T1_FST_file","PN"}, false},
+        {{"extraGeneticInfo_file"},                 {"GP", "S", "startAtGeneration"}, true},
+        {{"patchSize_file"},                        {"GP", "S", "startAtGeneration"}, false},
+        {{"extinction_file"},                       {"GP", "S", "startAtGeneration"}, false},
+        {{"genealogy_file"},                        {"GP", "S", "startAtGeneration"}, false},
+        {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration"}, false},
 
         // Species interaction
-        {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}},
-        {{"growthK", "growthCarryingCapacity"},         {"eco", "S", "PN", "N"}},
+        {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},
+        {{"growthK", "growthCarryingCapacity"},         {"eco", "S", "PN", "N"}, false},
 
         // other technical parameters
-        {{"Overwrite"},                   		            {}},
-        {{"readPopFromBinary"},           		            {"S"}},
-        {{"DryRun"},                         		        {}},
-        {{"centralT1LocusForExtraGeneticInfo"},             {}},
-        {{"resetGenetics"},                                 {"L","nbGenerations","T","S","PN","N"}}
+        {{"Overwrite"},                   		            {}, false},
+        {{"readPopFromBinary"},           		            {"S"}, false},
+        {{"DryRun"},                         		        {}, false},
+        {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
+        {{"resetGenetics"},                                 {"L","nbGenerations","T","S","PN","N"}, false}
     };
 
     //void received(std::string& optionNameReceived);

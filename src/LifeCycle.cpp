@@ -50,6 +50,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     std::vector<int> patchSizeNextGeneration;
+
     if (SSP->fecundityForFitnessOfOne != -1.0 || SSP->DispWeightByFitness)
     {
         patchSizeNextGeneration = SSP->dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes(

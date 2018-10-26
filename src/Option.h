@@ -4,10 +4,11 @@ class Option
     public:
     std::vector<std::string> optionNames;
     std::vector<std::string> optionsThatMustBeReadBefore;
-    bool wasInitiatedYet;
+    int howManyTimesReceivedYet;
     bool wasRenamedYet;
+    bool canGetSeveralInputs;
 
-    Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB);
+    Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, int CGSI);
     
     bool operator==(std::string other);
     std::string getNamesToPrint();

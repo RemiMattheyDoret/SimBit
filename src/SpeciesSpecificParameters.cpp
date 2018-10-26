@@ -1449,21 +1449,6 @@ void SpeciesSpecificParameters::readnbSubGenerations(InputReader& input)
 }
 
 
-bool SpeciesSpecificParameters::isLocusInT1_outputs_sequenceList(int locus)
-{
-    T1_locusDescription L(locus);
-    bool x = std::binary_search( 
-                T1_vcfOutput_sequenceList.begin(),
-                T1_vcfOutput_sequenceList.end(),
-                L,
-                [](const T1_locusDescription& right, const T1_locusDescription& left){return right.locus < left.locus;}
-            );
-    return x;
-
-    // 'operator==' between 'T1_locusDescription' and 'int' compares with the attribute 'locus'
-}
-
-
 void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& input)
 {
 #ifdef DEBUG
@@ -2830,7 +2815,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
 }
 
 
-void SpeciesSpecificParameters::readT1_vcfOutput_sequence(InputReader& input)
+/*void SpeciesSpecificParameters::readT1_vcfOutput_sequence(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option 'T1_vcfOutput_sequence', the std::string that is read is: " << input.print() << std::endl;
@@ -2914,7 +2899,7 @@ void SpeciesSpecificParameters::readT1_vcfOutput_sequence(InputReader& input)
 
     input.workDone();
 
-}
+}*/
 
 
 void SpeciesSpecificParameters::IsThereSelection()

@@ -43,11 +43,6 @@ public:
     std::string                                     readPopFromBinaryPath;
     bool                                            readPopFromBinary;
 
-    // T1 output sequence
-    std::vector<T1_locusDescription>                T1_vcfOutput_sequenceList; 
-    bool                                            T1_vcfOutput_sequenceIsRange;
-
-
     // Basic Demography
     std::vector<int>                                patchCapacity;
     std::vector<int>                                maxEverpatchCapacity;
@@ -193,7 +188,7 @@ public:
     void readResetTrackedT1Muts(InputReader& input);
     void readGameteDispersal(InputReader& input);
     void readpatchCapacity(InputReader& input);
-    void readT1_vcfOutput_sequence(InputReader& input);
+    //void readT1_vcfOutput_sequence(InputReader& input);
     void readDispMat(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
     void readInitialpatchSize(InputReader& input);
@@ -211,7 +206,6 @@ public:
     void IsThereSelection();
     //void setInitialT1_AlleleFreqTo(const int uniqueFreq);
     //void ClearT1_Initial_AlleleFreqs();
-    bool isLocusInT1_outputs_sequenceList(int locus);
     bool setFromLocusToFitnessMapIndex_DecidingFunction(double sumOfProb, int nbLoci);
     void setFromLocusToFitnessMapIndex();
 

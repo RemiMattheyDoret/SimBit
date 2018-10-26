@@ -32,7 +32,7 @@ T1_locusDescription::T1_locusDescription(int byteIndex, int bitIndex, int Locus)
     assert(byte_index * EIGHT + bit_index == locus);
 }
 
-T1_locusDescription::T1_locusDescription(int Locus) // minimalist class used only for creating object to search in 'isLocusInT1_outputs_sequenceList'
+T1_locusDescription::T1_locusDescription(int Locus) // minimalist class used only for creating object to search in 'subset'
 : byte_index(0), bit_index(0), locus(Locus)
 {}
 

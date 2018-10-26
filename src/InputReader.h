@@ -53,6 +53,7 @@ private:
 public:
     InputReader(std::string entry,std::string ForErrorMessage);
     InputReader(InputReader& fullInput, int from, int to, int speciesIndex);
+    void removeAlreadyRead();
 
     int GetNextElementInt();
     std::string GetErrorMessage();

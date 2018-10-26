@@ -418,7 +418,8 @@ std::cout << "Enters in 'SetParameters'\n";
     // random SSP security
     assert(SSP == nullptr);
 
-    // Loop through each possible option
+
+    ////// Loop through each possible option
     for (Option& option : optionContainer.options)
     {
         std::string flag = option.optionNames[0]; // THe flags have already been renamed to this first flag
@@ -479,7 +480,7 @@ std::cout << "Enters in 'SetParameters'\n";
     // Test if simulation should be run or if overwritemode and existing files prevent it
     if (!outputWriter.ShouldSimulationBeDone(GP->OverwriteMode))
     {
-        std::cout << "\t\tLogfile path:\n\t\t\t" << outputWriter.get_OutputFile(Logfile).getPath() << "\n\n";
+        std::cout << "\t\tLogfile path:\n\t\t\t" << outputWriter.get_OutputFiles(Logfile)[0].getPath() << "\n\n";
         std::cout << "Looking at existing files, files asked for outputs and the OverwriteMode, the simulation will not run (as figured out by 'outputWriter::ShouldSimulationBeDone'). If you want to overwrite files, please use '--Overwrite 2'\n";
 
         exit(1);
@@ -820,20 +821,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         outputWriter.LogfileType = 1;
     }
-    else if (flag == "T1_SubsetVCFOut")
-    {
-        for (auto& SSPi : this->SSPs)
-        {
-            if (SSPi.T1_nbBits > 0)
-            {
-                std::string s("range 0 ");
-                s += std::to_string(SSPi.T1_nbBits - 1);
-                InputReader input(s, "In Default value for --T1_vcfOutput_sequence,");
-                SSPi.readT1_vcfOutput_sequence(input);
-                assert(SSPi.T1_vcfOutput_sequenceList.size() == SSPi.T1_nbBits);   
-            }
-        }
-    } else if (flag == "sequencingErrorRate")
+    else if (flag == "sequencingErrorRate")
     {
         GP->sequencingErrorRate = 0.0;
     }
@@ -1128,7 +1116,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_vcfFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1136,7 +1124,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_LargeOutputFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1145,7 +1133,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_AlleleFreqFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     } else if (flag == "Log" || flag == "Logfile" || flag == "Logfile_file")
@@ -1159,7 +1147,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), MeanLDFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "T1_LongestRun_file")
@@ -1167,7 +1155,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), LongestRunFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1175,7 +1163,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), HybridIndexFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     
@@ -1184,7 +1172,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
 
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), ExpectiMinRecFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));        
 
@@ -1193,7 +1181,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
             
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T2_LargeOutputFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1201,7 +1189,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), SaveBinaryFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1209,7 +1197,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T3_LargeOutputFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
         
@@ -1217,7 +1205,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T3_MeanVarFile);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
          
@@ -1225,7 +1213,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitness);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1266,7 +1254,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         //std::cout << "inputForSpeciesSpecificLociSets = " << inputForSpeciesSpecificLociSets.print() << "\n";
 
         // time
-        file.interpretTimeInput(inputForTime);
+        file.interpretTimeAndSubsetInput(inputForTime);
 
         // LociSet
         wrapperOverSpecies(inputForSpeciesSpecificLociSets, &SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file);
@@ -1278,7 +1266,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitnessStats);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1286,7 +1274,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_FST);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1303,7 +1291,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), patchSize);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         outputWriter.insertOutputFile(std::move(file));
      
@@ -1319,7 +1307,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
         InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), genealogy);
-        file.interpretTimeInput(input);
+        file.interpretTimeAndSubsetInput(input);
         input.workDone();
         input.workDone();
         for (auto& SSPi : this->SSPs)
@@ -1352,12 +1340,6 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
             std::cout << "LogfileType received is " << outputWriter.LogfileType << ". Only 0, 1 and 2 are accepted for the moment.\n";
             abort();
         }
-    } else if (flag == "T1_vcfOutput_sequence" || flag == "T1_SubsetVCFOut")
-    {
-        
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_vcfOutput_sequence);
     } else if (flag == "sequencingErrorRate")
     {
 

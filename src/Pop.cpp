@@ -104,7 +104,7 @@ void Pop::PrintBinaryFile()
 {
     if (outputWriter.isFile(SaveBinaryFile))
     {
-        auto& file = outputWriter.get_OutputFile(SaveBinaryFile);
+        auto& file = outputWriter.get_OutputFiles(SaveBinaryFile)[0];
         if (file.isTime())
         {
             ////// Seed
@@ -328,6 +328,7 @@ int Pop::SelectionOriginPatch(int& patch_to)
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
     {
         double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
+        
         if (rnd < probability)
         {
             patch_from = SSP->dispersalData.BackwardMigrationIndex[patch_to][fake_patch_from];
@@ -357,7 +358,6 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
     assert(GP->PatchNumber > 0);
     pop1.CumSumFits.resize(GP->PatchNumber);
     pop2.CumSumFits.resize(GP->PatchNumber);
-
     if (pop1.getNbPatches() > GP->PatchNumber) // If it needs to remove patches
     {
         int NbPatchesToRemove = pop1.getNbPatches() - GP->PatchNumber;
@@ -377,7 +377,6 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
             pop2.AddPatch(NewPatch);  // Will copy in 'AddPatch'
         }
     }
-
     assert(pop1.getNbPatches() == GP->PatchNumber);
     assert(pop2.getNbPatches() == GP->PatchNumber);
 
@@ -400,32 +399,30 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
             
 
         if (pop1.getPatch(patch_index).getpatchCapacity() < SSP->patchCapacity[patch_index]) // If the carrying capacity increased.
-        {            
-            // Figure out what patch the individuals should be sampled from
+        {        
+            // even if fec == -1, I still have to add individuals (even if I won't make sense of them)
+            // Figure out what patch the individuals should be sampled from            
             int patch_index_ToSampleFrom = SSP->selectNonEmptyPatch(patch_index, previousPatchSizes, true);
-            
-            if (patch_index_ToSampleFrom == -1)
-            {
-                std::cout << "In Pop::updatePops, SimBit tried to increase the carrying capacity of patch " << patch_index << " but this patch size was zero, so SimBit could not duplicate an existing individual. So SimBit looked in other patches (in increasing order of patch indices) but they seem to all have a size of zero. This is likely an internal error as I think when reading the input, SimBit should ensure that the total carrying capacity is at least 1. Note that this message came up only because the fecundity was set to -1.0 and hence the patchsize cannot differ from the carrying capacity. If fecundity differed from -1.0 and patch size can differ form the carrying capacity, then when the capacity of a patch is increased, the size is not artificially increased by duplicating individuals. The size may increase in the coming generations but following a more realistic demographic model that the user has set.\n";
-                abort();
-            }
             assert(patch_index_ToSampleFrom >= 0 && patch_index_ToSampleFrom < GP->PatchNumber);
-            assert(previousPatchSizes[patch_index_ToSampleFrom] > 0);
-            //std::cout << "patch_index_ToSampleFrom = " << patch_index_ToSampleFrom << "\n";
             
-            
-            //std::uniform_int_distribution<int> SelectRandomIndividual(0,previousPatchSizes[patch_index_ToSampleFrom]-1);
-
-            int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
-            for (int ind_index = 0 ; ind_index < NbIndsToAdd ; ++ind_index)
+            if (patch_index_ToSampleFrom != -1)
             {
-                //std::cout << "RandomIndividual = " << RandomIndividual << "\n";
-                //assert(RandomIndividual >= 0 && RandomIndividual < pop1.getPatch(patch_index_ToSampleFrom).getpatchCapacity());
-                Individual NewIndividual = pop1.getPatch(patch_index_ToSampleFrom).getInd(ind_index); // Get the individual from this patch. DO NOT TAKE A REFERENCE ONLY. APPARENTLY AddIndividual DOES NOT COPY AS I EXPECTED IT TO.
-                pop1.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
-                pop2.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
+                assert(previousPatchSizes[patch_index_ToSampleFrom] > 0);
+                //std::cout << "patch_index_ToSampleFrom = " << patch_index_ToSampleFrom << "\n";
+
+                int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
+                for (int fake_ind_index = 0 ; fake_ind_index < NbIndsToAdd ; ++fake_ind_index)
+                {
+                    int ind_index = fake_ind_index % previousPatchSizes[patch_index_ToSampleFrom];
+                    
+                    assert(ind_index >= 0 && ind_index < previousPatchSizes[patch_index_ToSampleFrom]);
+                    //std::cout << "RandomIndividual = " << RandomIndividual << "\n";
+                    //assert(RandomIndividual >= 0 && RandomIndividual < pop1.getPatch(patch_index_ToSampleFrom).getpatchCapacity());
+                    Individual NewIndividual = pop1.getPatch(patch_index_ToSampleFrom).getInd(ind_index); // Get the individual from this patch. DO NOT TAKE A REFERENCE ONLY. APPARENTLY AddIndividual DOES NOT COPY AS I EXPECTED IT TO.
+                    pop1.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
+                    pop2.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
+                }
             }
-            
 
         } else if (pop1.getPatch(patch_index).getpatchCapacity() > SSP->patchCapacity[patch_index]) // If the carrying capacity decreased.
         {

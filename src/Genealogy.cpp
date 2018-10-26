@@ -4,7 +4,7 @@ void Genealogy::printBufferIfIsTime()
 	if (isItTime)
 	{
 		assert(outputWriter.isFile(genealogy));
-    auto& file = outputWriter.get_OutputFile(genealogy);
+    auto& file = outputWriter.get_OutputFiles(genealogy)[0];
 		buffer += "\n";
 		file.open();
 		file.write(buffer);

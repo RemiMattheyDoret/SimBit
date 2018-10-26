@@ -200,15 +200,25 @@ void remove_a_from_b(std::vector<T>& a, std::vector<T>& b)
   // remove from vector b all the elements that also exist in vector a.
   // Both vectors must be sorted
   
-  auto ib = std::begin(a);
+  auto ia = std::begin(a);
   auto iter = std::remove_if (
        std::begin(b), std::end(b),
-       [&ib,&a](auto& x) -> bool {
-                       while  (ib != std::end(a) && *ib < x) ++ib;
-                       return (ib != std::end(a) && *ib == x);
+       [&ia,&a](auto& bo) -> bool {
+                       while  (ia != std::end(a) && *ia < bo) ++ia;
+                       return (ia != std::end(a) && *ia == bo);
                      });
   (void) iter;
 }
+
+template<typename T>
+std::vector<T> intersection(std::vector<T>& a, std::vector<T>& b) 
+{
+  // Both vectors must be sorted
+  std::vector<T> r;
+  std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), back_inserter(r));
+  return r;
+}
+
 
 template<typename T>
 void sortAndRemoveDuplicates(std::vector<T>& vec)

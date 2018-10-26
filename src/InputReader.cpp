@@ -418,6 +418,14 @@ std::string InputReader::GetNextElementString()
     return r;
 }
 
+void InputReader::removeAlreadyRead()
+{
+    V.erase(V.begin(), V.begin() + VIndex - 1);
+    VIndex = 0;
+    VIndex_previous_habitat = 0;
+    VIndex_previous_generation = 0;
+}
+
 InputReader::InputReader(InputReader& fullInput, int from, int to, int speciesIndex)
 : VIndex(0), VIndex_previous_habitat(0), VIndex_previous_generation(0)
 {

@@ -279,3 +279,12 @@ SimBit_3.190
 
 SimBit_3.192
 	Improve the output for FST
+
+SimBit_3.193
+	Fix wrong assertion checking the number of T1 loci when computing FST
+
+SimBit_3.195
+	Fix bug when increasing patch size by more than the number of individuals from which individuals are being cloned (issue only for fec = -1)
+
+SimBit_3.196
+	More flexible way to ask for outputs on subsetted data

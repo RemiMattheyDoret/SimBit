@@ -112,7 +112,7 @@ int OptionContainer::HowManyOptionsWereInitiated()
     int r = 0;
     for (auto& option : options)
     {
-        if (option.wasInitiatedYet)
+        if (option.howManyTimesReceivedYet > 0)
         {
             r++;
         }
@@ -127,7 +127,7 @@ bool OptionContainer::wasInitiated(std::string name)
     {
         if (option == name)
         {
-            return option.wasInitiatedYet;
+            return option.howManyTimesReceivedYet > 0;
         }
     }
     std::cout << "Internal error (although you might want to check your input too)! In  'OptionContainer::hasReceived' could not find option with name " << name << ".\n";

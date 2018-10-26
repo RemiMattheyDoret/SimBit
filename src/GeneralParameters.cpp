@@ -222,20 +222,24 @@ void GeneralParameters::readSeed(InputReader input)
         std::ifstream file;
         file.open(seedBinaryFilePath, std::ios::out | std::ios::binary);
         file >> mt;
+        random_seed = std::numeric_limits<int>::quiet_NaN();
     } else 
     {
         if (input.PeakNextElementString() == "default")
         {
             input.skipElement();
-            std::mt19937 tmp(time(NULL));
-            GP->mt = tmp;
+            unsigned int time_ui = time(NULL) ;
+            srand(time_ui);
+            random_seed = rand();
         } else
         {
             random_seed = input.GetNextElementInt();
         }
-        std::mt19937 tmp(GP->random_seed);
+        std::mt19937 tmp(random_seed);
         GP->mt = tmp;
     }
+    //std::cout << GP->mt << "\n";
+    //std::cout << "GP->random_seed = " << GP->random_seed << "\n";
 
 }
 

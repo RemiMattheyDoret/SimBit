@@ -26,6 +26,18 @@
 
  */
 
+std::vector<T1_locusDescription> OutputFile::getSubsetToConsider(int speciesIndex)
+{
+    return this->subset[speciesIndex];
+}
+
+template<typename T>
+std::vector<T> OutputFile::removeSitesWeDontWant(std::vector<T> sites, int speciesIndex)
+{
+    // sites must be sorted
+    return intersection(this->subset[speciesIndex],sites);
+}
+
 const std::vector<std::string> OutputFile::OutputFileTypesNames = 
 {
     "Oops... failed to find file type name",
@@ -89,6 +101,25 @@ void OutputFile::mergeFiles(std::vector<std::string> listOfFiles)
 
 }
 
+bool OutputFile::isLocusInSubset(T1_locusDescription L, int speciesIndex)
+{
+    bool x = std::binary_search( 
+                subset[speciesIndex].begin(),
+                subset[speciesIndex].end(),
+                L,
+                [](const T1_locusDescription& right, const T1_locusDescription& left){return right.locus < left.locus;}
+            );
+    return x;
+
+    // 'operator==' between 'T1_locusDescription' and 'int' compares with the attribute 'locus'
+}
+
+bool OutputFile::isLocusInSubset(int locus, int speciesIndex)
+{
+    T1_locusDescription L(locus); // minimalist instantiation (no division by eight) used only to search in 'subset'
+    return isLocusInSubset(L, speciesIndex);
+    // 'operator==' between 'T1_locusDescription' and 'int' compares with the attribute 'locus'
+}
 
 std::string OutputFile::getPathForSeed()
 {
@@ -150,7 +181,8 @@ std::string OutputFile::getPath(int generation)
     }
 }
 
-void OutputFile::interpretTimeInput(InputReader& input)
+
+void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
 {
     if (!input.IsThereMoreToRead())
     {
@@ -160,7 +192,7 @@ void OutputFile::interpretTimeInput(InputReader& input)
 
     std::vector<int> v;
 
-    while (input.IsThereMoreToRead())
+    while (input.IsThereMoreToRead() || input.PeakNextElementString() != "subset")
     {
         if (input.PeakNextElementString() == "FromToBy" || input.PeakNextElementString() == "fromtoby" || input.PeakNextElementString() == "fromToBy")
         {
@@ -168,6 +200,7 @@ void OutputFile::interpretTimeInput(InputReader& input)
             int from = input.GetNextElementInt();
             int to = input.GetNextElementInt();
             int by = input.GetNextElementInt();
+
 
             for (int t = from ; t <= to ; t+=by)
             {
@@ -179,6 +212,79 @@ void OutputFile::interpretTimeInput(InputReader& input)
         }
     }
     this->setTimes(v);
+
+    if (input.IsThereMoreToRead())
+    {
+        std::vector<int> listOfOutputFileTypeThatCanTakeASubset = {
+            extraGeneticInfo,
+            T1_FST,
+            // not fitnessStats
+            // not patchSize
+            // not fitnessSubsetLoci (obviously)
+            // not fitness (fitnessSubsetLoci is here for that)
+            T1_AlleleFreqFile,
+            MeanLDFile,
+            LongestRunFile,
+            // not T2_LargeOutputFile
+            T1_LargeOutputFile,
+            HybridIndexFile,
+            ExpectiMinRecFile,
+            T1_vcfFile,
+            // not T3_LargeOutputFile
+            // T3_MeanVarFile
+            // extinction
+            // not genealogy
+            // not SaveBinaryFile
+            // not Logfile
+        };
+        assert(input.GetNextElementString() != "subset");
+
+        if (std::find(listOfOutputFileTypeThatCanTakeASubset.begin(), listOfOutputFileTypeThatCanTakeASubset.end(), this->OutputFileType) != listOfOutputFileTypeThatCanTakeASubset.end())
+        {
+            std::cout << "Received the 'subset' keyword for outputFile of type " << getFileTypeName(OutputFileType) << " but only the types {";
+            for (auto& elem : listOfOutputFileTypeThatCanTakeASubset)
+                std::cout << getFileTypeName(elem) << " ";
+            std::cout << "}\n";
+            abort();
+        }
+
+        input.removeAlreadyRead();
+        std::vector<std::pair<int, int>> rangesToSubsetFullInput = input.GetRangeOfIndicesForEachSpecies();
+        assert(rangesToSubsetFullInput.size() == GP->nbSpecies);
+        auto SSP_toReset = SSP;
+        for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; speciesIndex++)
+        {
+            SSP = allParameters.getSSPaddress(speciesIndex); // It is important to reset this because InputReader uses SSP
+            assert(SSP != nullptr);
+
+            int from = rangesToSubsetFullInput[speciesIndex].first;
+            int to = rangesToSubsetFullInput[speciesIndex].second;
+            assert(from < to);
+            InputReader inputOneSpecies(input, from, to, speciesIndex);
+
+
+            while (input.IsThereMoreToRead())
+            {
+                int locus = inputOneSpecies.GetNextElementInt();
+                subset.push_back({locus%8, locus/8, locus});
+            }            
+
+        }
+        SSP = SSP_toReset;
+
+    } else
+    {
+        // must list all loci in subset
+        std::vector<T1_locusDescription> oneSpeciesSubset;
+        for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies; speciesIndex++)
+        {
+            for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->T1_nbBits; locus++)
+            {
+                oneSpeciesSubset.push_back({locus%8, locus/8, locus}); 
+            }
+            subset.push_back(oneSpeciesSubset);
+        }
+    }
 }
 
 bool OutputFile::isEmpty(std::ifstream& pFile)

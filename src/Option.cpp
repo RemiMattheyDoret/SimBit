@@ -1,6 +1,6 @@
 
-Option::Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB)
-: optionNames(oN), optionsThatMustBeReadBefore(oTMBRB), wasInitiatedYet(false), wasRenamedYet(false)
+Option::Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, int CGSI)
+: optionNames(oN), optionsThatMustBeReadBefore(oTMBRB), howManyTimesReceivedYet(0), wasRenamedYet(false), canGetSeveralInputs(CGSI)
 {}
 
 bool Option::operator==(std::string other)
@@ -40,13 +40,13 @@ std::string Option::getNamesToPrint()
 void Option::received(OptionContainer& optionContainer)
 {
     // Check it was not received yet
-    if (wasInitiatedYet)
+    if (!canGetSeveralInputs && howManyTimesReceivedYet > 0)
     {
-        std::cout << "Option " << this->getNamesToPrint() << " was present more than once.\n";
+        std::cout << "Option " << this->getNamesToPrint() << " was present at least "<<howManyTimesReceivedYet+1<<" times but can only be received once.\n";
         abort();
     }
 
-    wasInitiatedYet = true;
+    howManyTimesReceivedYet++;
 
     // check the options that must be set before
     for (std::string& preOptionName : optionsThatMustBeReadBefore)
@@ -57,7 +57,7 @@ void Option::received(OptionContainer& optionContainer)
             if (option == preOptionName)
             {
                 wasOptionFoundSomewhere = true;
-                if (!option.wasInitiatedYet)
+                if (this->canGetSeveralInputs == 0)
                 {
                     std::cout << "Internal error: Read option " << this->getNamesToPrint() << " before option " << option.getNamesToPrint() << ".\n";
                     abort();

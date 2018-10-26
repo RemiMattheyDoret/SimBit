@@ -142,7 +142,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 3.192");
+    std::string VERSION("version 3.196");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -228,7 +228,7 @@ std::cout << getSimBitVersionLogo();
 
     if (outputWriter.LogfileType != 0)
     {
-        std::cout << "\t\tLogfile path:\n\t\t\t" << outputWriter.get_OutputFile(Logfile).getPath() << "\n\n";
+        std::cout << "\t\tLogfile path:\n\t\t\t" << outputWriter.get_OutputFiles(Logfile)[0].getPath() << "\n\n";
     }
         
 
