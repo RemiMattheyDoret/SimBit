@@ -36,7 +36,6 @@ public:
 
         // Other stuff about outputs
         {{"LogfileType"},                               {}, false},
-        {{"T1_SubsetFST"},                              {"L"}, false}, // specify [from, to]
         {{"sequencingErrorRate"},                       {}, false},
         
         // Selection

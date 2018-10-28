@@ -57,7 +57,7 @@ void Option::received(OptionContainer& optionContainer)
             if (option == preOptionName)
             {
                 wasOptionFoundSomewhere = true;
-                if (this->canGetSeveralInputs == 0)
+                if (option.howManyTimesReceivedYet == 0)
                 {
                     std::cout << "Internal error: Read option " << this->getNamesToPrint() << " before option " << option.getNamesToPrint() << ".\n";
                     abort();
