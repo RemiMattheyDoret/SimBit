@@ -35,11 +35,12 @@ template<typename T>
 std::vector<T> OutputFile::removeSitesWeDontWant(std::vector<T> sites, int speciesIndex)
 {
     // sites must be sorted
+    //std::cout << "From OutputFile::removeSitesWeDontWant: speciesIndex = " << speciesIndex << "\n";
+    //std::cout << "From OutputFile::removeSitesWeDontWant: this->subset.size() = " << this->subset.size() << "\n";
     return intersection(this->subset[speciesIndex],sites);
 }
 
-const std::vector<std::string> OutputFile::OutputFileTypesNames = 
-{
+const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "Oops... failed to find file type name",
     "Logfile",
     "T1_vcfFile",
@@ -61,7 +62,30 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames =
     "extinction",
     "genealogy",
     "fitnessSubsetLoci"
-};    
+}; 
+
+const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
+    extraGeneticInfo,
+    T1_FST,
+    // not fitnessStats
+    // not patchSize
+    // not fitnessSubsetLoci (obviously)
+    // not fitness (fitnessSubsetLoci is here for that)
+    T1_AlleleFreqFile,
+    MeanLDFile,
+    LongestRunFile,
+    // not T2_LargeOutputFile
+    T1_LargeOutputFile,
+    HybridIndexFile,
+    ExpectiMinRecFile,
+    T1_vcfFile,
+    // not T3_LargeOutputFile
+    // T3_MeanVarFile
+    // extinction
+    // not genealogy
+    // not SaveBinaryFile
+    // not Logfile
+};   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
 {
@@ -191,9 +215,12 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
     }    
 
     std::vector<int> v;
-
-    while (input.IsThereMoreToRead() || input.PeakNextElementString() != "subset")
+    while (input.IsThereMoreToRead())
     {
+        if (input.PeakNextElementString() == "subset")
+        {
+            break;
+        }
         if (input.PeakNextElementString() == "FromToBy" || input.PeakNextElementString() == "fromtoby" || input.PeakNextElementString() == "fromToBy")
         {
             input.skipElement();
@@ -212,34 +239,12 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
         }
     }
     this->setTimes(v);
-
+    
     if (input.IsThereMoreToRead())
     {
-        std::vector<int> listOfOutputFileTypeThatCanTakeASubset = {
-            extraGeneticInfo,
-            T1_FST,
-            // not fitnessStats
-            // not patchSize
-            // not fitnessSubsetLoci (obviously)
-            // not fitness (fitnessSubsetLoci is here for that)
-            T1_AlleleFreqFile,
-            MeanLDFile,
-            LongestRunFile,
-            // not T2_LargeOutputFile
-            T1_LargeOutputFile,
-            HybridIndexFile,
-            ExpectiMinRecFile,
-            T1_vcfFile,
-            // not T3_LargeOutputFile
-            // T3_MeanVarFile
-            // extinction
-            // not genealogy
-            // not SaveBinaryFile
-            // not Logfile
-        };
-        assert(input.GetNextElementString() != "subset");
+        assert(input.GetNextElementString() == "subset");
 
-        if (std::find(listOfOutputFileTypeThatCanTakeASubset.begin(), listOfOutputFileTypeThatCanTakeASubset.end(), this->OutputFileType) != listOfOutputFileTypeThatCanTakeASubset.end())
+        if (std::find(listOfOutputFileTypeThatCanTakeASubset.begin(), listOfOutputFileTypeThatCanTakeASubset.end(), this->OutputFileType) == listOfOutputFileTypeThatCanTakeASubset.end())
         {
             std::cout << "Received the 'subset' keyword for outputFile of type " << getFileTypeName(OutputFileType) << " but only the types {";
             for (auto& elem : listOfOutputFileTypeThatCanTakeASubset)
@@ -247,7 +252,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             std::cout << "}\n";
             abort();
         }
-
+        
         input.removeAlreadyRead();
         std::vector<std::pair<int, int>> rangesToSubsetFullInput = input.GetRangeOfIndicesForEachSpecies();
         assert(rangesToSubsetFullInput.size() == GP->nbSpecies);
@@ -262,29 +267,38 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             assert(from < to);
             InputReader inputOneSpecies(input, from, to, speciesIndex);
 
+            std::vector<T1_locusDescription> oneSpeciesSubset;
 
             while (input.IsThereMoreToRead())
             {
                 int locus = inputOneSpecies.GetNextElementInt();
-                subset.push_back({locus%8, locus/8, locus});
-            }            
+                oneSpeciesSubset.push_back({locus/8, locus%8, locus});
+            }   
+            this->subset.push_back(oneSpeciesSubset);
 
         }
         SSP = SSP_toReset;
 
     } else
     {
+        
         // must list all loci in subset
         std::vector<T1_locusDescription> oneSpeciesSubset;
         for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies; speciesIndex++)
         {
             for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->T1_nbBits; locus++)
             {
-                oneSpeciesSubset.push_back({locus%8, locus/8, locus}); 
+                /*
+                std::cout << "locus = " << locus << "\n";
+                std::cout << "locus%8 = " << locus%8 << "\n";
+                std::cout << "locus/8 = " << locus/8 << "\n";
+                */
+                oneSpeciesSubset.push_back({locus/8, locus%8, locus}); 
             }
-            subset.push_back(oneSpeciesSubset);
+            this->subset.push_back(oneSpeciesSubset);
         }
     }
+    assert(this->subset.size() == GP->nbSpecies);
 }
 
 bool OutputFile::isEmpty(std::ifstream& pFile)
@@ -413,7 +427,7 @@ bool OutputFile::isTime()
 }
 
 OutputFile::OutputFile(OutputFile&& f)
-: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet)
+: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet), subset(f.subset)
 {}
 
 OutputFile::OutputFile(std::string f, OutputFileTypes t)
@@ -755,5 +769,13 @@ std::string OutputFile::getFileTypeName(int fileTypeIndex)
     } else
     {
         return OutputFileTypesNames[fileTypeIndex];
+    }
+}
+
+void OutputFile::assertSubsetSize()
+{
+    if (std::find(listOfOutputFileTypeThatCanTakeASubset.begin(), listOfOutputFileTypeThatCanTakeASubset.end(), this->OutputFileType) != listOfOutputFileTypeThatCanTakeASubset.end())
+    {
+        assert(this->subset.size() == GP->nbSpecies);
     }
 }

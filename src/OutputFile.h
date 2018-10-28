@@ -56,6 +56,7 @@ typedef enum {
     4) complete OutputFileTypesNames
 */
 
+
 class OutputFile
 {
 private:
@@ -70,12 +71,14 @@ private:
     bool doesTimeNeedsToBeSet;
     std::vector<std::vector<T1_locusDescription>> subset;
 
+    static const std::vector<int> listOfOutputFileTypeThatCanTakeASubset;
     static const std::vector<std::string> OutputFileTypesNames; // initialized in .cpp
 
 public:
     static std::string GeneralPath;
     static std::string sequencingErrorStringToAddToFilnames;
 
+    void assertSubsetSize();
     OutputFile(OutputFile&& f); // move constructor
     OutputFile(std::string f, OutputFileTypes t);
     bool containsRightNumberOfLines(std::ifstream& pFile);

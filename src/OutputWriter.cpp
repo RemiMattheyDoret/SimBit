@@ -450,9 +450,19 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 void OutputWriter::insertOutputFile(OutputFile&& file)
 {
     auto iter = TypesToPrintOn.find(file.getFileType());
-    if (iter != TypesToPrintOn.end())
+    
+    /*std::cout << "In TypesToPrintOn, there is: ";
+    for( typename std::map<const OutputFileTypes, std::vector<OutputFile>>::const_iterator it = TypesToPrintOn.begin(); it != TypesToPrintOn.end(); ++it )
     {
-        // there is no file of this type of the moment
+        std::cout << it->first << " ";
+    }
+    std::cout << std::endl;*/
+    //std::cout << "Try to insert outputFile of type " << file.getFileType() << ".\n";
+    file.assertSubsetSize();
+
+    if (iter == TypesToPrintOn.end())
+    {
+        //std::cout << "there is no file of this type of the moment.\n";        
         std::vector<OutputFile> v;
         v.push_back(std::move(file));
         TypesToPrintOn.insert(
@@ -460,7 +470,7 @@ void OutputWriter::insertOutputFile(OutputFile&& file)
         );
     } else
     {
-        // a file of this type already exists
+        //std::cout << "there is a file of this type already exists.\n";
         (*iter).second.push_back(std::move(file));
     }
 }
@@ -949,19 +959,15 @@ void OutputWriter::WriteOutputs_T1_FST_header(OutputFile& file)
 
 void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
 {
-
     file.open();
     std::string s_tab("\t");
     std::string s;
     s += std::to_string(GP->CurrentGeneration);
 
-
     // compute alleleFreq at each patch
     std::vector<std::vector<double>> alleleFreqs;  // alleleFreqs[patch][locus]
     alleleFreqs.resize(GP->PatchNumber);
-
     auto polymorphicLoci = file.removeSitesWeDontWant(SSP->simTracker.listAllPolymorphicT1Sites(pop), SSP->speciesIndex);
-    
     
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
@@ -989,7 +995,6 @@ void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
             }
         }
     }
-
     assert(alleleFreqs.size() == GP->PatchNumber);
 
 
@@ -1092,7 +1097,6 @@ void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
 
         } while (std::prev_permutation(patchesToConsider.begin(), patchesToConsider.end()));
     }
-
 
     s += std::string("\n");
     file.write(s);

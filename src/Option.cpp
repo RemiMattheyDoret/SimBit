@@ -77,8 +77,11 @@ std::string Option::renameFlag()
 {
     if (this->wasRenamedYet)
     {
-        std::cout << "Option " << this->getNamesToPrint() << " was received more than once!\n";
-        abort();
+        if (!this->canGetSeveralInputs)
+        {
+            std::cout << "Option " << this->getNamesToPrint() << " is not an option that can be received more than once (but it was received more than once)!\n";
+            abort();
+        }
     }
     this->wasRenamedYet = true;
 

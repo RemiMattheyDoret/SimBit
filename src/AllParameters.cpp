@@ -425,29 +425,30 @@ std::cout << "Enters in 'SetParameters'\n";
         std::string flag = option.optionNames[0]; // THe flags have already been renamed to this first flag
 
         // Find index in UserEntries
-        int UserInputIndexForFlag = -1;
+        std::vector<int> UserInputIndexForFlags;
         for (int optionReceivedIndex = 0 ; optionReceivedIndex < UserEntries.size() ; optionReceivedIndex++)
         {
             if (flag == UserEntries[optionReceivedIndex].first)
             {
-                UserInputIndexForFlag = optionReceivedIndex;
+                UserInputIndexForFlags.push_back(optionReceivedIndex);
             }
         }
-
-        //std::cout << option.optionNames[0] << "\n";
         
         option.received(optionContainer);
 
         // if flag not found in UserEntries
-        if (UserInputIndexForFlag == -1) 
+        if (UserInputIndexForFlags.size() == 0) 
         {
             //std::cout << "Set to default...\n";
             this->setOptionToDefault(flag); // The line 'option.received(optionContainer);' is present in the function 'setOptionToDefault' only when something is indeed received
         // if flag was found
         } else 
         {
-            //std::cout << "Set from user...\n";
-            this->setOptionToUserInput(flag, UserEntries[UserInputIndexForFlag].second);
+            for (int UserInputIndexForFlag : UserInputIndexForFlags)
+            {
+                //std::cout << "Set from user...\n";
+                this->setOptionToUserInput(flag, UserEntries[UserInputIndexForFlag].second);
+            }
         }
     }
 
@@ -730,7 +731,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
             outputWriter.insertOutputFile(std::move(file));
             if (!outputWriter.isFile(Logfile))
             {
-                std::cout << "Internal error: Default Logfile failed to be inserted (and failed to find) in outputWriter\n";
+                std::cout << "Internal error: Default Logfile failed to be inserted (and failed to be found) in outputWriter\n";
                 abort();
             }
         }
