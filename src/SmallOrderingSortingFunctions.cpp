@@ -227,3 +227,21 @@ void sortAndRemoveDuplicates(std::vector<T>& vec)
   vec.erase( unique( vec.begin(), vec.end() ), vec.end() );
 }
 
+template <typename INT, typename T> // INT could be int, unsigned int, char, size_t, etc...
+void removeIndicesFromVector(std::vector<T>& v, std::vector<INT>& rm )
+{
+  size_t rm_index = 0;
+  v.erase(
+    std::remove_if(std::begin(v), std::end(v), [&](T& elem)
+    {
+      if (rm.size() != rm_index && &elem - &v[0] == rm[rm_index])
+      {
+        rm_index++;
+        return true;
+      }
+      return false;
+    }),
+    std::end(v)
+  );
+}
+

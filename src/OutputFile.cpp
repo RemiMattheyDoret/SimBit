@@ -264,16 +264,17 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
 
             int from = rangesToSubsetFullInput[speciesIndex].first;
             int to = rangesToSubsetFullInput[speciesIndex].second;
-            assert(from < to);
+            assert(from <= to);
             InputReader inputOneSpecies(input, from, to, speciesIndex);
 
             std::vector<T1_locusDescription> oneSpeciesSubset;
 
-            while (input.IsThereMoreToRead())
+            while (inputOneSpecies.IsThereMoreToRead())
             {
                 int locus = inputOneSpecies.GetNextElementInt();
-                oneSpeciesSubset.push_back({locus/8, locus%8, locus});
-            }   
+   		oneSpeciesSubset.push_back({locus/8, locus%8, locus});
+            }  
+	    inputOneSpecies.workDone(); 
             this->subset.push_back(oneSpeciesSubset);
 
         }
@@ -299,6 +300,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
         }
     }
     assert(this->subset.size() == GP->nbSpecies);
+    input.consideredFullyRead();
 }
 
 bool OutputFile::isEmpty(std::ifstream& pFile)

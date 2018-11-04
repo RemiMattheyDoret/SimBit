@@ -53,6 +53,7 @@ Note for Remi of things to do:
 #include <map>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
 
 /*#include <iostream>
 #include <list>
@@ -142,7 +143,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 3.196");
+    std::string VERSION("version 3.198");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

@@ -72,6 +72,9 @@ public:
     int currentVIndex();
     int FindVIndexOfNextMatchingString(std::string toFind, bool throwErrorIfNotFound);
     int numberOfWordsInInput();
-
+    void consideredFullyRead();
+    void interpretKeywords();
+    int getVIndex();
+    size_t getSizeOfV();
 };
 

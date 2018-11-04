@@ -67,8 +67,10 @@ void AllParameters::wrapperOverSpecies(InputReader& fullInput, void (SpeciesSpec
         InputReader input(fullInput, from, to, speciesIndex);
 
         (SSP->*readFunction)(input); // call method that readFunction points to on object SSPs[speciesIndex] and give it input in argument.
+        input.workDone();
     }
     SSP = nullptr; // Set it back to null to avoid mistakes
+    fullInput.consideredFullyRead();
 }
 
 
@@ -435,6 +437,7 @@ std::cout << "Enters in 'SetParameters'\n";
         }
         
         option.received(optionContainer);
+        //std::cout << "Flag " << flag << "\n";
 
         // if flag not found in UserEntries
         if (UserInputIndexForFlags.size() == 0) 
@@ -447,7 +450,33 @@ std::cout << "Enters in 'SetParameters'\n";
             for (int UserInputIndexForFlag : UserInputIndexForFlags)
             {
                 //std::cout << "Set from user...\n";
-                this->setOptionToUserInput(flag, UserEntries[UserInputIndexForFlag].second);
+
+                // Check for potential issue
+                std::string& entry = UserEntries[UserInputIndexForFlag].second;
+                bool issueWithEntry = false;
+                if (entry.size() == 0)
+                {
+                    issueWithEntry = true;
+                }
+                if (entry.size() == 1)
+                {
+                    if (entry.at(0) == ' ')
+                    {
+                        issueWithEntry = true;
+                    }
+                }
+                if (issueWithEntry)
+                {
+                    std::cout << "For flag / option '" << flag << "', the entry is either empty or contain only whitespaces.\n";
+                    abort();
+                }
+
+                // Make InputReader
+                InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+                input.interpretKeywords();
+
+                // Set option
+                this->setOptionToUserInput(flag, input);
             }
         }
     }
@@ -1088,140 +1117,92 @@ void AllParameters::setOptionToDefault(std::string& flag)
 
 
 
-void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
+void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 {
-    bool issueWithEntry = false;
-    if (entry.size() == 0)
-    {
-        issueWithEntry = true;
-    }
-    if (entry.size() == 1)
-    {
-        if (entry.at(0) == ' ')
-        {
-            issueWithEntry = true;
-        }
-    }
-    if (issueWithEntry)
-    {
-        std::cout << "For flag / option '" << flag << "', the entry is either empty or contain only whitespaces.\n";
-        abort();
-    }
 
     if (flag == "GeneralPath" || flag == "GP")
     {
 
-        OutputFile::GeneralPath = entry;
+        OutputFile::GeneralPath = input.GetNextElementString();
     } else if (flag == "T1_vcf_file" || flag == "T1_VCF_file")
     {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_vcfFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     } else if (flag == "T1_LargeOutput_file")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_LargeOutputFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "T1_AlleleFreq_file")
     {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_AlleleFreqFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     } else if (flag == "Log" || flag == "Logfile" || flag == "Logfile_file")
     {
-        
-
-        OutputFile file(entry, Logfile);
+        OutputFile file(input.GetNextElementString(), Logfile);
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "T1_MeanLD_file")
     {
         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), MeanLDFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "T1_LongestRun_file")
     {
         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), LongestRunFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "T1_HybridIndex_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), HybridIndexFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
     
     }  else if (flag == "T1_ExpectiMinRec_file" )
     {
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), ExpectiMinRecFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));        
 
     }  else if (flag == "T2_LargeOutput_file" )
-    {
-            
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {     
         OutputFile file(input.GetNextElementString(), T2_LargeOutputFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "SaveBinary_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), SaveBinaryFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "T3_LargeOutput_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T3_LargeOutputFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
         
     }  else if (flag == "T3_MeanVar_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T3_MeanVarFile);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
          
     }  else if (flag == "fitness_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitness);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "fitnessSubsetLoci_file" )
     {
 
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitnessSubsetLoci);
 
         // Find out the separation between time arguments and the loci to subset
@@ -1260,68 +1241,54 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         // LociSet
         wrapperOverSpecies(inputForSpeciesSpecificLociSets, &SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file);
 
-        // input.workDone(); Do not call work Done because input is not read itself but only the subset of it
+
         outputWriter.insertOutputFile(std::move(file));
 
     } else if (flag == "fitnessStats_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), fitnessStats);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     } else if (flag == "T1_FST_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), T1_FST);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
 
     }  else if (flag == "T1_FST_info")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        GP->readT1_FST_info(input);
+                GP->readT1_FST_info(input);
     } else if (flag == "extraGeneticInfo_file" )
     {        
-        OutputFile file(entry, extraGeneticInfo);
+        OutputFile file(input.GetNextElementString(), extraGeneticInfo);
         outputWriter.insertOutputFile(std::move(file));
         
     }  else if (flag == "patchSize_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), patchSize);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
         outputWriter.insertOutputFile(std::move(file));
      
 
     }  else if (flag == "extinction_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), extinction);
         outputWriter.insertOutputFile(std::move(file));
-        input.workDone();
-
+        
     } else if (flag == "genealogy_file" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         OutputFile file(input.GetNextElementString(), genealogy);
         file.interpretTimeAndSubsetInput(input);
-        input.workDone();
-        input.workDone();
-        for (auto& SSPi : this->SSPs)
+                        for (auto& SSPi : this->SSPs)
         {
             SSPi.simTracker.genealogy.setGenealogyTimes(file.getTimes());
         }   
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "coalesce" )
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        int coalesceGenealogyFrequency = input.GetNextElementInt();
-        input.workDone();
-        if (coalesceGenealogyFrequency < 0)
+                int coalesceGenealogyFrequency = input.GetNextElementInt();
+                if (coalesceGenealogyFrequency < 0)
         {
             std::cout << "In option --coalesced, the values received is negative ( is "<<coalesceGenealogyFrequency<<"). Value of zero mean no coalescence. Any value bigger than 0 indicates the frequency at which SimBit will coalesce. This frequency won't change anything to the output but might well affect the computational time (should not affect the RAM though).\n";
             abort();
@@ -1334,7 +1301,6 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     else if (flag == "LogfileType")
     {
         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         outputWriter.LogfileType = input.GetNextElementInt();
         if (outputWriter.LogfileType > 2)
         {
@@ -1345,65 +1311,51 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
     {
 
 
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         GP->sequencingErrorRate = input.GetNextElementDouble();
         if (GP->sequencingErrorRate < 0.0)
         {
             std::cout << "In --" << flag << ", received a negative error rate (received "<<GP->sequencingErrorRate<<").";
             abort();
         }
-        input.workDone();
     } else if (flag == "nbGens" || flag == "nbGenerations")
     {
         
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         GP->nbGenerations = input.GetNextElementInt();
         if (GP->nbGenerations < 0)
         {
             std::cout << "'nbGenerations' is " << GP->nbGenerations << ". 'nbGenerations' cannot be lower than 0." << std::endl;
             abort();
         }
-        input.workDone();
     } else if (flag == "startAtGeneration")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
-        GP->startAtGeneration = input.GetNextElementInt();
+                GP->startAtGeneration = input.GetNextElementInt();
         assert(GP->nbGenerations >= 0);
         if (GP->startAtGeneration < 0 || GP->startAtGeneration > GP->nbGenerations)
         {
             std::cout << "For option " << flag << ", generation to be received is either negative of larger than the number of generations to be computed. GP->startAtGeneration = " << GP->startAtGeneration << "  GP->nbGenerations = " << GP->nbGenerations  << "\n";
             abort();
         }
-        input.workDone();
     } else if (flag == "PN" || flag == "PatchNumber")
     {
-        
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         GP->readPatchNumber(input);
     }  else if (flag == "seed" || flag == "random_seed")
     {
 
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         GP->readSeed(input);
     }  else if (flag == "nbThreads")
     {
         
         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         GP->nbThreads = input.GetNextElementInt();
         //omp_set_num_threads(GP->nbThreads);
     }  else if (flag == "N" || flag == "patchCapacity")
     {
-        
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readpatchCapacity);
+
     } else if (flag == "nbSubGens" || flag == "nbSubGenerations")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readnbSubGenerations);
+
     } else if (flag == "InitialpatchSize")
     {
         // just a security
@@ -1411,153 +1363,110 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         {
             assert(SSPi.__patchCapacity[0].size() == GP->__PatchNumber[0]);
         }
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+        // set option
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readInitialpatchSize);
 
     }  else if (flag == "cloningRate")
     {
-                    
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readCloningRate);
         
     }  else if (flag == "selfingRate")
     { 
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readSelfingRate);
         
     }  else if (flag == "DispMat" || flag == "m")
     { 
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispMat);
         
     }  else if (flag == "DispWeightByFitness")
     {
-        
-        InputReader input(entry, "In --DispWeightByFitness, ");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispWeightByFitness);
         
     }  else if (flag == "Loci" || flag == "L")
     {
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readLoci);
+
     }  else if (flag == "ploidy")
     {     
-        
-        InputReader input(entry,std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readPloidy);
     
     }  else if (flag == "RecombinationRate" || flag == "r")
     {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readRecombinationRate);
         
     }  else if (flag == "recRateOnMismatch")
     {
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readRecRateOnMismatch);
         
     }  else if (flag == "FitnessMapInfo")
-    {
-        
-        InputReader input(entry, "--In FitnessMapProbOfEvent,");
+    {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readFitnessMapInfo);
         
     } else if (flag == "resetTrackedT1Muts")
-    {
-        
-        InputReader input(entry, "--In resetTrackedT1Muts,");
+    {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readResetTrackedT1Muts);
         
     }  else if (flag == "fecundityForFitnessOfOne" || flag == "fec")
-    {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readfecundityForFitnessOfOne);
         
     }  else if (flag == "T1_MutationRate" || flag == "T1_mu")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_MutationRate);
 
     } else if (flag == "additiveEffectAmongLoci")
     {
         std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
         abort();
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readadditiveEffectAmongLoci);
     } else if (flag == "T1_FitnessEffects" || flag == "T1_fit")
     {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
         
     }  else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
-    {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_Initial_AlleleFreqs);
         
     }  else if (flag == "T1_EpistaticFitnessEffects" || flag == "T1_epistasis")
-    {
-        
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_EpistaticFitnessEffects);
     
     }  else if (flag == "T2_MutationRate" || flag == "T2_mu")
-    {
-         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT2_MutationRate);
         
     }  else if (flag == "T2_FitnessEffects" || flag == "T2_fit")
     {       
-  
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT2_FitnessEffects);
   
     }  else if (flag == "T3_MutationRate" || flag == "T3_mu")
     {
-         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_MutationRate);
         
     }  else if (flag == "T3_PhenotypicEffects" || flag == "T3_pheno")
-    {
-         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_PhenotypicEffects);
         
     }  else if (flag == "T3_FitnessLandscape" || flag == "T3_fit")
-    {
-         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_FitnessLandscape);
         
     }  else if (flag == "Habitats" || flag == "H")
     {
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readHabitats);
+
     } else if (flag == "matingSystem")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readMatingSystem);
+
     }
     else if (flag == "TemporalChanges" || flag == "T")
-    {
-         
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
+    { 
         GP->readTemporalChanges(input);
+
     }  else if (flag == "Overwrite")
     {
         
-        InputReader input(entry,"In -Overwrite,");
         GP->OverwriteMode = input.GetNextElementInt();
         if (
             GP->OverwriteMode != 0 && 
@@ -1570,22 +1479,19 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         }
     }  else if (flag == "readPopFromBinary")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readReadPopFromBinary);
+
     } else if (flag == "DryRun")
     {       
-
         GP->DryRun = true;
+
     }  else if (flag == "centralT1LocusForExtraGeneticInfo")
     {
-        
-        InputReader input(entry,std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input,&SpeciesSpecificParameters::readCentralT1LocusForExtraGeneticInfo);
     
     }  else if (flag == "S" || flag == "species" || flag == "SNames" || flag == "SpeciesNames")
     {
         
-        InputReader input(entry,"In --speciesNames,");
         if (SSPs.size() != 0)
         {
             std::cout << "Internal error. SSPs (the attribute of AllParameters containing all species specific parameters) had a length different from 0 before reading -speciesNames. \n";
@@ -1641,7 +1547,6 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
             abort();
         }
 
-        input.workDone();
         if (GP->nbSpecies == 0)
         {
             std::cout << "While reading --speciesNames, it appears that zero species names have been indicated. You need at least one species to simulate something.\n";
@@ -1649,8 +1554,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         }
     }  else if (flag == "eco" || flag == "ecoRelation" || flag == "speciesEcologicalRelationships")
     {   
-        InputReader input(entry,std::string("In '--") + flag + std::string("', "));
-
+        
         bool isRandomGauss;
         std::string randomGaussType;
         double randomGaussMean;
@@ -1728,23 +1632,23 @@ void AllParameters::setOptionToUserInput(std::string& flag, std::string entry)
         GP->speciesEcoRel_type   = transposeSquareMatrix(transposeOfspeciesEcoRel_type);
         GP->speciesEcoRel_effect = transposeSquareMatrix(transposeOfspeciesEcoRel_effect);
         
-        input.workDone();
     } else if (flag == "growthK")
     {
         assert(GP->speciesEcoRel_type.size() == this->GlobalP.nbSpecies);
         assert(GP->speciesEcoRel_effect.size() == this->GlobalP.nbSpecies);
-
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readGrowthK);
+
     } else if (flag == "resetGenetics")
     {
-        InputReader input(entry, std::string("In '--") + flag + std::string("', "));
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readResetGenetics);
+
     } else
     {
         std::cout << "Received flag/option " << flag << ". This option is not recognized. Sorry. The error was caught after the renaming which highlights the first security gate has a bug and failed to find this mistake.\n";
         abort();
-    } 
+    }
+
+    input.workDone();
 }
 
 

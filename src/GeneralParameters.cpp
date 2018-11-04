@@ -62,7 +62,7 @@ void GeneralParameters::saveSSPPatchSize_toGP_lowerSecurity()
 }
 */
 
-void GeneralParameters::readT1_FST_info(InputReader input)
+void GeneralParameters::readT1_FST_info(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--T1_FST_info', the std::string that is read is: " << input.print() << std::endl;
@@ -119,7 +119,7 @@ void GeneralParameters::readT1_FST_info(InputReader input)
     input.workDone();
 }
 
-void GeneralParameters::readPatchNumber(InputReader input)
+void GeneralParameters::readPatchNumber(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--PN (--PatchNumber)', the std::string that is read is: " << input.print() << std::endl;
@@ -164,7 +164,7 @@ void GeneralParameters::initializeAllSpeciesPatchSizes()
 
 
 
-void GeneralParameters::readTemporalChanges(InputReader input)
+void GeneralParameters::readTemporalChanges(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--T (--TemporalChanges)', the std::string that is read is: " << input.print() << std::endl;
@@ -213,8 +213,10 @@ void GeneralParameters::UpdateParametersPatchNumber(int generation_index)
     }
 }
 
-void GeneralParameters::readSeed(InputReader input)
+void GeneralParameters::readSeed(InputReader& input)
 {
+    //std::cout << "in readSeed: VIndex = " << input.getVIndex() << "\n";
+    //std::cout << "in readSeed: V.size() = " << input.getSizeOfV() << "\n";
     if (input.PeakNextElementString() == "binfile" || input.PeakNextElementString() == "f")
     {
         input.skipElement();

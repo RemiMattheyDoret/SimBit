@@ -52,7 +52,7 @@ public:
     static std::string readNthLine(const std::string& filename, int N);
     //static void split_string(const std::string &s, std::vector<std::string>& elems);
     void setOptionToDefault(std::string& flag);
-    void setOptionToUserInput(std::string& flag, std::string entry);
+    void setOptionToUserInput(std::string& flag, InputReader input);
     bool isSpeciesIndexReadFromBinary(int speciesIndex);
 };
 

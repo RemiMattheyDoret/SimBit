@@ -725,7 +725,6 @@ void DispersalData::readDispMat(InputReader& input)
         // Set this->__ForwardMigration
         __FullFormForwardMigration.push_back(FFFM);
     }
-    input.workDone();
 #ifdef DEBUG
     std::cout << "readDispMat is finished" << std::endl;
 #endif

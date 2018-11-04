@@ -16,7 +16,7 @@ Download the most recent release! The folder will contain a user manual, have a 
 
 ### Compilation
 
-SimBit is written in C++ and requires the standard of C++14 to be compiled. SimBit uses several of the standard libraries as well as boost/algorithm/string.hpp.
+SimBit is written in C++ and requires the standard of C++14 to be compiled. SimBit uses several of the standard libraries as well as a few boost libraries.
 
 `cd` to the downloaded folder and type `make` to call the makeFile for compilation. The makefile is very simple but should be sufficient. The compilation can take a few minutes.
 

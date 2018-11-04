@@ -106,7 +106,7 @@ void SpeciesSpecificParameters::setRandomDistributions()
 
 void SpeciesSpecificParameters::readDispMat(InputReader& input)
 {
-    dispersalData.readDispMat(input); // input.workDone is called in dispersalData::readDispMat
+    dispersalData.readDispMat(input);
 }
 
 void SpeciesSpecificParameters::readGameteDispersal(InputReader& input)
@@ -123,7 +123,7 @@ void SpeciesSpecificParameters::readGameteDispersal(InputReader& input)
         std::cout << "In option --gameteDispersal, expected either 'yes' (or 'y','Y', '1' and a few others) or 'no' (or 'n', 'N', '0' and a few others) but instead received " << s << "\n";
         abort();
     }
-    input.workDone();
+    
 }
 
 SpeciesSpecificParameters::SpeciesSpecificParameters(std::string sN, int sI)
@@ -470,7 +470,6 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
         previous = current;
     }
 
-    input.workDone();
     //std::cout << "this->T1_nbBits = " << this->T1_nbBits << "\nthis->T1_nbChars = " << this->T1_nbChars << "\nthis->T2_nbChars = " << this->T2_nbChars << "\nthis->T1_nbBitsLastByte = " << this->T1_nbBitsLastByte << "\n";
     //std::cout << "TotalNbLoci = " << TotalNbLoci << " FromLocusToTXLocus.size() = " << FromLocusToTXLocus.size() << "\n";
 
@@ -491,7 +490,6 @@ void SpeciesSpecificParameters::readCloningRate(InputReader& input)
         std::cout << "In --cloningRate, received a cloning rate for species '"<<this->speciesName<<"' that is either lower than zero or greater than one. cloningRate receveid is " << this->cloningRate << "\n";
         abort();
     }
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readSelfingRate(InputReader& input)
@@ -502,7 +500,6 @@ void SpeciesSpecificParameters::readSelfingRate(InputReader& input)
         std::cout << "In --selfingRate, received a cloning rate that is either lower than zero or greater than one. cloningRate receveid is " << this->selfingRate << ". Note that a selfingRate of -1.0 would be acceptible as it would refer to a simple Wright-Fisher model where the selfing rate is at 1/2N (a little bit lower with migration)\n";
         abort();
     }
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readMatingSystem(InputReader& input)
@@ -553,7 +550,6 @@ void SpeciesSpecificParameters::readMatingSystem(InputReader& input)
         std::cout << "For option '--matingSystem', the mating system received is " << s << ". Only types 'fm' (or 'mf', 'FM','MF') and 'h' (or 'H') are recognized. Sorry.\n";
         abort();
     }
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readDispWeightByFitness(InputReader& input)
@@ -586,7 +582,6 @@ void SpeciesSpecificParameters::readDispWeightByFitness(InputReader& input)
             abort();
         }
     }
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readPloidy(InputReader& input)
@@ -600,7 +595,6 @@ void SpeciesSpecificParameters::readPloidy(InputReader& input)
         std::cout << "Sorry, for the moment ploidy can only be equal to 2" << std::endl;
         abort();
     }
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
@@ -850,8 +844,6 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
         );
         eventIndex++;
     }
-
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readfecundityForFitnessOfOne(InputReader& input)
@@ -860,7 +852,6 @@ void SpeciesSpecificParameters::readfecundityForFitnessOfOne(InputReader& input)
     std::cout << "For option '--fec', the std::string that is read is: " << input.print() << std::endl;
 #endif
     this->fecundityForFitnessOfOne = input.GetNextElementDouble();
-    input.workDone();
 
     if (this->fecundityForFitnessOfOne > 10000.0)
     {
@@ -939,7 +930,6 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
 */
     
     //std::cout << "recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = "<< recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations << "\n";
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
@@ -985,8 +975,6 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
             abort(); 
         }
     }
-        
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
@@ -1057,7 +1045,6 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
         abort();
     }
 
-    input.workDone();
     assert(this->patchSize.size() == GP->__PatchNumber[0]);
 
     if (TotalNbIndsAtStart == 0)
@@ -1183,9 +1170,6 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
             assert(this->T1_Initial_AlleleFreqs[patch_index].size() == this->T1_nbBits);
         }
     }
-    
-    
-    input.workDone();
 }
 
 void SpeciesSpecificParameters::readGrowthK(InputReader& input)
@@ -1347,7 +1331,7 @@ void SpeciesSpecificParameters::readHabitats(InputReader& input)
         previous = current;
     }
 
-    input.workDone();
+    
 }
 
 void SpeciesSpecificParameters::readpatchCapacity(InputReader& input)
@@ -1420,7 +1404,7 @@ void SpeciesSpecificParameters::readpatchCapacity(InputReader& input)
     
     assert(this->__patchCapacity.size() == GP->__GenerationChange.size());
     this->patchCapacity = this->__patchCapacity[0];
-    input.workDone();
+    
 
     for (int patch_index=0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index)
     {
@@ -1445,7 +1429,7 @@ void SpeciesSpecificParameters::readnbSubGenerations(InputReader& input)
         abort();
     }
     
-    input.workDone();
+    
 }
 
 
@@ -1547,7 +1531,7 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
         //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex]
     } // end of if "NA"
 
-    input.workDone();
+    
 }
 
 
@@ -1880,7 +1864,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
         assert(this->T1_FitnessEffects.size() == this->MaxHabitat + 1);
     }
         
-    input.workDone();
+    
 }
 
 
@@ -1965,7 +1949,7 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
         assert(this->T2_FitnessEffects.size() == this->MaxHabitat + 1);
     }
 
-    input.workDone();
+    
 }
 
 
@@ -2080,7 +2064,7 @@ void SpeciesSpecificParameters::readT1_MutationRate(InputReader& input)
         this->T1_Total_Mutation_rate = this->T1_MutationRate.back();
     }
 
-    input.workDone();
+    
 }
 
 void SpeciesSpecificParameters::readT2_MutationRate(InputReader& input)
@@ -2166,7 +2150,7 @@ void SpeciesSpecificParameters::readT2_MutationRate(InputReader& input)
         
     }
         
-    input.workDone();
+    
 }
 
 void SpeciesSpecificParameters::readT3_MutationRate(InputReader& input)
@@ -2253,7 +2237,7 @@ void SpeciesSpecificParameters::readT3_MutationRate(InputReader& input)
         
     }
     
-    input.workDone();
+    
 }
 
 
@@ -2332,7 +2316,7 @@ void SpeciesSpecificParameters::readT3_PhenotypicEffects(InputReader& input)
     }
  
    
-    input.workDone();
+    
 }
 
 void SpeciesSpecificParameters::readCentralT1LocusForExtraGeneticInfo(InputReader& input)
@@ -2341,7 +2325,7 @@ void SpeciesSpecificParameters::readCentralT1LocusForExtraGeneticInfo(InputReade
     std::cout << "For option '--centralT1LocusForExtraGeneticInfo', the std::string that is read is: " << input.print() << std::endl;
 #endif
     this->centralT1LocusForExtraGeneticInfo = input.GetNextElementInt();
-    input.workDone();  
+      
 }
 
 
@@ -2515,7 +2499,7 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
             
     }
 
-    input.workDone();
+    
 }
 
 
@@ -2574,10 +2558,11 @@ void SpeciesSpecificParameters::readT3_DevelopmentalNoise(InputReader& input)
         } // end of for habitat
 
         assert(this->T3_DevelopmentalNoiseStandardDeviation.size() == this->MaxHabitat+1);
-        input.workDone();
+        
     } else
     {
         this->T3_PhenoNbDimensions = 0;
+        input.consideredFullyRead();
     }
 }
 
@@ -2616,7 +2601,7 @@ void SpeciesSpecificParameters::readRecRateOnMismatch(InputReader& input)
     }
 
 
-    input.workDone();
+    
 }
 
 void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
@@ -2811,7 +2796,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
         this->TotalRecombinationRate = 0;
     }
     
-    input.workDone();
+    
 }
 
 
@@ -2897,7 +2882,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
         assert(T1_vcfOutput_sequenceList[0].locus < T1_vcfOutput_sequenceList[1].locus);
     }
 
-    input.workDone();
+    
 
 }*/
 
@@ -3287,7 +3272,7 @@ void SpeciesSpecificParameters::readReadPopFromBinary(InputReader& input)
     }
 
 
-    input.workDone();
+    
 }
 
 

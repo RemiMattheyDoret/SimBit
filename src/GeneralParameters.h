@@ -81,10 +81,10 @@ public:
     std::vector<int>                                output_FST_nbPatchesToConsider;
 
     // methods
-    void readTemporalChanges(InputReader input);
-    void readPatchNumber(InputReader input);
-    void readT1_FST_info(InputReader input);
-    void readSeed(InputReader input);
+    void readTemporalChanges(InputReader& input);
+    void readPatchNumber(InputReader& input);
+    void readT1_FST_info(InputReader& input);
+    void readSeed(InputReader& input);
     void saveSSPPatchSize_toGP();
     //void saveSSPPatchSize_toGP_lowerSecurity();
     //void UpdateParametersallSpeciesPatchSizes();

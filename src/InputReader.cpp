@@ -420,7 +420,7 @@ std::string InputReader::GetNextElementString()
 
 void InputReader::removeAlreadyRead()
 {
-    V.erase(V.begin(), V.begin() + VIndex - 1);
+    V.erase(V.begin(), V.begin() + VIndex);
     VIndex = 0;
     VIndex_previous_habitat = 0;
     VIndex_previous_generation = 0;
@@ -674,6 +674,124 @@ int InputReader::FindVIndexOfNextMatchingString(std::string toFind, bool throwEr
 
 
 int InputReader::numberOfWordsInInput()
+{
+    return V.size();
+}
+
+void InputReader::consideredFullyRead()
+{
+    VIndex = V.size();
+}
+
+void InputReader::interpretKeywords()
+{
+    //std::cout << "V.size() = " << V.size() << "\n";
+    //std::cout << "VIndex = " << VIndex << "\n";
+    for (int vi = V.size()-1; vi >= VIndex; vi--) // vi is int because it must be allowed to go to -1
+    {
+        //std::cout << "V["<<vi<<"] = "<< V[vi] << std::endl;
+        std::vector<std::string> toInsert;
+
+        std::string currentKeyword = V[vi];
+        if (currentKeyword == "seq")
+        {
+            auto from = std::stoi(V[vi+1]);
+            auto to   = std::stoi(V[vi+2]);
+            auto by   = std::stoi(V[vi+3]);
+
+            for (int i = from ; i <= to; i += by)
+            {
+                toInsert.push_back(std::to_string(i));
+            }
+                
+        } else if (currentKeyword == "rep" || currentKeyword == "repeach")
+        {
+            auto whatToRepeat_original = V[vi+1];
+            auto nbRepeats    = std::stoi(V[vi+2]);
+            std::vector<std::string> whatToRepeat;
+            assert(whatToRepeat_original.size() >= 1);
+
+            if (whatToRepeat_original[0] == '{')
+            {
+                if (whatToRepeat_original.back() != '}')
+                {
+                    std::cout << "In InputReader::interpretKeywords, received the keyword 'rep'. The first element starts with '{' (indicating a vector of things to repeat) but does not finish with '}'\n";
+                    std::cout << "The string received is "<< whatToRepeat_original <<".\n";
+                    abort();
+                }
+                if (whatToRepeat_original.size() <= 2)
+                {
+                    std::cout << "In InputReader::interpretKeywords, received the keyword 'rep'. The first element starts with '{' (indicating a vector of things to repeat) but seems to be immediately followd by '}'\n";
+                    std::cout << "The string received is "<< whatToRepeat_original <<".\n";
+                    abort();   
+                }
+
+                whatToRepeat_original.pop_back();
+                whatToRepeat_original.erase(whatToRepeat_original.begin());
+
+                boost::char_separator<char> sep(",");
+                boost::tokenizer<boost::char_separator<char>> tokens(whatToRepeat_original, sep);
+                for (const auto& t : tokens) {
+                    whatToRepeat.push_back(t);
+                }
+
+            } else
+            {
+                whatToRepeat.push_back(whatToRepeat_original);
+            }
+
+            if (currentKeyword == "rep")
+            {
+                for (size_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
+                {
+                    for (auto& elem : whatToRepeat)
+                    {
+                        toInsert.push_back(elem);
+                    }
+                }
+            } else if (currentKeyword == "repeach")
+            {
+                for (auto& elem : whatToRepeat)
+                {
+                    for (size_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
+                    {
+                        toInsert.push_back(elem);
+                    }
+                }
+            } else
+            {
+                std::cout << "internal error with keywords in InputReader::interpretKeywords\n";
+                abort();
+            }
+                
+        }
+
+        // Actually insert
+        if (toInsert.size() != 0)
+        {
+            /*
+            std::cout << "will insert\n";
+            for (auto& elem : toInsert)
+            {
+                std::cout << elem << "\n";
+            }
+            */
+
+            // replace the string
+            std::vector<int> toRm = {vi, vi+1, vi+2};
+            removeIndicesFromVector(V, toRm);
+            V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+        }
+    }
+}
+
+
+int InputReader::getVIndex()
+{
+    return VIndex;
+}
+
+size_t InputReader::getSizeOfV()
 {
     return V.size();
 }
