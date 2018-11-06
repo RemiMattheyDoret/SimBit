@@ -695,11 +695,22 @@ void InputReader::interpretKeywords()
         std::string currentKeyword = V[vi];
         if (currentKeyword == "seq")
         {
-            auto from = std::stoi(V[vi+1]);
-            auto to   = std::stoi(V[vi+2]);
-            auto by   = std::stoi(V[vi+3]);
+            double from = std::stod(V[vi+1]);
+            double to   = std::stod(V[vi+2]);
+            double by   = std::stod(V[vi+3]);
 
-            for (int i = from ; i <= to; i += by)
+            for (auto i = from ; i <= to; i += by)
+            {
+                toInsert.push_back(std::to_string(i));
+            }
+                
+        } else if (currentKeyword == "seqInt")
+        {
+            int from = std::stoi(V[vi+1]);
+            int to   = std::stoi(V[vi+2]);
+            int by   = std::stoi(V[vi+3]);
+
+            for (auto i = from ; i <= to; i += by)
             {
                 toInsert.push_back(std::to_string(i));
             }
@@ -778,8 +789,20 @@ void InputReader::interpretKeywords()
             */
 
             // replace the string
-            std::vector<int> toRm = {vi, vi+1, vi+2};
-            removeIndicesFromVector(V, toRm);
+            if (currentKeyword == "rep" || currentKeyword == "repeach")
+            {
+                std::vector<int> toRemove = {vi, vi+1, vi+2};
+                removeIndicesFromVector(V, toRemove);
+            } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
+            {
+                std::vector<int> toRemove = {vi, vi+1, vi+2, vi+3};
+                removeIndicesFromVector(V, toRemove);
+            } else
+            {
+                std::cout << "Internal error in 'InputReader::interpretKeywords'. Unkown keyword\n";
+                abort();
+            }
+                
             V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
         }
     }
