@@ -539,10 +539,10 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
     double W = 1.0;
     for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
     {
-        double diffToOptimal = std::abs(Individual::T3_IndPhenotype[dim] - SSP->T3_fitnessLandscapeOptimum[Habitat][dim]);
+        double diffToOptimal = Individual::T3_IndPhenotype[dim] - SSP->T3_fitnessLandscapeOptimum[Habitat][dim];
         if (SSP->T3_fitnessLandscapeType == 'L')
         {
-            W *= 1 - (diffToOptimal * SSP->T3_fitnessLandscapeLinearGradient[Habitat][dim]);
+            W *= 1 - (std::abs(diffToOptimal) * SSP->T3_fitnessLandscapeLinearGradient[Habitat][dim]);
             if (W < 0.0) 
             {
                 W = 0.0;
@@ -550,7 +550,7 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
             }
         } else if (SSP->T3_fitnessLandscapeType == 'G')
         {
-            W *= exp( - diffToOptimal / SSP->T3_fitnessLandscapeGaussStrength[Habitat][dim]);
+            W *= exp( - pow(diffToOptimal,2) / SSP->T3_fitnessLandscapeGaussStrength[Habitat][dim]);
         } else
         {
             std::cout << "Internal error in Individual::CalculateT3Fitness. Unkown SSP->T3_fitnessLandscapeType.  SSP->T3_fitnessLandscapeType = " << SSP->T3_fitnessLandscapeType << "\n";

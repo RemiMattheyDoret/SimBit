@@ -288,3 +288,9 @@ SimBit_3.195
 
 SimBit_3.196
 	More flexible way to ask for outputs on subsetted data
+
+SimBit_3.200
+	Fix seq keyword
+
+SimBit_3.201
+	Change definition of gaussian fitness function
