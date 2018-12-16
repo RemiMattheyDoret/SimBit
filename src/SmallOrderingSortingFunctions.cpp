@@ -203,7 +203,7 @@ void remove_a_from_b(std::vector<T>& a, std::vector<T>& b)
   auto ia = std::begin(a);
   auto iter = std::remove_if (
        std::begin(b), std::end(b),
-       [&ia,&a](auto& bo) -> bool {
+       [&ia,&a](T& bo) -> bool {
                        while  (ia != std::end(a) && *ia < bo) ++ia;
                        return (ia != std::end(a) && *ia == bo);
                      });

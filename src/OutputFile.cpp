@@ -61,7 +61,9 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "patchSize",
     "extinction",
     "genealogy",
-    "fitnessSubsetLoci"
+    "fitnessSubsetLoci",
+    "T4_LargeOutputFile",
+    "T4_vcfFile"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -85,6 +87,8 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not genealogy
     // not SaveBinaryFile
     // not Logfile
+    // not T4_LargeOutputFile,
+    // not T4_vcfFile
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -326,7 +330,7 @@ bool OutputFile::containsRightNumberOfLines(std::ifstream& pFile)
     
     if (nbExpectedLines < number_of_lines)
     {
-        if (this->OutputFileType != T1_vcfFile)
+        if (this->OutputFileType != T1_vcfFile && this->OutputFileType != T4_vcfFile)
         {
             std::cout << "\tThe file of type " << getFileTypeName(OutputFileType) << " (index "<< OutputFileType <<")" << " seems to contain more lines than the simulation is expected to produce. Simulation should produce " << nbExpectedLines << " lines (incl. header) and the current file contains " << number_of_lines << " lines." << "\n";
         }
@@ -425,6 +429,15 @@ bool OutputFile::isTime()
         std::cout << "Internal error: Tried to get times for a file typeDoesTimeNeedsToBeSet who does not need time to be set\n";
         abort();
     }
+    /*
+    std::cout << "Trying to find time " << GP->CurrentGeneration << "\n";
+    std::cout << "times was set at ";
+    for (auto& t : times)
+        std::cout << t << " ";
+    std::cout << "\n";
+    if (std::find(times.begin(), times.end(),  GP->CurrentGeneration) != times.end())
+        std::cout << "time has been found!";
+    */
     return std::find(times.begin(), times.end(),  GP->CurrentGeneration) != times.end();
 }
 
@@ -579,6 +592,20 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+    } else if (t == T4_LargeOutputFile)
+    {
+        this->extension = std::string(".T4LO");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+    } else if (t == T4_vcfFile)
+    {
+        this->extension = std::string(".T4vcf");
+        isGenerationSpecific = true;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else
     {
@@ -756,6 +783,10 @@ void OutputFile::setTimes(std::vector<int> x)
 
     // set times
     this->times = x;
+    std::cout << "times set at ";
+    for (auto& t : times)
+        std::cout << t << " ";
+    std::cout << "\n";
 }
 
 bool OutputFile::getDoesTimeNeedsToBeSet()

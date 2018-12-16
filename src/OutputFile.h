@@ -47,7 +47,9 @@ typedef enum {
     patchSize = 17,
     extinction = 18,
     genealogy = 19,
-    fitnessSubsetLoci = 20
+    fitnessSubsetLoci = 20,
+    T4_LargeOutputFile = 21,
+    T4_vcfFile = 22
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific

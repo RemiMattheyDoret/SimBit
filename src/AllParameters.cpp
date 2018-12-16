@@ -583,6 +583,14 @@ std::cout << "Enters in 'SetParameters'\n";
             SSPi.DispWeightByFitness = true;
         }
 
+        // Initialize tree for T4
+        if (SSPi.T4_nbBits)
+        {
+            SSP = &SSPi;
+            SSPi.T4Tree.initialize();
+            SSP=nullptr;
+        }
+
     }
         
     #ifdef DEBUG
@@ -701,7 +709,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         std::string sN = "sp";
         SpeciesSpecificParameters ssp(sN, 0);
-        SSPs.push_back(ssp);
+        SSPs.push_back(std::move(ssp));
         GP->speciesNames.push_back(sN);
         GP->nbSpecies++;
         assert(GP->nbSpecies == 1);
@@ -846,6 +854,14 @@ void AllParameters::setOptionToDefault(std::string& flag)
         {
             SSPi.simTracker.genealogy.setcoalesceGenealogyFrequency(0);
         }   
+    }
+    else if (flag == "T4_LargeOutput_file")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T4_vcf_file")
+    {
+        // Nothing to do
     }
     else if (flag == "LogfileType")
     {
@@ -1059,6 +1075,21 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("unif 0"), "In Default value for --T3_DN,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_DevelopmentalNoise);
+    }
+    else if (flag == "T4_mu")
+    {
+        for (auto& SSPi : this->SSPs)
+        {
+            if (SSPi.T4_nbBits)
+            {
+                std::cout << "You asked for T4 loci for species "<<SSPi.speciesName<<"but option '--T4_MutationRate' is missing!\n";
+                abort();
+            }
+        }
+    } else if (flag == "T4_maxAverageNbNodesPerHaplotype")
+    {
+        InputReader input(std::string("default"), "In Default value for --T4_maxAverageNbNodesPerHaplotype,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype);
     }
     else if (flag == "eco")
     { 
@@ -1298,6 +1329,20 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             SSPi.simTracker.genealogy.setcoalesceGenealogyFrequency(coalesceGenealogyFrequency);
         }   
     } 
+    else if (flag == "T4_LargeOutput_file")
+    {
+        OutputFile file(input.GetNextElementString(), T4_LargeOutputFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    }
+    else if (flag == "T4_vcf_file" || flag == "T4_VCF_file")
+    {
+        OutputFile file(input.GetNextElementString(), T4_vcfFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    } 
     else if (flag == "LogfileType")
     {
         
@@ -1451,7 +1496,18 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_FitnessLandscape);
         
-    }  else if (flag == "Habitats" || flag == "H")
+    } else if (flag == "T3_DN" || flag == "T3_DevelopmentalNoise")
+    {    
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_DevelopmentalNoise);
+        
+    } else if (flag == "T4_mu" || flag == "T4_MutationRate")
+    {    
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_MutationRate);
+        
+    } else if (flag == "T4_maxAverageNbNodesPerHaplotype")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype);
+    } else if (flag == "Habitats" || flag == "H")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readHabitats);
 

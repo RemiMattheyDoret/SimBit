@@ -425,6 +425,11 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeType,"T3_fitnessLandscapeType");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_PhenoNbDimensions,"T3_PhenoNbDimensions");
 
+                // Genetics T4
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_nbBits,"T4_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation,"T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_MutationRate,"T3_MutationRate");
+
                 // Ecology
                 this->ExtendStringForAdvancedLogFile(s, SSP->__Habitats,"__Habitats");
                 this->ExtendStringForAdvancedLogFile(s, SSP->MaxHabitat,"MaxHabitat");
@@ -473,6 +478,7 @@ void OutputWriter::insertOutputFile(OutputFile&& file)
         //std::cout << "there is a file of this type already exists.\n";
         (*iter).second.push_back(std::move(file));
     }
+    (void) TypesToPrintOn.at(file.getFileType());
 }
 
 bool OutputWriter::isTime()
@@ -844,7 +850,7 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
                         addToE_HudsonKaplan = 0.0;
                     } else
                     {
-                        addToE_HudsonKaplan = (currentMutationRate * t) / (pow(t + currentDistanceInRate, 2));
+                        addToE_HudsonKaplan = (currentMutationRate/2 * t) / (2*(pow(t + currentDistanceInRate, 2)));
                     }
 
                     // E_NordborgEtAl
@@ -1914,6 +1920,7 @@ void OutputWriter::WriteOutputs_T1_LargeOutput_header(OutputFile& file)
     file.close();
 }
 
+
 void OutputWriter::WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file)
 {
     std::string s;
@@ -1945,6 +1952,67 @@ void OutputWriter::WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file)
     file.write(s);
     file.close();
 }
+
+
+void OutputWriter::WriteOutputs_T4_LargeOutput_header(OutputFile& file)
+{
+    file.open();
+    
+    std::string s("Generation");
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
+            {
+                for (int T4_locus = 0 ; T4_locus < SSP->T4_nbBits ; T4_locus++)
+                {
+                    s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + std::string("_H") + std::to_string(haplo_index) + std::string("_L") + std::to_string(T4_locus);
+                }
+            }
+        }
+    }
+    s += std::string("\n");
+    file.write(s);
+    file.close();
+}
+
+void OutputWriter::WriteOutputs_T4_LargeOutput(Pop& pop, OutputFile& file)
+{
+    std::string s;
+    std::string s_tab = "\t";
+    s.reserve(SSP->TotalpatchCapacity * SSP->T4_nbBits * 3);
+
+    auto data = SSP->T4Tree.getCurrentStates();
+    
+    s += std::to_string( GP->CurrentGeneration);
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
+            {
+                for (int T4_locus = 0 ; T4_locus < SSP->T4_nbBits ; T4_locus++)
+                {
+                    if (shouldNABePrinted(patch_index,ind_index))
+                    {
+                        s += s_tab + "NA";
+                    } else
+                    {
+                        s += s_tab + std::to_string(data[patch_index][ind_index][haplo_index][T4_locus]);
+                    }
+                }
+            }
+        }
+    }
+    s +=std::string("\n");
+    file.open();
+    file.write(s);
+    file.close();
+}
+
+
+
 
 void OutputWriter::WriteOutputs_T1_HybridIndex_header(OutputFile& file)
 {   
@@ -2143,6 +2211,123 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
                 s_vert
                 +
                 std::to_string(pop.getPatch(patch_index).getInd(ind_index).getHaplo(1).getT1_Allele(byte_index,bit_index));
+            }
+        }
+        s += "\n";
+        file.write(s);
+    }
+    
+    file.close();
+}
+
+
+void OutputWriter::WriteOutputs_T4_vcf(Pop& pop, OutputFile& file)
+{
+    //std::cout << "In OutputWriter::WriteOutputs_T1_vcf at generation " <<GP->CurrentGeneration<<"\n";
+
+    // Get current states
+    auto data = SSP->T4Tree.getCurrentStates();
+    
+    // Find polymorphic loci
+    std::vector<bool> oneAlleles(SSP->T4_nbBits);
+    for (size_t locus = 0 ; locus < SSP->T4_nbBits ; ++locus)
+    {
+        oneAlleles[locus] = data[GP->PatchNumber-1][0][0][locus];
+    }
+    std::vector<bool> isPolymorphic(SSP->T4_nbBits, false);
+
+    
+    assert(data.size() == GP->PatchNumber);
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        assert(data[patch_index].size() == SSP->patchSize[patch_index]);
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+        {
+            assert(data[patch_index][ind_index].size() == 2);
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+            {
+                assert(data[patch_index][ind_index][haplo_index].size() == SSP->T4_nbBits);
+                for (size_t locus = 0 ; locus < SSP->T4_nbBits ; ++locus)
+                {
+                    if (data[GP->PatchNumber-1][ind_index][haplo_index][locus] != oneAlleles[locus])
+                    {
+                        isPolymorphic[locus] = true;
+                    }
+                }   
+            }
+        }
+    }
+    std::vector<size_t> polymorphicLoci;
+    for (size_t locus = 0 ; locus < SSP->T4_nbBits ; ++locus)
+    {
+        if (isPolymorphic[locus])
+            polymorphicLoci.push_back(locus);
+    }
+
+
+    std::string s_tab = "\t";
+    std::string s_P   = "P";
+    std::string s_dotI = ".I";
+
+    file.open();
+
+    // Write header
+    {
+        std::string s;
+
+        s += std::string("##fileformat=VCFv4.2\n##Generation=") + std::to_string( GP->CurrentGeneration) + std::string("\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT");
+        s.reserve(s.size() + SSP->TotalpatchCapacity * 4);
+        
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+            {
+                s += s_tab + s_P + std::to_string(patch_index) + s_dotI + std::to_string(ind_index);
+            }
+        }
+        s += std::string("\n");
+        //std::cout << "writing: " << s << "\n";
+        file.write(s);
+
+    }
+      
+    if (polymorphicLoci.size() > SSP->T4_nbBits)
+    {
+        std::cout << "Internal bug: OutputWriter polymorphicLoci.size() = "<<polymorphicLoci.size()<<"  SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
+        for (int i = 0 ; i < polymorphicLoci.size(); i++)
+        {
+            std::cout << i << ": " << polymorphicLoci[i] << " ";
+        }
+        std::cout << "\n";
+        assert(polymorphicLoci.size() <= SSP->T4_nbBits);
+        abort();
+    }
+ 
+    // Write Data
+    std::string s_vert = "|";
+    for (auto& locus : polymorphicLoci) // SSP->simTracker.PolymorphicT1Sites contain only the sites in  file.getSubsetToConsider(SSP->speciesIndex)
+    {
+        std::string s;
+        s.reserve(SSP->TotalpatchCapacity * 6);
+        
+        
+        std::vector<int>::iterator it = std::lower_bound(SSP->ChromosomeBoundaries.begin(), SSP->ChromosomeBoundaries.end(), locus);
+        
+        int WhichIndependentSegment = it - SSP->ChromosomeBoundaries.begin();
+        
+        s += std::to_string(WhichIndependentSegment + 1) + std::string("\t") + std::to_string(locus + 1) + std::string("\t.\tA\tT\t.\t.\t.\tGT"); // arbitrarily decide that 0 is A and 1 is T. I chose 'A' for ancestral as 0 is often the non-mutated allele although depends upon starting condtions asked by the user.
+        
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+            {
+                s += s_tab
+                +
+                std::to_string(data[patch_index][ind_index][0][locus])
+                +
+                s_vert
+                +
+                std::to_string(data[patch_index][ind_index][1][locus]);
             }
         }
         s += "\n";
@@ -2401,6 +2586,10 @@ std::cout << "Enters in 'OutputWriter::imitateSequencingError'\n";
 
 void OutputWriter::WriteOutputs(Pop& realPop)
 {
+    /*
+    std::cout << "GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
+    std::cout << "this->isTime() = " << this->isTime() << "\n";
+    */
     if (this->isTime())
     { 
         // output the pop
@@ -2482,6 +2671,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ### extinction ###
      ##################
      */
+    //std::cout << "line 2674\n";
     
     if (SSP->speciesIndex == 0 && this->isFile(extinction) && GP->CurrentGeneration == GP->nbGenerations)
     {
@@ -2494,6 +2684,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ### fitness ###
      ###############
      */
+    //std::cout << "line 2687\n";
     if (this->isFile(fitness))
     {
         OutputFile& file = this->get_OutputFiles(fitness)[0];
@@ -2515,6 +2706,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ### fitnessSubsetLoci ###
      #########################
      */
+    //std::cout << "line 2709\n";
     if (this->isFile(fitnessSubsetLoci))
     {
         OutputFile& file = this->get_OutputFiles(fitnessSubsetLoci)[0];
@@ -2536,6 +2728,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ### fitnessStats ###
      ####################
      */
+    //std::cout << "line 2731\n";
     if (this->isFile(fitnessStats))
     {
         if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T3_isSelection || SSP->T1_isEpistasis)
@@ -2560,6 +2753,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ### T1_Allele Frequency ###
      ###########################
      */
+    //std::cout << "line 2756\n";
     if (this->isFile(T1_AlleleFreqFile))
     {
         if (SSP->T1_nbBits)
@@ -2588,6 +2782,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1_MeanLD  ####
      ####################
      */
+    //std::cout << "line 2786\n";
     if (this->isFile(MeanLDFile))
     {
         if (SSP->T1_nbBits)
@@ -2616,6 +2811,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1_LongestRun  ####
      ########################
      */
+    //std::cout << "line 2814\n";
     if (this->isFile(LongestRunFile))
     {
         if (SSP->T1_nbBits)
@@ -2643,6 +2839,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T2_LargeOutput  ####
      #########################
      */
+    //std::cout << "line 2842\n";
     if (this->isFile(T2_LargeOutputFile))
     {
         if (SSP->T2_nbChars)
@@ -2667,7 +2864,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1_LargeOutput  #####
      ##########################
      */
-
+    //std::cout << "line 2767\n";
     if (this->isFile(T1_LargeOutputFile))
     {
         if (SSP->T1_nbBits)
@@ -2693,9 +2890,39 @@ std::cout << "Enters in 'WriteOutputs'\n";
 
     /*
      ##########################
+     #### T4_LargeOutput  #####
+     ##########################
+     */
+    //std::cout << "line 2896\n";
+    if (this->isFile(T4_LargeOutputFile))
+    {
+        if (SSP->T4_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T4_LargeOutputFile);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T4_LargeOutput_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T4_LargeOutputFile\n";
+                    #endif
+                    this->WriteOutputs_T4_LargeOutput(pop, file);
+                }
+            }
+        }
+    }
+
+
+    /*
+     ##########################
      #### T1 Hybrid Index  ####
      ##########################
      */
+    //std::cout << "line 2925\n";
     if (this->isFile(HybridIndexFile))
     {
         if (SSP->T1_nbBits)
@@ -2723,6 +2950,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1 ExpectiMinRec ####
      ##########################
      */
+    //std::cout << "line 2952\n";
     if (this->isFile(ExpectiMinRecFile))
     {
         if (SSP->T1_nbBits)
@@ -2750,7 +2978,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1 vcf ####
      ################
      */
-
+    //std::cout << "line 2981\n";
     if (this->isFile(T1_vcfFile))
     {
         if (SSP->T1_nbBits)
@@ -2771,10 +2999,37 @@ std::cout << "Enters in 'WriteOutputs'\n";
 
 
     /*
+     ################
+     #### T4 vcf ####
+     ################
+     */
+    //std::cout << "line 3006\n";
+    if (this->isFile(T4_vcfFile))
+    {
+        if (SSP->T4_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T4_vcfFile);
+            for (auto& file : files)
+            {
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T4_vcfFile \n";
+                    #endif
+                    this->WriteOutputs_T4_vcf(pop, file);
+                }
+            }
+        }
+    }
+
+
+
+    /*
      ##########################
      #### T3 Large Outputs ####
      ##########################
      */
+    //std::cout << "line 3032\n";
     if (this->isFile(T3_LargeOutputFile))
     {
         if (SSP->T3_nbChars)
@@ -2802,7 +3057,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T3 VarMean ####
      ####################
      */
-    
+    //std::cout << "line 3036\n";
     if (this->isFile(T3_MeanVarFile))
     {
         if (SSP->T3_nbChars)
@@ -2830,7 +3085,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      ##### patchSize ####
      ####################
      */
-
+    //std::cout << "line 3088\n";
     if (this->isFile(patchSize))
     {
         auto& files = this->get_OutputFiles(patchSize);
@@ -2856,6 +3111,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1 FST ####
      ################
      */
+    //std::cout << "line 3114\n";
     if (this->isFile(T1_FST))
     {
         if (SSP->T1_nbBits)
@@ -2883,7 +3139,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### extraGeneticInfo ####
      ##########################
      */
-    
+    //std::cout << "line 3142\n";
     if (SSP->speciesIndex == 0 && this->isFile(extraGeneticInfo))
     {
         if (SSP->T1_nbBits || SSP->T2_nbChars)
@@ -2903,6 +3159,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
             }
         }
     }
+    //std::cout << "line 3162\n";
 }
 
 

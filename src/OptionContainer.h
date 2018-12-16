@@ -18,7 +18,7 @@ public:
     
         
         // Genetics and Selection Both T1, T2 and T3 (first part)
-        {{"L","Loci"},                           		{"S"}, false},
+        {{"L","Loci"},                           		{"S", "nbSubGens"}, false},
         {{"ploidy"},                      				{"S"}, false},
         {{"fec","fecundityForFitnessOfOne"},            {"S"}, false},
 
@@ -57,7 +57,12 @@ public:
         {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
         {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},
 
-        // Genetics and Selection Both T1, T2 and T3 (second part)
+        // Genetics and Selection T3
+        {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
+        {{"T4_maxAverageNbNodesPerHaplotype"},          {"S", "L"}, false},
+        
+
+        // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
         {{"recRateOnMismatch"},                         {"S", "L"}, false},
         {{"FitnessMapInfo"},           {"S", "T", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
@@ -87,6 +92,8 @@ public:
         {{"extinction_file"},                       {"GP", "S", "startAtGeneration", "L"}, false},
         {{"genealogy_file"},                        {"GP", "S", "startAtGeneration", "L"}, false},
         {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration", "L"}, false},
+        {{"T4_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
 
         // Species interaction
         {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},

@@ -68,6 +68,7 @@ public:
     std::vector<int>                                FromT1LocusToLocus;
     std::vector<int>                                FromT2LocusToLocus;
     std::vector<int>                                FromT3LocusToLocus;
+    std::vector<int>                                FromT4LocusToLocus;
 
     // Fitness Map
     std::vector<int>                                FromLocusToFitnessMapIndex;
@@ -105,7 +106,7 @@ public:
     std::vector<std::vector<double>>                T1_FitnessEffects;
     bool                                            T1_isSelection;
     bool                                            T1_isEpistasis;
-    std::vector<double>                             T1_MutationRate;
+    std::vector<double>                             T1_MutationRate;  // cumulative
     double                                          T1_Total_Mutation_rate;
     
     std::vector<std::vector<std::vector<T1_locusDescription>>>   T1_Epistasis_LociIndices;
@@ -117,7 +118,7 @@ public:
     int                                             T2_nbChars;
     std::vector<std::vector<double>>                T2_FitnessEffects;
     bool                                            T2_isSelection;
-    std::vector<double>                             T2_MutationRate;
+    std::vector<double>                             T2_MutationRate;  // cumulative
     double                                          T2_Total_Mutation_rate;    
 
     // Genetics and selection T3
@@ -130,10 +131,16 @@ public:
     std::vector<std::vector<double>>                T3_fitnessLandscapeLinearGradient;
     std::vector<std::vector<double>>                T3_fitnessLandscapeGaussStrength;
     bool                                            T3_isSelection;
-    std::vector<double>                             T3_MutationRate;
+    std::vector<double>                             T3_MutationRate;  // cumulative
     double                                          T3_Total_Mutation_rate;
     int                                             T3_PhenoNbDimensions;
     std::vector<std::vector<double>>                T3_DevelopmentalNoiseStandardDeviation;
+
+    // Genetics T4
+    int                                             T4_nbBits;
+    std::vector<double>                             T4_MutationRate; // cumulative
+    Tree                                            T4Tree;
+    double                                          T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation;
 
     // Ecology
     std::vector<int>                                Habitats;
@@ -182,6 +189,8 @@ public:
     void readT2_FitnessEffects(InputReader& input);
     void readT3_FitnessLandscape(InputReader& input);
     void readT3_DevelopmentalNoise(InputReader& input);
+    void readT4_MutationRate(InputReader& input);
+    void readT4_maxAverageNbNodesPerHaplotype(InputReader& input);
     void readResetGenetics(InputReader& input);
     void readHabitats(InputReader& input);
     void readGrowthK(InputReader& input);
@@ -213,4 +222,5 @@ public:
     std::vector<int> UpdateParameters(int generation_index);
 
     SpeciesSpecificParameters(std::string sN, int sI);
+    ~SpeciesSpecificParameters();
 };

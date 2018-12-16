@@ -32,6 +32,6 @@ Note for Remi of things to do:
 
  */
 
-FromLocusToTXLocusElement::FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int TT)
-    : T1(inT1), T2(inT2), T3(inT3), TType(TT)
+FromLocusToTXLocusElement::FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int TT)
+    : T1(inT1), T2(inT2), T3(inT3), T4(inT4), TType(TT)
     {}

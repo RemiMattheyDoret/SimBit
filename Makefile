@@ -23,5 +23,8 @@ debug:
 debugSani:
 	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall -DDEBUG -fsanitize=address
 
+sani:
+	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall -fsanitize=address
+
 clean:
 	rm bin/*

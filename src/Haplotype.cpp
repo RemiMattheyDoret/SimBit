@@ -573,7 +573,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
 #endif      
     (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
     assert(SSP!=nullptr);
-    assert(SSP->T1_nbChars + SSP->T2_nbChars + SSP->T3_nbChars > 0);
+    assert(SSP->T1_nbChars + SSP->T2_nbChars + SSP->T3_nbChars + SSP->T4_nbBits > 0);
 
     // Initiate W_T1 and W_T2
     if (SSP->T1_isSelection)

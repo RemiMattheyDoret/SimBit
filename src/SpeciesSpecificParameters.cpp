@@ -128,7 +128,14 @@ void SpeciesSpecificParameters::readGameteDispersal(InputReader& input)
 
 SpeciesSpecificParameters::SpeciesSpecificParameters(std::string sN, int sI)
 : speciesName(sN), speciesIndex(sI)
-{}
+{
+    //std::cout << "Constructor of SpeciesSpecificParameters\n";
+}
+
+SpeciesSpecificParameters::~SpeciesSpecificParameters()
+{
+    //std::cout << "Destructor of SpeciesSpecificParameters\n";
+}
 
 /*
 template <typename T>
@@ -175,6 +182,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
         int T1_locus = this->FromLocusToTXLocus[interlocus].T1;
         int T2_locus = this->FromLocusToTXLocus[interlocus].T2;
         int T3_locus = this->FromLocusToTXLocus[interlocus].T3;
+        int T4_locus = this->FromLocusToTXLocus[interlocus].T4;
         int locusType;
 
 
@@ -183,7 +191,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             // Long security
             if (interlocus == 0)
             {
-                assert(T1_locus + T2_locus + T3_locus == 1);
+                assert(T1_locus + T2_locus + T3_locus + T4_locus == 1);
                 if (T1_locus == 1)
                 {
                     locusType = 1;
@@ -193,14 +201,17 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 } else if (T3_locus == 1)
                 {
                     locusType = 3;
+                } else if (T4_locus == 1)
+                {
+                    locusType = 4;
                 } else
                 {
-                    std::cout << "Internal error in void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex().\n";
+                    std::cout << "Internal error in void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex(): unknown locusType received.\n";
                     abort();
                 }
             } else
             {
-                assert(T1_locus + T2_locus + T3_locus - this->FromLocusToTXLocus[interlocus - 1].T1 - this->FromLocusToTXLocus[interlocus - 1].T2 - this->FromLocusToTXLocus[interlocus - 1].T3 == 1);
+                assert(T1_locus + T2_locus + T3_locus + T4_locus - this->FromLocusToTXLocus[interlocus - 1].T1 - this->FromLocusToTXLocus[interlocus - 1].T2 - this->FromLocusToTXLocus[interlocus - 1].T3 - this->FromLocusToTXLocus[interlocus - 1].T4 == 1);
                 if (T1_locus - this->FromLocusToTXLocus[interlocus - 1].T1 == 1)
                 {
                     locusType = 1;
@@ -210,6 +221,9 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 } else if (T3_locus - this->FromLocusToTXLocus[interlocus - 1].T3 == 1)
                 {
                     locusType = 3;
+                } else if (T4_locus - this->FromLocusToTXLocus[interlocus - 1].T4 == 1)
+                {
+                    locusType = 4;
                 } else
                 {
                     std::cout << "Internal error in 'void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()'.\n";
@@ -288,7 +302,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             {
                 FitnessMapIndex++;
                 sumOfProb = 0.0;
-                FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, locusType);
+                FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, locusType);
                 FromLocusToFitnessMapBoundaries.push_back(E);
                 nbLociInPiece = 0;
             }
@@ -300,7 +314,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     NbElementsInFitnessMap = FitnessMapIndex + 1;
 
     // Add last element to boundaries
-    FromLocusToTXLocusElement E(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
+    FromLocusToTXLocusElement E(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
     FromLocusToFitnessMapBoundaries.push_back(E);
     assert(FromLocusToFitnessMapBoundaries.size() == NbElementsInFitnessMap);
 
@@ -309,8 +323,8 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     for (int i = 0 ; i < FromLocusToFitnessMapBoundaries.size() ; i++)
     {
         auto& b = FromLocusToFitnessMapBoundaries[i];
-        assert(b.T1 + b.T2 + b.T3 <= this->TotalNbLoci);
-        int b_interlocus = b.T1 + b.T2 + b.T3;
+        assert(b.T1 + b.T2 + b.T3 + b.T4 <= this->TotalNbLoci);
+        int b_interlocus = b.T1 + b.T2 + b.T3 + b.T4;
 
         for (int j = previous_b_interlocus  ; j < b_interlocus ; j++)
         {
@@ -368,13 +382,14 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     this->T1_nbChars  = 0;
     this->T2_nbChars  = 0;
     this->T3_nbChars  = 0;
+    this->T4_nbBits   = 0;
     this->T1_nbBits   = 0;
     this->TotalNbLoci = 0;
 
     while( input.IsThereMoreToRead() )
     {
         std::string Type = input.GetNextElementString();
-        if (Type.compare("1")==0)
+        if (Type == "1" || Type == "T1" || Type == "t1")
         {
             int nbBits = input.GetNextElementInt();
             
@@ -386,11 +401,11 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT1LocusToLocus.push_back(this->TotalNbLoci);
                     this->T1_nbBits++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, 1);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, 1);
                     this->FromLocusToTXLocus.push_back(CME);
                 }
             }
-        } else if (Type.compare("2")==0)
+        } else if (Type == "2" || Type == "T2" || Type == "t2")
         {
             int nbBytes = input.GetNextElementInt();
             if (nbBytes >= 1)
@@ -400,11 +415,11 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT2LocusToLocus.push_back(this->TotalNbLoci);
                     this->T2_nbChars++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, 2);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, 2);
                     this->FromLocusToTXLocus.push_back(CME);                
                 }
             }
-        } else if (Type.compare("3")==0)
+        } else if (Type == "3" || Type == "T3" || Type == "t3")
         {
             int nbBytes = input.GetNextElementInt();
             
@@ -415,8 +430,24 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT3LocusToLocus.push_back(this->TotalNbLoci);
                     this->T3_nbChars++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, 3);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, 3);
                     this->FromLocusToTXLocus.push_back(CME);            
+                }
+            }
+        } else if (Type == "4" || Type == "T4" || Type == "t4")
+        {
+            int nbBits = input.GetNextElementInt();
+            
+            if (nbBits >= 1)
+            {
+                for (int i = 0 ; i < nbBits ; i++)
+                {
+
+                    this->FromT4LocusToLocus.push_back(this->TotalNbLoci);
+                    this->T4_nbBits++;
+                    this->TotalNbLoci++;
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, 4);
+                    this->FromLocusToTXLocus.push_back(CME);
                 }
             }
         } else
@@ -429,7 +460,9 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     assert(this->T1_nbBits == this->FromT1LocusToLocus.size());
     assert(this->T2_nbChars == this->FromT2LocusToLocus.size());
     assert(this->T3_nbChars == this->FromT3LocusToLocus.size());
+    assert(this->T4_nbBits == this->FromT4LocusToLocus.size());
     assert(this->TotalNbLoci == this->FromLocusToTXLocus.size());
+    assert(this->TotalNbLoci == T1_nbBits + T2_nbChars + T3_nbChars + T4_nbBits );
 
     this->T1_nbChars  = ceil(this->T1_nbBits/ (double) EIGHT);
 
@@ -441,11 +474,20 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     this->T1_nbBitsLastByte = this->T1_nbBits % EIGHT;
     if (this->T1_nbBitsLastByte == 0) {this->T1_nbBitsLastByte = EIGHT;}
     assert(this->T1_nbBitsLastByte >= 0 && this->T1_nbBitsLastByte <= EIGHT);
-    assert(this->TotalNbLoci == this->T1_nbBits + this->T2_nbChars + this->T3_nbChars);
+    assert(this->TotalNbLoci == this->T1_nbBits + this->T2_nbChars + this->T3_nbChars + this->T4_nbBits);
     if (this->TotalNbLoci <= 0)
     {
         std::cout << "In option '--Loci' you seem to have indicated zero loci. The platform requires to have at least one locus (of either Mode) to run.\n";
         abort();
+    }
+
+    if (this->T4_nbBits > 0)
+    {
+        if (this->nbSubGenerationsPerGeneration != 1)
+        {
+            std::cout << "You have asked for loci of type T4 via option --Loci (--L). You have also asked for having a number of subGeneration per generation different than 1 via option --nbSubGenerations (--nbSubGens). Sorry, the coalescent tree used to track T4 loci assumes on subgeneration per generation. It would be easy for Remi to get rid of this assumption. Please let me know!\n";
+            abort();
+        }
     }
     
     // Assert FromLocusToTXLocus is good
@@ -455,7 +497,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     int current;
     for (int i = 0 ; i < this->FromLocusToTXLocus.size() ; i++)
     {
-        current = this->FromLocusToTXLocus[i].T1 + this->FromLocusToTXLocus[i].T2 + this->FromLocusToTXLocus[i].T3;
+        current = this->FromLocusToTXLocus[i].T1 + this->FromLocusToTXLocus[i].T2 + this->FromLocusToTXLocus[i].T3 + this->FromLocusToTXLocus[i].T4;
         //std::cout << "i = " << i << " current = " << current << " previous = " << previous << std::endl;
         if (previous + 1 != current)
         {
@@ -2565,6 +2607,48 @@ void SpeciesSpecificParameters::readT3_DevelopmentalNoise(InputReader& input)
         input.consideredFullyRead();
     }
 }
+
+
+void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option 'T4_MutationRate', the std::string that is read is: " << input.print() << std::endl;
+#endif
+    std::string mode = input.GetNextElementString();
+    if (mode == "unif")
+    {
+        double constantRate = input.GetNextElementDouble();
+        T4_MutationRate.push_back(constantRate); // yes, just one value. It will be taken care of. Not very clean though as a design
+    } else if (mode == "A")
+    {
+        if (T4_nbBits > 0)
+            T4_MutationRate.push_back(input.GetNextElementDouble());
+        for (size_t locus = 1 ; locus < T4_nbBits ; locus++)
+        {
+            T4_MutationRate.push_back(T4_MutationRate.back() + input.GetNextElementDouble());
+        }
+    } else
+    {
+        std::cout << "For option 'T4_MutationRate', received the mode of entry '"<<mode<<"'. Sorry, only modes 'unif' and 'A' are accepted.\n";
+        abort();
+    }
+}
+
+void SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option 'T4_maxAverageNbNodesPerHaplotype', the std::string that is read is: " << input.print() << std::endl;
+#endif 
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation = 100;
+    } else
+    {
+        T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation = input.GetNextElementDouble();
+    }
+}
+
 
 void SpeciesSpecificParameters::readRecRateOnMismatch(InputReader& input)
 {

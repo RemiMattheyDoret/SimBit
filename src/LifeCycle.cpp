@@ -42,6 +42,10 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     #endif
     */
 
+    if (SSP->T4_nbBits > 0)
+    {
+        SSP->T4Tree.newGeneration();
+    }
 
 
     // Calculate fitness
@@ -85,7 +89,8 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             int mother_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
             #ifdef DEBUG
             if (mother_patch_from != patch_index) NBMIGRANTS++;
-            #endif          
+            #endif
+
             // 4: Select parents.
             // Select the mother
             int mother_index = Parent_pop.SelectionParent(mother_patch_from,0);
@@ -111,6 +116,16 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 Offspring_fHaplo = mother.getHaplo(1);
                 father_index = mother_index;
                 father_patch_from = mother_patch_from;
+                if (SSP->T4_nbBits > 0)
+                {
+                    //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
+                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
+                    SSP->T4Tree.addChildHaplotype_addNode(0,0,SSP->T4_nbBits);
+                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
+                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
+                    SSP->T4Tree.addChildHaplotype_addNode(1,0,SSP->T4_nbBits);
+                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
+                }
             } else
             {
                 if (SSP->selfingRate > 0.0 && GP->random_0and1(GP->mt) < SSP->selfingRate)
@@ -132,15 +147,28 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 Individual& father = Parent_pop.getPatch(father_patch_from).getInd(father_index);
 
                 // 6. The function 'recombination' direclty write the offsprings (one chromosome per call of 'recombination' in 'Offsrping_pop'   
+                if (SSP->T4_nbBits > 0)
+                {
+                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
+                }
                 recombination(
                    mother,
                    Offspring_mHaplo
                 );
 
+                if (SSP->T4_nbBits > 0)
+                {
+                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
+                    SSP->T4Tree.addChildHaplotype_setParentInfo(father_patch_from, father_index);
+                }
                 recombination(
                    father,
                    Offspring_fHaplo
                 );
+                if (SSP->T4_nbBits > 0)
+                {
+                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
+                }
 
             } // end of if ShouldIClone         
             // Mutate
@@ -208,6 +236,11 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         }
     }
     */
+
+    if (SSP->T4_nbBits > 0)
+    {
+        SSP->T4Tree.pruneDeadLineages();
+    }
 
 }
 
@@ -341,15 +374,21 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
     breakpoints.push_back(INT_MAX);
 }
 
-void LifeCycle::recombination_copyOver(Individual& parent,Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationInfo)
+void LifeCycle::recombination_copyOver(Individual& parent, Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationInfo)
 {    
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'recombination_copyOver'\n";
-#endif  
+#endif
+    int SegregationIndex;
     if (breakpoints.size()==1)
     {
         int SegregationIndex = GP->random_0or1(GP->mt);
         TransmittedChrom = parent.getHaplo(SegregationIndex);
+        if (SSP->T4_nbBits > 0)
+        {
+            //std::cout <<"\tLIFECYCLE!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
+            SSP->T4Tree.addChildHaplotype_addNode(SegregationIndex, 0, SSP->T4_nbBits);
+        }
         
     } else if (breakpoints.size()>1)
     {
@@ -361,24 +400,29 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         
         int Safety_T3_Absolutefrom = INT_MAX;
         int Safety_T3_Absoluteto   = -1;
+
+        int Safety_T4_Absolutefrom = INT_MAX;
+        int Safety_T4_Absoluteto   = -1;
         
         
         int T1_from = 0;
         int T2_from = 0;
         int T3_from = 0;
+        int T4_from = 0;
         int T1_to = 0;
         int T2_to = 0;
         int T3_to = 0;
+        int T4_to = 0;
         int fitnessMapIndexFrom = 0;
 
-        int haplo_index;
         if (segregationInfo == 0 || segregationInfo == 1)
         {
-            haplo_index = segregationInfo;
+            SegregationIndex = segregationInfo;
         } else
         {
-            haplo_index = GP->random_0or1(GP->mt); // Here is first chromosome segregation happening.
+            SegregationIndex = GP->random_0or1(GP->mt); // Here is first chromosome segregation happening.
         }
+        int haplo_index = SegregationIndex;
         
         
         /*std::cout << "\t";
@@ -397,6 +441,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T1_to = SSP->T1_nbBits;
                 T2_to = SSP->T2_nbChars;
                 T3_to = SSP->T3_nbChars;
+                T4_to = SSP->T4_nbBits;
                 b = SSP->TotalNbLoci - 1;
             } else
             {
@@ -405,6 +450,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T1_to = SSP->FromLocusToTXLocus[b].T1;
                 T2_to = SSP->FromLocusToTXLocus[b].T2;
                 T3_to = SSP->FromLocusToTXLocus[b].T3;
+                T4_to = SSP->FromLocusToTXLocus[b].T4;
             }
 
             #ifdef DEBUG
@@ -412,6 +458,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(T1_to <= SSP->T1_nbBits);
             assert(T2_to <= SSP->T2_nbChars);
             assert(T3_to <= SSP->T3_nbChars);
+            assert(T4_to <= SSP->T4_nbBits);
             
             #endif
 
@@ -612,11 +659,22 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 Safety_T3_Absolutefrom = std::min(Safety_T3_Absolutefrom, T3_from);
                 Safety_T3_Absoluteto = std::max(Safety_T3_Absoluteto, T3_to);
             }
+
+            // Copy for T4. from included, to excluded
+            if (T4_from < T4_to)
+            {
+                assert(T4_to > 0 && T4_to <= SSP->T4_nbBits + 1);
+                //std::cout <<"\tLIFECYCLE!! b = "<<b<<" T4_from = "<<T4_from<<" T4_to = "<<T4_to<<"\n";
+                SSP->T4Tree.addChildHaplotype_addNode(haplo_index, T4_from, T4_to);
+                Safety_T4_Absolutefrom = std::min(Safety_T4_Absolutefrom, T4_from);
+                Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
+            }
             
             // Set new 'from'
             T1_from = T1_to;
             T2_from = T2_to;
             T3_from = T3_to;
+            T4_from = T4_to;
             
             // Switch parent chromosome
             haplo_index = !haplo_index;
@@ -642,6 +700,13 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(T3_to == SSP->T3_nbChars);
             assert(Safety_T3_Absoluteto == SSP->T3_nbChars);
             assert(Safety_T3_Absolutefrom == 0);
+        }
+
+        if (SSP->T4_nbBits)
+        {
+            assert(T4_to == SSP->T4_nbBits);
+            assert(Safety_T4_Absoluteto == SSP->T4_nbBits);
+            assert(Safety_T4_Absolutefrom == 0);
         }
 
         

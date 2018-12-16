@@ -294,3 +294,6 @@ SimBit_3.200
 
 SimBit_3.201
 	Change definition of gaussian fitness function
+
+SimBit_4.0.4
+	Add Trait T4

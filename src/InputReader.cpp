@@ -699,9 +699,12 @@ void InputReader::interpretKeywords()
             double to   = std::stod(V[vi+2]);
             double by   = std::stod(V[vi+3]);
 
-            for (auto i = from ; i <= to; i += by)
+
+            for (double i = from ; i <= to; i += by)
             {
-                toInsert.push_back(std::to_string(i));
+                std::stringstream stream;
+                stream << std::fixed << std::setprecision(20) << i;
+                toInsert.push_back(stream.str());
             }
                 
         } else if (currentKeyword == "seqInt")

@@ -56,5 +56,7 @@ class InputReader;
 class SimulationTracker;
 class LifeCycle;
 class SmallOrderingSortingFunctions;
+class TreeNode;
+class Tree;
 
 #endif

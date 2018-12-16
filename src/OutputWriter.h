@@ -108,11 +108,14 @@ public:
     void WriteOutputs_T2_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_LargeOutput_header(OutputFile& file);
+    void WriteOutputs_T4_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
     void WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_vcf(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);

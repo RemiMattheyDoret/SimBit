@@ -51,6 +51,7 @@ Note for Remi of things to do:
 #include <limits.h>
 #include <algorithm>
 #include <map>
+#include <queue>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
@@ -90,7 +91,9 @@ Note for Remi of things to do:
 #include "GeneralParameters.h"
 #include "SimulationTracker.h"
 #include "DispersalData.h" 
-#include "ResetGenetics.h"   
+#include "ResetGenetics.h"
+#include "TreeNode.h"
+#include "Tree.h"
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
 #include "FromLocusToTXLocusElement.h"
@@ -124,7 +127,8 @@ Note for Remi of things to do:
 #include "SimulationTracker.cpp"
 #include "SpeciesSpecificParameters.cpp"
 #include "T1_locusDescription.cpp"
-
+#include "TreeNode.cpp"
+#include "Tree.cpp"
     
 //#include <boost/tokenizer.hpp> // was used to split strings but now the code only uses STL functions
 //#include <omp.h> // If cannot find this file, then the Alejandro answer at 'http://stackoverflow.com/questions/35134681/installing-openmp-on-mac-os-x-10-11' can be helpful!
@@ -143,7 +147,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 3.199");
+    std::string VERSION("version 4.0.5");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -201,14 +205,13 @@ std::string OutputFile::sequencingErrorStringToAddToFilnames = "";
 
 int main(int argc, char *argv[])
 {
-
 /*
 ###########################################
 ############## INITALIZATION ##############
 ###########################################
 */
 
-std::cout << getSimBitVersionLogo();
+    std::cout << getSimBitVersionLogo();
 
 #ifdef DEBUG
     std::cout << "Run in DEBUG mode" << std::endl;
@@ -217,6 +220,9 @@ std::cout << getSimBitVersionLogo();
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Run in CALLENTRANCEFUNCTIONS mode" << std::endl;
 #endif  
+
+    // measure time of process
+    outputWriter.SetBeforeInitializationTime();
 
     // Keep track of the number of times a T2 block neede to be corrected
     unsigned long long int nbT2LociCorrections = 0;
@@ -236,9 +242,7 @@ std::cout << getSimBitVersionLogo();
 #ifdef DEBUG
     std::cout << "-------- Parameters read -------- " << std::endl;
 #endif
-    
-    // measure time of process
-    outputWriter.SetBeforeInitializationTime();
+
 
     // start at the desired generation
     GP->UpdateParametersPatchNumber(0);
