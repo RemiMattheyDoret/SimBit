@@ -63,7 +63,10 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "genealogy",
     "fitnessSubsetLoci",
     "T4_LargeOutputFile",
-    "T4_vcfFile"
+    "T4_vcfFile",
+    "T4_SFS",
+    "T1_SFS",
+    "T4_printTree"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -89,6 +92,9 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not Logfile
     // not T4_LargeOutputFile,
     // not T4_vcfFile
+    // not T4_SFS
+    T1_SFS
+    // not T4_printTree
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -607,6 +613,25 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+    } else if (t == T4_SFS)
+    {
+        this->extension = std::string(".T4SFS");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
+    } else if (t == T1_SFS)
+    {
+        this->extension = std::string(".T1SFS");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
+    } else if (t == T4_printTree)
+    {
+        this->extension = std::string(".T4tree");
+        // The following false/true should not matter as this file is not going into the outputWriter
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = false;
     } else
     {
         std::cout << "Internal Error: In class 'OutputFile' in 'set_path', unknown fileType\n";

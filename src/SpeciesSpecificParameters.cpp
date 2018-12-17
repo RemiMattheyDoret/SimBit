@@ -126,6 +126,28 @@ void SpeciesSpecificParameters::readGameteDispersal(InputReader& input)
     
 }
 
+void SpeciesSpecificParameters::readOutputSFSbinSize(InputReader& input)
+{
+    while (input.IsThereMoreToRead())
+    {
+        if (input.PeakNextElementString() == "default")
+        {
+            input.skipElement();
+            outputSFSbinSizes.push_back(0.01);
+        } else
+        {
+            double x = input.GetNextElementDouble();            
+            if (x <= 0 || x > 1)
+            {
+                std::cout << "While reading option --outputSFSbinSize, a bin size of " << x << " has been received. A bin size must be great than zero and must be lower (or equal) to one.\n";
+                abort();
+            }
+            outputSFSbinSizes.push_back(x);
+        }
+    }
+}
+
+
 SpeciesSpecificParameters::SpeciesSpecificParameters(std::string sN, int sI)
 : speciesName(sN), speciesIndex(sI)
 {
@@ -365,7 +387,14 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
 
 }
 
-
+void SpeciesSpecificParameters::readT4_printTree(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option '--T4_printTree', the std::string that is read is: " << input.print() << std::endl;
+#endif
+    OutputFile file(input.GetNextElementString(), T4_printTree);
+    T4Tree.indicateOutputFile(&file);
+}
 
 void SpeciesSpecificParameters::readLoci(InputReader& input)
 {

@@ -1,3 +1,63 @@
+std::string Tree::getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, size_t& serialNumber)
+{
+	auto it = nodeNames.find(node);
+	if (it == nodeNames.end())
+	{
+		// Not in map yet
+		std::string r = std::to_string(serialNumber);
+		nodeNames.insert(std::pair<TreeNode*,std::string>(node, r));
+		serialNumber++;
+		return r;
+	} else
+	{
+		// Already in map
+		return it->second;
+	}
+}
+
+
+void Tree::printToFile(std::queue<TreeNode*> FIFO)
+{
+	std::map<TreeNode*, std::string> nodeNames;	
+	size_t serialNumber = 0;
+
+	std::string s;
+	s += "Generation " + std::to_string(GP->CurrentGeneration) + "\n\n" + "Tree:\n";
+
+	while (FIFO.size())
+	{
+		TreeNode* node = FIFO.front(); FIFO.pop();
+		//assert(node->nbChilren == node->children.size());
+
+		auto name = getNodeName(nodeNames, node, serialNumber);
+		s += name + ":";
+		for (TreeNode*& child : node->children)
+		{
+			s += " " + getNodeName(nodeNames, child, serialNumber);
+		}
+		s += "\n";
+	}
+
+	file->open();
+	file->write(s);
+	s.resize(0);
+
+	s += "\ngenotypicRange:\n";
+	for (auto it = nodeNames.begin() ; it != nodeNames.end() ; it++)
+	{
+		s += getNodeName(nodeNames, it->first, serialNumber) + ":" + std::to_string(it->first->left) + "-" + std::to_string(it->first->right) + "\n";
+	}
+	s += "\n";
+
+	file->write(s);
+	file->close();
+}
+
+
+
+
+
+
 void Tree::addNode(TreeNode* node)
 {
 	//std::cout << "\tadding new node from " << node->left << " to " << node->right << "\n";
@@ -127,12 +187,34 @@ void Tree::destroyAllNodesFromGenerationAndParents(std::vector<std::vector<Haplo
 	pruneFromFIFO(FIFO);
 }
 
-Tree::Tree(){
-	nbNodesInTree = 0;
+Tree::Tree()
+:nbNodesInTree(0), file(nullptr)
+{}
+
+void Tree::indicateOutputFile(OutputFile* f)
+{
+	file = f;
 }
 
 Tree::~Tree()
 {
+	if (file != nullptr)
+	{
+		if (!currentStatesGotJustComputed)
+		{
+			// initialize FIFO
+			auto roots = getRootsAndSetChildren();
+			std::queue<TreeNode*> FIFO;
+			for (auto& root : roots)
+			{	
+				assert(root->nbChildren == root->children.size());
+				FIFO.push(root);
+			}
+
+			printToFile(FIFO);
+		}
+	}
+
 	if (nbNodesInTree > 0)
 	{
 		// destroy the whole tree // That's a bit of a funny way to destroy the tree. The current generation has no children and so everyone should be killed
@@ -146,6 +228,9 @@ Tree::~Tree()
 		std::cout << "Internal error in the destructor of Tree for T4. After attempt to remove all the nodes, it seems that there are " << nbNodesInTree << " nodes left, while it was supposed to have 0 nodes left!\n";
 		abort();
 	}
+
+	// ugly pointer usage here
+	delete file;
 }
 
 std::queue<TreeNode*> Tree::initiateFIFO(std::vector<std::vector<HaplotypeDescription>>& oneGeneration, bool onlyNodesWithoutChildren)
@@ -317,6 +402,12 @@ void Tree::computeCurrentStates()
 		FIFO.push(root);
 	}
 	TreeNode* lastOfGenerationNode = roots.back();
+
+	// print tree
+	if (file != nullptr)
+	{
+		printToFile(FIFO);
+	}
 	
 	// Place mutations on tree and compute nodes to destroy
 	std::vector<TreeNode*> nodesToDestroy = placeMutationsOnTree(FIFO, lastOfGenerationNode);
@@ -608,6 +699,47 @@ void Tree::pruneDeadLineages()
 	}
 }
 
+
+
+std::vector<std::vector<double>> Tree::getCurrentStates_frequencies()
+{
+	// compute if needed
+	if (!currentStatesGotJustComputed)
+	{
+		computeCurrentStates();	
+	}
+
+	std::vector<std::vector<double>> r(GP->PatchNumber);
+	for (size_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
+	{
+		// Sum up the trues
+		r[patch_index].resize(SSP->T4_nbBits);
+		for (size_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
+		{
+			for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+			{
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index].size() == 1);
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbBits);
+
+				for (size_t locus = 0 ; locus < SSP->T4_nbBits ; locus++)
+				{
+					if (currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype[locus])
+						r[patch_index][locus]++;
+				}
+			}
+		}
+
+		// divide
+		for (size_t locus = 0 ; locus < SSP->T4_nbBits ; locus++)       
+	  {
+	      r[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+	      assert(r[patch_index][locus] >= 0.0 && r[patch_index][locus] <= 1.0);
+	  }
+	}
+
+	
+	return r;	
+}
 
 
 std::vector<std::vector<std::vector<std::vector<bool>>>> Tree::getCurrentStates()

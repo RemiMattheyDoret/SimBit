@@ -863,6 +863,23 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
+    else if (flag == "T4_SFS")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T1_SFS")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T4_printTree")
+    {
+        // Nothing to do
+    } 
+    else if (flag == "outputSFSbinSize")
+    {
+        InputReader input("default","In Default value for --outputSFSbinSize,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readOutputSFSbinSize);
+    } 
     else if (flag == "LogfileType")
     {
         outputWriter.LogfileType = 1;
@@ -1342,7 +1359,29 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
+    }
+    else if (flag == "T4_SFS")
+    {
+        OutputFile file(input.GetNextElementString(), T4_SFS);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
     } 
+    else if (flag == "T1_SFS")
+    {
+        OutputFile file(input.GetNextElementString(), T1_SFS);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    }
+    else if (flag == "T4_printTree")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_printTree);
+    } 
+    else if (flag == "outputSFSbinSize")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readOutputSFSbinSize);
+    }
     else if (flag == "LogfileType")
     {
         

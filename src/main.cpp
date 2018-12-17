@@ -92,6 +92,7 @@ Note for Remi of things to do:
 #include "SimulationTracker.h"
 #include "DispersalData.h" 
 #include "ResetGenetics.h"
+#include "OutputFile.h"
 #include "TreeNode.h"
 #include "Tree.h"
 #include "SpeciesSpecificParameters.h"
@@ -102,7 +103,6 @@ Note for Remi of things to do:
 #include "Individual.h"
 #include "InputReader.h"
 #include "LifeCycle.h"
-#include "OutputFile.h"
 #include "OutputWriter.h"
 #include "Patch.h"
 #include "T1_locusDescription.h"
@@ -147,7 +147,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.0.5");
+    std::string VERSION("version 4.0.7");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

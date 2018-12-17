@@ -109,13 +109,13 @@ public:
     void WriteOutputs_T1_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_LargeOutput_header(OutputFile& file);
-    void WriteOutputs_T4_LargeOutput(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_LargeOutput(OutputFile& file);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
     void WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
-    void WriteOutputs_T4_vcf(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_vcf(OutputFile& file);
     void WriteOutputs_T3_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);
@@ -123,6 +123,12 @@ public:
     void WriteOutputs_extraGeneticInfo(OutputFile& file);
     void WriteOutputs_T1_FST_header(OutputFile& file);
     void WriteOutputs_T1_FST(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4SFS(OutputFile& file);
+    void WriteOutputs_T4SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4SFS_header(OutputFile& file);
+    void WriteOutputs_T1SFS(Pop& pop, OutputFile& file);
+    void WriteOutputs_T1SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file);
     void WriteOutputs_extinction(OutputFile& file);
     void WriteOutputs(Pop& realPop);
     void WriteOutputs_forDefinedPop(Pop& pop);

@@ -32,6 +32,9 @@ private:
 	HaplotypeDescription newHaplotypeDescription;
 	size_t parent_patch_index_newHaplotypeDescription;
 	size_t parent_ind_index_newHaplotypeDescription;
+
+	// outputing the tree
+	OutputFile* file;
 	
 	
 
@@ -50,6 +53,7 @@ private:
 	void destroyListOfNodes(std::vector<TreeNode*>& nodes);
 	std::vector<TreeNode*> getRootsAndSetChildren();
 	std::vector<TreeNode*> placeMutationsOnTree(std::queue<TreeNode*> FIFO, TreeNode* lastOfGenerationNode);
+	std::string getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, size_t& serialNumber);
 
 public:
 
@@ -65,5 +69,8 @@ public:
 
 	void pruneDeadLineages();
 	std::vector<std::vector<std::vector<std::vector<bool>>>> getCurrentStates();
+	std::vector<std::vector<double>> getCurrentStates_frequencies();
+	void indicateOutputFile(OutputFile* f);
+	void printToFile(std::queue<TreeNode*> FIFO);
 };
 

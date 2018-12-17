@@ -1977,7 +1977,7 @@ void OutputWriter::WriteOutputs_T4_LargeOutput_header(OutputFile& file)
     file.close();
 }
 
-void OutputWriter::WriteOutputs_T4_LargeOutput(Pop& pop, OutputFile& file)
+void OutputWriter::WriteOutputs_T4_LargeOutput(OutputFile& file)
 {
     std::string s;
     std::string s_tab = "\t";
@@ -2221,7 +2221,7 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
 }
 
 
-void OutputWriter::WriteOutputs_T4_vcf(Pop& pop, OutputFile& file)
+void OutputWriter::WriteOutputs_T4_vcf(OutputFile& file)
 {
     //std::cout << "In OutputWriter::WriteOutputs_T1_vcf at generation " <<GP->CurrentGeneration<<"\n";
 
@@ -2545,6 +2545,205 @@ void OutputWriter::WriteOutputs_extinction(OutputFile& file)
     file.write(s);
     file.close();
 }
+
+
+void OutputWriter::WriteOutputs_T1or4SFS_header(OutputFile& file)
+{
+    std::string s;
+    
+    s += "Generation";
+
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        for (double binSize : SSP->outputSFSbinSizes)
+        {
+            size_t nbBins = (size_t) std::ceil(1 / binSize);
+            double from = 0.0;
+            for (size_t bin_index = 0 ; bin_index < nbBins ; bin_index++)
+            {
+                double to = from + binSize;
+                if (to > 1.0)
+                    to = 1.0;
+
+                s += "\tP" + std::to_string(patch_index) + "_" + std::to_string(from) + "-" + std::to_string(to);
+
+                from = to;
+            }
+        }
+    }
+
+    for (double binSize : SSP->outputSFSbinSizes)
+    {
+        size_t nbBins = (size_t) std::ceil(1 / binSize);
+        double from = 0.0;
+        for (size_t bin_index = 0 ; bin_index < nbBins ; bin_index++)
+        {
+            double to = from + binSize;
+            if (to > 1.0)
+                to = 1.0;
+
+            s += "\tallPatches" + std::to_string(from) + "-" + std::to_string(to);
+
+            from = to;
+        }
+    }
+
+
+    file.open();
+    file.write(s);
+    file.close();
+}
+
+
+void OutputWriter::WriteOutputs_T4SFS_header(OutputFile& file)
+{
+    WriteOutputs_T1or4SFS_header(file);
+}
+
+void OutputWriter::WriteOutputs_T1SFS_header(OutputFile& file)
+{
+    WriteOutputs_T1or4SFS_header(file);
+}
+
+
+
+void OutputWriter::WriteOutputs_T4SFS(OutputFile& file)
+{
+    std::vector<std::vector<double>> obsFreqs = SSP->T4Tree.getCurrentStates_frequencies(); // obsFreqs[patch_index][locus]
+    WriteOutputs_T1or4SFS(obsFreqs, file);
+}
+
+void OutputWriter::WriteOutputs_T1SFS(Pop& pop, OutputFile& file)
+{
+    // Build obsFreqs
+    std::vector<std::vector<double>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        // count
+        obsFreqs[patch_index].resize(SSP->T1_nbBits, 0.0);
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        {
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+            {
+                for (size_t locus = 0 ; locus < SSP->T1_nbBits ; locus++)
+                {
+                    if (pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(locus / 8, locus % 8))
+                        obsFreqs[patch_index][locus]++;
+                
+                }
+            }
+        }
+
+        // divide
+        for (size_t locus = 0 ; locus < SSP->T1_nbBits ; locus++)
+        {
+            obsFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+            assert(obsFreqs[patch_index][locus] >= 0.0 && obsFreqs[patch_index][locus] <= 1.0);
+        }
+    }
+    
+    
+    WriteOutputs_T1or4SFS(obsFreqs, file);
+}
+
+
+void OutputWriter::WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file)
+{
+    // Format is obsFreqs[patch_index][locus]
+
+    std::string s;
+    s += std::to_string(GP->CurrentGeneration);
+
+    size_t nbLoci = obsFreqs[0].size();
+    std::vector<double> obsFreqsPop(nbLoci, 0); // obsFreqsPop[locus] // for the entire population
+
+
+    // Build s
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        assert(obsFreqs[patch_index].size() == nbLoci);
+
+        // order loci by frequency. I could merge sorting with the next loop for performance
+        std::sort(obsFreqs[patch_index].begin(), obsFreqs[patch_index].end());
+
+        // set obsFreqsPop
+        for (size_t locus = 0 ; locus < nbLoci ; locus++)
+            obsFreqsPop[locus] += obsFreqs[patch_index][locus]; // division by patchNumber later
+
+        // build s
+        for (double binSize : SSP->outputSFSbinSizes)
+        {
+            size_t totalNbLociFound = 0; // For security
+
+            size_t nbBins = (size_t) std::ceil(1 / binSize);
+            double from = 0.0;
+            for (size_t bin_index = 0 ; bin_index < nbBins ; bin_index++)
+            {
+                double to = from + binSize;
+                if (to == 1.0)
+                    to = 1.01; // To include the frequencies of exactly 1.0
+
+                // as usual, 'from' is included and 'to' is excluded. But there is exception for the frequency of exactly 1.0, where 'to' is included
+                
+                auto itFrom = std::lower_bound(obsFreqs[patch_index].begin(), obsFreqs[patch_index].end(), from);
+                auto itTo   = std::lower_bound(itFrom, obsFreqs[patch_index].end(), to);
+
+                size_t nbLociFound = itTo - itFrom;
+                totalNbLociFound += nbLociFound;
+                double freqInBin = (double)nbLociFound / (double)nbLoci;
+                    
+                s += "\t" + std::to_string(freqInBin);
+
+                from = to;
+            }
+            assert(totalNbLociFound == nbLoci);
+        }
+    }
+
+    // set obsFreqsPop
+    for (size_t locus = 0 ; locus < nbLoci ; locus++)
+    {
+        obsFreqsPop[locus] /= GP->PatchNumber;
+        assert(obsFreqsPop[locus] >= 0.0 && obsFreqsPop[locus] <= 1.0);
+    }
+
+    // For the whole population
+    for (double binSize : SSP->outputSFSbinSizes)
+    {
+        size_t totalNbLociFound = 0; // For security
+
+        size_t nbBins = (size_t) std::ceil(1 / binSize);
+        double from = 0.0;
+        for (size_t bin_index = 0 ; bin_index < nbBins ; bin_index++)
+        {
+            double to = from + binSize;
+            if (to == 1.0)
+                to = 1.01; // To include the frequencies of exactly 1.0
+
+            // as usual, 'from' is included and 'to' is excluded. But there is exception for the frequency of exactly 1.0, where 'to' is included
+            
+            auto itFrom = std::lower_bound(obsFreqsPop.begin(), obsFreqsPop.end(), from);
+            auto itTo   = std::lower_bound(itFrom, obsFreqsPop.end(), to);
+
+            size_t nbLociFound = itTo - itFrom;
+            totalNbLociFound += nbLociFound;
+            double freqInBin = (double)nbLociFound / (double)nbLoci;
+                
+            s += "\t" + std::to_string(freqInBin);
+
+            from = to;
+        }
+        assert(totalNbLociFound == nbLoci);
+    }
+
+
+    file.open();
+    file.write(s);
+    file.close();
+}
+
+
+
 
 void OutputWriter::imitateSequencingError(Pop& pop)
 {
@@ -2910,7 +3109,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
                     #ifdef DEBUG
                     std::cout << "Write T4_LargeOutputFile\n";
                     #endif
-                    this->WriteOutputs_T4_LargeOutput(pop, file);
+                    this->WriteOutputs_T4_LargeOutput(file);
                 }
             }
         }
@@ -3016,7 +3215,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
                     #ifdef DEBUG
                     std::cout << "Write T4_vcfFile \n";
                     #endif
-                    this->WriteOutputs_T4_vcf(pop, file);
+                    this->WriteOutputs_T4_vcf(file);
                 }
             }
         }
@@ -3160,6 +3359,61 @@ std::cout << "Enters in 'WriteOutputs'\n";
         }
     }
     //std::cout << "line 3162\n";
+         /*
+     ###############
+     #### T4SFS ####
+     ###############
+     */
+    if (SSP->speciesIndex == 0 && this->isFile(T4_SFS))
+    {
+        if (SSP->T4_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T4SFS_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T4SFS\n";
+                    #endif
+                    this->WriteOutputs_T4SFS(file);
+                }
+            }
+        }
+    }
+
+
+         /*
+     ###############
+     #### T1SFS ####
+     ###############
+     */
+    if (SSP->speciesIndex == 0 && this->isFile(T1_SFS))
+    {
+        if (SSP->T1_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T1SFS_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T1SFS\n";
+                    #endif
+                    this->WriteOutputs_T1SFS(pop, file);
+                }
+            }
+        }
+    }
+       
 }
 
 

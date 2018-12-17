@@ -94,6 +94,10 @@ public:
         {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration", "L"}, false},
         {{"T4_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T1_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"outputSFSbinSize"},                      {"T4_SFS", "T1_SFS", "GP", "S", "startAtGeneration", "L"}, true},
 
         // Species interaction
         {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},

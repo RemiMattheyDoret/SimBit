@@ -167,6 +167,7 @@ public:
     
     // Other
     int                                              centralT1LocusForExtraGeneticInfo;
+    std::vector<double>                              outputSFSbinSizes;
     
     std::vector<std::vector<int>>                    subsetT1LociForfitnessSubsetLoci_file;
     std::vector<std::vector<int>>                    subsetT2LociForfitnessSubsetLoci_file;
@@ -210,6 +211,8 @@ public:
     void readMatingSystem(InputReader& input);
     void readReadPopFromBinary(InputReader& input);
     void readSubsetLociForfitnessSubsetLoci_file(InputReader& input);
+    void readOutputSFSbinSize(InputReader& input);
+    void readT4_printTree(InputReader& input);
     int selectNonEmptyPatch(int firstPatchToLookAt, std::vector<int>& PSs, bool increasingOrder);
 
     void IsThereSelection();

@@ -49,7 +49,10 @@ typedef enum {
     genealogy = 19,
     fitnessSubsetLoci = 20,
     T4_LargeOutputFile = 21,
-    T4_vcfFile = 22
+    T4_vcfFile = 22,
+    T4_SFS = 23,
+    T1_SFS = 24,
+    T4_printTree = 25 // special type that is not going in outputWriter
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific
