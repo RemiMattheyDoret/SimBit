@@ -81,7 +81,8 @@ public:
     std::vector<int>                                output_FST_nbPatchesToConsider;
 
     // methods
-    void readTemporalChanges(InputReader& input);
+    //void readTemporalChanges(InputReader& input); // not in use anymore
+    void readTemporalChanges(std::vector<int>& T);
     void readPatchNumber(InputReader& input);
     void readT1_FST_info(InputReader& input);
     void readSeed(InputReader& input);

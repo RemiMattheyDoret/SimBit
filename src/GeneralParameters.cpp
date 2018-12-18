@@ -164,11 +164,14 @@ void GeneralParameters::initializeAllSpeciesPatchSizes()
 
 
 
-void GeneralParameters::readTemporalChanges(InputReader& input)
+/*void GeneralParameters::readTemporalChanges(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--T (--TemporalChanges)', the std::string that is read is: " << input.print() << std::endl;
 #endif
+
+    std::cout << "Internal error. This function should not be used anymore!\n";
+    abort();
     
     //assert(this->__GenerationChange.size() == 1); // as it should already contain 0
     
@@ -186,17 +189,55 @@ void GeneralParameters::readTemporalChanges(InputReader& input)
     // Sort and remove duplicates
     std::sort(this->__GenerationChange.begin(), this->__GenerationChange.end());
     this->__GenerationChange.erase(std::unique(this->__GenerationChange.begin(), this->__GenerationChange.end()), this->__GenerationChange.end());
-/*
-    std::cout << "__GenerationChange:\n";
-    for (auto& x : this->__GenerationChange) std::cout << x << " ";
-    std::cout << "\n";
-*/
+
+    //std::cout << "__GenerationChange:\n";
+    //for (auto& x : this->__GenerationChange) std::cout << x << " ";
+    //std::cout << "\n";
+
     if (this->__GenerationChange[0] != 0)
     {
         this->__GenerationChange.insert(this->__GenerationChange.begin(), 0);
     }
 
     input.workDone();
+}
+*/
+
+
+
+void GeneralParameters::readTemporalChanges(std::vector<int>& T)
+{
+#ifdef DEBUG
+    std::cout << "For option '--T (--TemporalChanges)', the std::string that is read is: " << input.print() << std::endl;
+#endif
+    
+    //assert(this->__GenerationChange.size() == 1); // as it should already contain 0
+    
+    this->__GenerationChange.push_back(0); // must always contain at least zero
+    for (auto& t : T)
+    {
+        if (t < 0)
+        {
+            std::cout << "Received a generation specific marker (@G) followed by a negative number (followed by the number "<< t <<"). Generations must be zero or positive integers.\n";
+            abort();
+        }
+        this->__GenerationChange.push_back(t);
+    }
+
+    // Sort and remove duplicates
+    std::sort(this->__GenerationChange.begin(), this->__GenerationChange.end());
+    this->__GenerationChange.erase(std::unique(this->__GenerationChange.begin(), this->__GenerationChange.end()), this->__GenerationChange.end());
+/*
+    std::cout << "__GenerationChange:\n";
+    for (auto& x : this->__GenerationChange) std::cout << x << " ";
+    std::cout << "\n";
+*/
+/*
+    if (this->__GenerationChange[0] != 0)
+    {
+        this->__GenerationChange.insert(this->__GenerationChange.begin(), 0);
+    }
+*/
 }
 
 

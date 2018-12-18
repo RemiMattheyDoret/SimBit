@@ -420,7 +420,77 @@ std::cout << "Enters in 'SetParameters'\n";
     // random SSP security
     assert(SSP == nullptr);
 
+    // Check the temporal changes
+    {
+        std::vector<int> temporalChanges;
+        for (auto& p : UserEntries)
+        {
+            std::string& entry = p.second;
+            size_t Gpos = entry.find("@G", 0);
+            while (true)
+            {
+                Gpos = entry.find("@G", Gpos);
+                if (Gpos == std::string::npos)
+                    break;
+                Gpos += 2;
+                size_t start = Gpos;
+                size_t end   = entry.find(" ", Gpos);
+                size_t endTab = entry.find("\t", Gpos);
+                if (endTab < end)
+                {
+                    end = endTab;
+                }
+                size_t length = end - start;
 
+                std::string s = entry.substr(start, length);
+                if (s.size() == 0)
+                {
+                    std::cout << "Expected zero (0) or a positive integer after generation specific marker (@G) but ti seems to have received a space (or maybe a quote followed by a space).\n";
+                    abort();
+                }
+                //std::cout << "s = '" << s << "'\n";
+
+
+                if (
+                    std::count(s.begin(), s.end(), '.') > 0
+                    || 
+                        (s.at(0) != '-' && !isdigit(s.at(0)))
+                    ||
+                        !isdigit(s.at(s.size() - 1))
+                )
+                {
+                    std::cout << "Expected zero (0) or a positive integer value after a generation specific marker (@G) but received '" << s << "'" <<std::endl;
+                    abort();
+                }
+                int r;
+                try
+                {
+                    double d = std::stod(s);
+                    double fraction = d - ((long)d);
+                    if (fraction > 0.00001 || fraction < -0.00001)
+                    {
+                        std::cout << "Expected zero (0) or a positive integer after a generation specific marker (@G) but received '" << s << "' which seems to be a float number to SimBit (but it is surprising it did not get caught the the first security gates)! (error caught at the second security gate in setParameters)" <<std::endl;
+                    }
+                    r = (int) std::stod(s);
+                }
+                catch(...)
+                {
+                    std::cout << "Expected zero (0) or a positive integer after a generation specific marker (@G) but received '" << s << "'' (error caught at the third security gate in setParameters) " << std::endl;
+                    abort();
+                }
+
+                if (r < 0)
+                {
+                    std::cout << "Received a generation specific marker (@G) followed by a negative number (followed by the number "<< r <<"). Generations must be zero or positive integers.\n";
+                    abort();
+                }
+                
+                temporalChanges.push_back(r);
+            }
+        }
+        GP->readTemporalChanges(temporalChanges); // Will order and remove duplicates
+    }
+        
     ////// Loop through each possible option
     for (Option& option : optionContainer.options)
     {
@@ -721,11 +791,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
             SSPs[speciesIndex].nbSubGenerationsPerGeneration = 1;
         }
     }
-    else if (flag == "T")
+    /*else if (flag == "T")
     {
         assert(this->GlobalP.__GenerationChange.size() == 0);
         this->GlobalP.__GenerationChange.push_back(0);
-    }
+    }*/
     else if (flag == "matingSystem")
     {
         assert(SSPs.size() > 0);
@@ -1410,6 +1480,14 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             std::cout << "'nbGenerations' is " << GP->nbGenerations << ". 'nbGenerations' cannot be lower than 0." << std::endl;
             abort();
         }
+        for (auto& t : GP->__GenerationChange)
+        {
+            if (t > GP->nbGenerations)
+            {
+                std::cout << "User asked to simulate " << GP->nbGenerations << " generations (info set by using the option --nbGenerations (--nbGens)). However, somewhere in the command, there are temporal changes at generation " << t <<" (as indicated with generation specific marker @G). It does not make sense to ask for a temporal change at a time after the simulation is over.\n";
+                abort();
+            }
+        }
     } else if (flag == "startAtGeneration")
     {
                 GP->startAtGeneration = input.GetNextElementInt();
@@ -1555,11 +1633,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readMatingSystem);
 
     }
-    else if (flag == "TemporalChanges" || flag == "T")
+    /*else if (flag == "TemporalChanges" || flag == "T")
     { 
         GP->readTemporalChanges(input);
 
-    }  else if (flag == "Overwrite")
+    }*/  else if (flag == "Overwrite")
     {
         
         GP->OverwriteMode = input.GetNextElementInt();

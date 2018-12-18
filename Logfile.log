@@ -2,16 +2,16 @@
 	 / ___|(_)_ __ ___ | __ )(_) |_ 
 	 \___ \| | '_ ` _ \|  _ \| | __|
 	  ___) | | | | | | | |_) | | |_ 
-	 |____/|_|_| |_| |_|____/|_|\__| version 4.0.4
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.0.8
 
 Random seed:
-	23
+	1041792070
 
 User Input:
-	--PN 1 --N unif 1e3 --L T4 1e6 --nbGens 1e4 --T4_mu unif 1e-3 --r rate unif 1e-9 --T4_maxAverageNbNodesPerHaplotype 1e15 --seed 23 --Overwrite 2 --GP /Users/remi/Downloads/SimBit/ 
+	--PN 2 --N @G0 unif 10 @G20 unif 20 @G35 unif 15 --nbGens 100 --L 1 1 --m Island 0.01 --T1_mu A 0.00002 
 
-		Time for initialization: 0 seconds (0.3493 seconds)
+		Time for initialization: 0 seconds (0.003696 seconds)
 
-		Time for the simulation: 1 minutes 44 seconds (103.7 seconds)
+		Time for the simulation: 0 seconds (0.01215 seconds)
 
 		------ Simulation is over. Good Job! ----

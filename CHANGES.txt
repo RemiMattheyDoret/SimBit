@@ -297,3 +297,7 @@ SimBit_3.201
 
 SimBit_4.0.4
 	Add Trait T4
+
+SimBit_4.0.8
+	Suppress the option --T to make it automatic
+	

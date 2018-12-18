@@ -12,9 +12,9 @@ public:
         {{"nbThreads"},                                 {}, false},
         {{"S", "species"},                              {}, false},
         {{"nbSubGens","nbSubGenerations"},              {"nbGens", "S"}, false},
-        {{"T", "TemporalChanges"}, 		  				{"nbGens"}, false},   // all species must have temporal change at the same time
-        {{"PN","PatchNumber"},                          {"T"}, false},
-        {{"H", "Habitats"},                           	{"S","PN","T"}, false}, // not all species need to have same habitat distinction
+        //{{"T", "TemporalChanges"}, 		  				{"nbGens"}, false},   // all species must have temporal change at the same time THIS IS NOT AN OPTION ANYMORE
+        {{"PN","PatchNumber"},                          {}, false},
+        {{"H", "Habitats"},                           	{"S","PN",}, false}, // not all species need to have same habitat distinction
     
         
         // Genetics and Selection Both T1, T2 and T3 (first part)
@@ -28,11 +28,11 @@ public:
         {{"gameteDispersal"},                           {"S"}, false},
 
         // Basics Demography
-        {{"N", "patchCapacity"},                        {"PN","S","T"}, false},
+        {{"N", "patchCapacity"},                        {"PN","S",}, false},
         {{"InitialpatchSize"},                          {"PN","S","N","fec"}, false},
         {{"cloningRate"},                               {"S"}, false},
         {{"selfingRate"},                               {"S"}, false},
-        {{"matingSystem"},                              {"S","T","fec","N","PN"}, false}, // if fec != -1.0, then I must make sure that there will be at least one male and one female in every patch at all times. This assumption might be relaxed later
+        {{"matingSystem"},                              {"S","fec","N","PN"}, false}, // if fec != -1.0, then I must make sure that there will be at least one male and one female in every patch at all times. This assumption might be relaxed later
 
         // Other stuff about outputs
         {{"LogfileType"},                               {}, false},
@@ -65,7 +65,7 @@ public:
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
         {{"recRateOnMismatch"},                         {"S", "L"}, false},
-        {{"FitnessMapInfo"},           {"S", "T", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
+        {{"FitnessMapInfo"},           {"S", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
         {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
         // Outputs
@@ -108,7 +108,7 @@ public:
         {{"readPopFromBinary"},           		            {"S"}, false},
         {{"DryRun"},                         		        {}, false},
         {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
-        {{"resetGenetics"},                                 {"L","nbGenerations","T","S","PN","N"}, false}
+        {{"resetGenetics"},                                 {"L","nbGenerations","S","PN","N"}, false}
     };
 
     //void received(std::string& optionNameReceived);
