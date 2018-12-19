@@ -2588,6 +2588,7 @@ void OutputWriter::WriteOutputs_T1or4SFS_header(OutputFile& file)
         }
     }
 
+    s += "\tnbSNPs";
 
     file.open();
     file.write(s);
@@ -2658,6 +2659,7 @@ void OutputWriter::WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFre
     std::vector<double> obsFreqsPop(nbLoci, 0); // obsFreqsPop[locus] // for the entire population
 
 
+
     // Build s
     for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
@@ -2701,10 +2703,18 @@ void OutputWriter::WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFre
     }
 
     // set obsFreqsPop
+    size_t nbSNPs = 0;
     for (size_t locus = 0 ; locus < nbLoci ; locus++)
     {
         obsFreqsPop[locus] /= GP->PatchNumber;
-        assert(obsFreqsPop[locus] >= 0.0 && obsFreqsPop[locus] <= 1.0);
+        
+        if (obsFreqsPop[locus] == 0.0 || obsFreqsPop[locus] == 1.0 )
+        {
+            nbSNPs++;
+        } else
+        {
+            assert(obsFreqsPop[locus] > 0.0 && obsFreqsPop[locus] < 1.0);
+        }
     }
 
     // For the whole population
@@ -2736,6 +2746,7 @@ void OutputWriter::WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFre
         assert(totalNbLociFound == nbLoci);
     }
 
+    s += "\t" + std::to_string(nbSNPs);
 
     file.open();
     file.write(s);

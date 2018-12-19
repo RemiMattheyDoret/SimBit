@@ -301,3 +301,6 @@ SimBit_4.0.4
 SimBit_4.0.8
 	Suppress the option --T to make it automatic
 	
+SimBit_4.0.9
+	T1_SFS and T4_SFS also outputs nbSNPs, mainly for security check
+
