@@ -1744,6 +1744,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
                 std::cout << "In --eco, received keyword 'randomGauss'. The keyword was followed by the type ("<<randomGaussType<<"), the mean ("<< randomGaussMean << ") and the SD ("<< randomGaussSd <<"). SD received is negative.\n";
                 abort();
             }
+        } else
+        {
+            isRandomGauss = false;
+            randomGaussMean = 0.0;
+            randomGaussSd = 0.0;
         }
 
         std::vector<std::vector<char>> transposeOfspeciesEcoRel_type;

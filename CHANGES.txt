@@ -304,3 +304,6 @@ SimBit_4.0.8
 SimBit_4.0.9
 	T1_SFS and T4_SFS also outputs nbSNPs, mainly for security check
 
+SimBit_4.1.0
+	Fix rare bug when reading input to flag --eco
+
