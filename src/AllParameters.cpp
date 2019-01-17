@@ -164,7 +164,7 @@ std::cout << "Enters in 'SetParameters'\n";
     if (argc <= 1)
     {
         AllParameters::PrintHelpToUser(optionContainer);
-        abort();
+        exit(1);
     }
     
 
@@ -173,7 +173,7 @@ std::cout << "Enters in 'SetParameters'\n";
     {
         std::cout << "Received less than two options (executable incl.). Please look at the manual for help" << std::endl;
         PrintHelpToUser(optionContainer);
-        abort();
+        exit(1);
     }
 
     std::string AllInputInLongString;
@@ -195,7 +195,7 @@ std::cout << "Enters in 'SetParameters'\n";
         {
             std::cout << "received only " << argc << " options while trying to read from file. First option should be the executable, the second should be 'FILE' (or something similar), the third should be the line (counting based 1) from the file to consider.\n";
             PrintHelpToUser(optionContainer);
-            abort();
+            exit(1);
         }
 
         // Get optionFilePath
@@ -822,11 +822,19 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
+    else if (flag == "T5_vcf_file")
+    {
+        // Nothing to do
+    }
     else if (flag == "T1_LargeOutput_file")
     {
         // Nothing to do
     }
     else if (flag == "T1_AlleleFreq_file")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T5_AlleleFreq_file")
     {
         // Nothing to do
     }
@@ -938,6 +946,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
         // Nothing to do
     }
     else if (flag == "T1_SFS")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T5_SFS")
     {
         // Nothing to do
     }
@@ -1089,6 +1101,20 @@ void AllParameters::setOptionToDefault(std::string& flag)
             }
         }
     }
+    else if (flag == "T5_mu")
+    {
+        for (auto& SSPi : this->SSPs)
+        {
+            if (SSPi.T5_nbBits)
+            {
+                std::cout << "You asked for T5 loci for species "<< SSPi.speciesName <<" but option '--T5_MutationRate' is missing!\n";
+                abort();
+            } else
+            {
+                SSPi.T5_Total_Mutation_rate = 0.0;
+            }
+        }
+    }
     else if (flag == "additiveEffectAmongLoci")
     {
         InputReader input(std::string("@S0 no"), "In Default value for --additiveEffectAmongLoci,");
@@ -1098,6 +1124,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 @H0 MultiplicityUnif 1.0"), "In Default value for --T1_FitnessEffects,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
+    }
+    else if (flag == "T5_fit")
+    {
+        InputReader input(std::string("@S0 @H0 MultiplicityUnif 1.0"), "In Default value for --T5_FitnessEffects,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_FitnessEffects);
     }
     else if (flag == "T1_ini")
     {
@@ -1183,7 +1214,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
         assert(this->GlobalP.nbSpecies > 0);
         assert(this->GlobalP.nbSpecies == this->SSPs.size());
         
-
+        //std::cout << "this->GlobalP.nbSpecies = " << this->GlobalP.nbSpecies << "\n";
         for (int speciesIndex_to = 0 ; speciesIndex_to < this->GlobalP.nbSpecies; speciesIndex_to++)
         {
             std::vector<double> fromOneSpecies_effect;
@@ -1192,12 +1223,26 @@ void AllParameters::setOptionToDefault(std::string& flag)
             fromOneSpecies_type.resize(this->GlobalP.nbSpecies);
             for (int speciesIndex_from = 0 ; speciesIndex_from < this->GlobalP.nbSpecies; speciesIndex_from++)
             {
-                fromOneSpecies_type[speciesIndex_to]   = '0';
-                fromOneSpecies_effect[speciesIndex_to] = 0.0;
+                fromOneSpecies_type[speciesIndex_from]   = '0';
+                fromOneSpecies_effect[speciesIndex_from] = 0.0;
             }
             GP->speciesEcoRel_type.push_back(fromOneSpecies_type);
             GP->speciesEcoRel_effect.push_back(fromOneSpecies_effect);
         }
+        
+        /*
+        std::cout << "Default eco Types:\n";
+        for (auto& a : GP->speciesEcoRel_type)
+        {
+            std::cout << "\t";
+            for (auto& b : a)   
+            {
+                std::cout << "'" << b << "' ";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+        */
     } else if (flag == "growthK")
     {
         assert(GP->speciesEcoRel_type.size() == this->GlobalP.nbSpecies);
@@ -1248,6 +1293,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
+    } else if (flag == "T5_vcf_file" || flag == "T5_VCF_file")
+    {
+        OutputFile file(input.GetNextElementString(), T5_vcfFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
     } else if (flag == "T1_LargeOutput_file")
     {
         OutputFile file(input.GetNextElementString(), T1_LargeOutputFile);
@@ -1257,6 +1308,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     }  else if (flag == "T1_AlleleFreq_file")
     {
         OutputFile file(input.GetNextElementString(), T1_AlleleFreqFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+    }  else if (flag == "T5_AlleleFreq_file")
+    {
+        OutputFile file(input.GetNextElementString(), T5_AlleleFreqFile);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
     } else if (flag == "Log" || flag == "Logfile" || flag == "Logfile_file")
@@ -1444,6 +1500,13 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         outputWriter.insertOutputFile(std::move(file));
 
     }
+    else if (flag == "T5_SFS")
+    {
+        OutputFile file(input.GetNextElementString(), T5_SFS);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    }
     else if (flag == "T4_printTree")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_printTree);
@@ -1576,6 +1639,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_MutationRate);
 
+    } else if (flag == "T5_MutationRate" || flag == "T5_mu")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_MutationRate);
+
     } else if (flag == "additiveEffectAmongLoci")
     {
         std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
@@ -1584,6 +1651,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "T1_FitnessEffects" || flag == "T1_fit")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
+        
+    } else if (flag == "T5_FitnessEffects" || flag == "T5_fit")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_FitnessEffects);
         
     }  else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
     {   
@@ -1809,6 +1880,33 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         }
         GP->speciesEcoRel_type   = transposeSquareMatrix(transposeOfspeciesEcoRel_type);
         GP->speciesEcoRel_effect = transposeSquareMatrix(transposeOfspeciesEcoRel_effect);
+
+        /*
+        std::cout << "eco Types:\n";
+        for (auto& a : GP->speciesEcoRel_type)
+        {
+            std::cout << "\t";
+            for (auto& b : a)   
+            {
+                std::cout << "'" << b << "' ";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+
+        std::cout << "eco Effects:\n";
+        for (auto& a : GP->speciesEcoRel_effect)
+        {
+            std::cout << "\t";
+            for (auto& b : a)   
+            {
+                std::cout << "'" << b << "' ";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+        */
+        
         
     } else if (flag == "growthK")
     {

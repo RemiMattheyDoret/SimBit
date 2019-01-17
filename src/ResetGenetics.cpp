@@ -62,6 +62,7 @@ ResetGeneticsEvent::ResetGeneticsEvent(
     std::vector<int> T1l,
     std::vector<int> T2l,
     std::vector<int> T3l,
+    std::vector<int> T5l,
     std::vector<int> pa,
     std::vector<int> hap,
     std::vector<std::vector<int>> inds
@@ -71,6 +72,7 @@ ResetGeneticsEvent::ResetGeneticsEvent(
     T1loci(T1l),
     T2loci(T2l),
     T3loci(T3l),
+    T5loci(T5l),
     patches(pa),
     haplotypes(hap),
     individuals(inds)
@@ -91,9 +93,9 @@ ResetGeneticsEvent::ResetGeneticsEvent(
         assert(generation_index >= 0 && generation_index < GP->__GenerationChange.size());
 
 
-        if (T1loci.size() + T2loci.size() + T3loci.size() == 0)
+        if (T1loci.size() + T2loci.size() + T3loci.size() + T5loci.size() == 0)
         {
-            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) no loci (nor T1, T2 or T3) have been indicated for an event happening at generation "<<generation<<".\n";
+            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) no loci (nor T1, T2, T3 or T5) have been indicated for an event happening at generation "<<generation<<".\n";
             abort();
         }
 
@@ -275,6 +277,28 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
                         for (int& T3locus : event.T3loci)
                         {
                             haplo.setT3_Allele(T3locus, 0);
+                        }
+
+                        // T5
+                        for (int& T5locus : event.T5loci)
+                        {
+                            assert(SSP->Habitats.size() > patch_index);
+                            if (event.mutationType == 2)
+                            {
+                                haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                            } else if (event.mutationType == 0)
+                            {
+                                if (haplo.getT5_Allele(T5locus))
+                                {
+                                    haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                                }
+                            } else if (event.mutationType == 1)
+                            {
+                                if (!haplo.getT5_Allele(T5locus))
+                                {
+                                    haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                                }
+                            }
                         }
                     }
                 }

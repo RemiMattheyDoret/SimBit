@@ -69,6 +69,7 @@ public:
     std::vector<int>                                FromT2LocusToLocus;
     std::vector<int>                                FromT3LocusToLocus;
     std::vector<int>                                FromT4LocusToLocus;
+    std::vector<int>                                FromT5LocusToLocus;
 
     // Fitness Map
     std::vector<int>                                FromLocusToFitnessMapIndex;
@@ -82,13 +83,14 @@ public:
     int                recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
     //bool allowToCorrectRecomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
 
-    // Genetics and selection Both T1, T2 and T3
+    // Genetics and selection Both T1, T2, T3, T4 and T5
     int                                             ploidy;
     std::vector<double>                             RecombinationRate;
     double                                          TotalRecombinationRate;
 
     int                                             TotalNbLoci;
-    bool                                            FitModel_T1_isMultiplicity;
+    bool                                            T1_isMultiplicitySelection;
+    bool                                            T5_isMultiplicitySelection;
     bool                                            recRateOnMismatch_bool;
     int                                             recRateOnMismatch_halfWindow;
     double                                          recRateOnMismatch_factor;
@@ -142,6 +144,14 @@ public:
     Tree                                            T4Tree;
     double                                          T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation;
 
+    // Genetics T5
+    int                                             T5_nbBits;
+    std::vector<double>                             T5_MutationRate;  // cumulative
+    double                                          T5_Total_Mutation_rate;
+    std::vector<std::vector<double>>                T5_FitnessEffects;
+    bool                                            T5_isSelection;
+    bool                                            T5_isMuliplicitySelection;
+
     // Ecology
     std::vector<int>                                Habitats;
     std::vector<std::vector<int>>                   __Habitats;
@@ -153,6 +163,7 @@ public:
     std::poisson_distribution<int>                   T1_rpois_nbMut;
     std::poisson_distribution<int>                   T2_rpois_nbMut;
     std::poisson_distribution<int>                   T3_rpois_nbMut;
+    std::poisson_distribution<int>                   T5_rpois_nbMut;
     
     std::uniform_int_distribution<int>               runiform_int_ForRecPos;    // Used when const recombination rate
     std::uniform_real_distribution<double>           runiform_double_ForRecPos;  // Used when variation in recombination rate
@@ -160,9 +171,11 @@ public:
     std::uniform_int_distribution<int>               T1_runiform_int_ForMutPos;    // Used when const mutation rate
     std::uniform_int_distribution<int>               T2_runiform_int_ForMutPos;    // Used when const mutation rate
     std::uniform_int_distribution<int>               T3_runiform_int_ForMutPos;    // Used when const mutation rate
+    std::uniform_int_distribution<int>               T5_runiform_int_ForMutPos;    // Used when const mutation rate
     std::uniform_real_distribution<double>           T1_runiform_double_ForMutPos;  // Used when variation in mutation rate
     std::uniform_real_distribution<double>           T2_runiform_double_ForMutPos;  // Used when variation in mutation rate
     std::uniform_real_distribution<double>           T3_runiform_double_ForMutPos;  // Used when variation in mutation rate
+    std::uniform_real_distribution<double>           T5_runiform_double_ForMutPos;  // Used when variation in mutation rate
     
     
     // Other
@@ -172,6 +185,7 @@ public:
     std::vector<std::vector<int>>                    subsetT1LociForfitnessSubsetLoci_file;
     std::vector<std::vector<int>>                    subsetT2LociForfitnessSubsetLoci_file;
     std::vector<std::vector<int>>                    subsetT3LociForfitnessSubsetLoci_file;
+    std::vector<std::vector<int>>                    subsetT5LociForfitnessSubsetLoci_file;
     std::vector<std::vector<int>>                    subsetT1epistasisLociForfitnessSubsetLoci_file;
     
     // methods
@@ -183,6 +197,8 @@ public:
     void readT1_MutationRate(InputReader& input);
     void readT2_MutationRate(InputReader& input);
     void readT3_MutationRate(InputReader& input);
+    void readT4_MutationRate(InputReader& input);
+    void readT5_MutationRate(InputReader& input);
     void readadditiveEffectAmongLoci(InputReader& input);
     void readT3_PhenotypicEffects(InputReader& input);
     void readT1_EpistaticFitnessEffects(InputReader& input);
@@ -190,8 +206,8 @@ public:
     void readT2_FitnessEffects(InputReader& input);
     void readT3_FitnessLandscape(InputReader& input);
     void readT3_DevelopmentalNoise(InputReader& input);
-    void readT4_MutationRate(InputReader& input);
     void readT4_maxAverageNbNodesPerHaplotype(InputReader& input);
+    void readT5_FitnessEffects(InputReader& input);
     void readResetGenetics(InputReader& input);
     void readHabitats(InputReader& input);
     void readGrowthK(InputReader& input);

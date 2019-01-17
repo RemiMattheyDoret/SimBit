@@ -23,13 +23,6 @@
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
-
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
-
  */
 
 
@@ -54,6 +47,8 @@ public:
     double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
     void CalculateT3Phenotype(const int& Habitat);
     static double CalculateT3Fitness(const int& Habitat);
+    double CalculateT5FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T1_locusFrom, int T1_locusTo);
+    double CalculateT5FitnessNoMultiplicity(const int& Habitat);
 
 
     static bool isLocusIsInSet(const int locus, const std::vector<int>& LociSet);
@@ -63,6 +58,8 @@ public:
     double CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    double CalculateT5FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    double CalculateT5FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
     Individual(Haplotype& matChrom, Haplotype& patChrom);

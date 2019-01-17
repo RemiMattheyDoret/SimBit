@@ -386,7 +386,7 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 
                 
                 // Genetics and selection T1
-                this->ExtendStringForAdvancedLogFile(s, SSP->FitModel_T1_isMultiplicity,"FitModel_T1_isMultiplicity");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_isMultiplicitySelection,"T1_isMultiplicitySelection");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Initial_AlleleFreqs,"T1_Initial_AlleleFreqs");
                 
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbChars,"T1_nbChars");
@@ -429,6 +429,14 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->T4_nbBits,"T4_nbBits");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation,"T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T4_MutationRate,"T3_MutationRate");
+
+
+                // Genetics T5
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_nbBits,"T5_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_FitnessEffects,"T5_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_isSelection,"T5_isSelection");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_isMultiplicitySelection,"T5_isMultiplicitySelection");
+
 
                 // Ecology
                 this->ExtendStringForAdvancedLogFile(s, SSP->__Habitats,"__Habitats");
@@ -778,8 +786,8 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
                     assert(T1_locus <= T1MR.size());
                     currentMutationRate = T1MR[T1_locus];
 
-                    //std::cout << "SSP->FitModel_T1_isMultiplicity = " << SSP->FitModel_T1_isMultiplicity << std::endl;
-                    if (SSP->FitModel_T1_isMultiplicity)
+                    //std::cout << "SSP->T1_isMultiplicitySelection = " << SSP->T1_isMultiplicitySelection << std::endl;
+                    if (SSP->T1_isMultiplicitySelection)
                     {
                         //std::cout << " SSP->T1_FitnessEffects[0][locus] = " << SSP->T1_FitnessEffects[0][locus] << std::endl;
                         t = 1.0 - SSP->T1_FitnessEffects[0][T1_locus];
@@ -1234,6 +1242,7 @@ void OutputWriter::WriteOutputs_fitnessSubsetLoci_header(OutputFile& file)
                 s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T1EpistasisFit";
                 s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T2Fit";
                 s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T3Fit";
+                s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_LociSet" + std::to_string(lociSetIndex) + "_T5Fit";
             }
         }
     }
@@ -1259,7 +1268,7 @@ void OutputWriter::WriteOutputs_fitnessSubsetLoci(Pop& pop, OutputFile& file)
             {
                 if (shouldNABePrinted(patch_index,ind_index))
                 {
-                    s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
+                    s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
                 } else
                 {
                     auto fitnessComponents = pop.getPatch(patch_index).getInd(ind_index, patch_index).CalculateFitnessComponentsOnSubsetOfLoci(SSP->Habitats[patch_index], lociSetIndex);
@@ -1269,9 +1278,10 @@ void OutputWriter::WriteOutputs_fitnessSubsetLoci(Pop& pop, OutputFile& file)
                     std::string T2Fit =             std::to_string(fitnessComponents[1]);
                     std::string T1EpistasisFit =    std::to_string(fitnessComponents[2]);
                     std::string T3Fit =             std::to_string(fitnessComponents[3]);
-                    std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3]);
+                    std::string T5Fit =             std::to_string(fitnessComponents[4]);
+                    std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
 
-                    s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit;
+                    s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit + s_tab + T5Fit;
                 }
             }
         }
@@ -1298,6 +1308,7 @@ void OutputWriter::WriteOutputs_fitness_header(OutputFile& file)
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_T1EpistasisFit";
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_T2Fit";
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_T3Fit";
+            s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + "_T5Fit";
         }
     }
     s += std::string("\n");
@@ -1320,19 +1331,20 @@ void OutputWriter::WriteOutputs_fitness(Pop& pop, OutputFile& file)
         {
             if (shouldNABePrinted(patch_index,ind_index))
             {
-                s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
+                s += s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA" + s_tab + "NA";
             } else
             {
                 auto fitnessComponents = pop.getPatch(patch_index).getInd(ind_index, patch_index).CalculateFitnessComponents(SSP->Habitats[patch_index]);
-                assert(fitnessComponents.size() == 4);
+                assert(fitnessComponents.size() == 5);
 
                 std::string T1Fit =             std::to_string(fitnessComponents[0]);
                 std::string T2Fit =             std::to_string(fitnessComponents[1]);
                 std::string T1EpistasisFit =    std::to_string(fitnessComponents[2]);
                 std::string T3Fit =             std::to_string(fitnessComponents[3]);
-                std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3]);
+                std::string T5Fit =             std::to_string(fitnessComponents[4]);
+                std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
 
-                s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit;
+                s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit + s_tab + T5Fit;
             }
         }
     }
@@ -1354,6 +1366,26 @@ void OutputWriter::WriteOutputs_T1_AlleleFreq_header(OutputFile& file)
         for (auto& T1_locus : file.getSubsetToConsider(SSP->speciesIndex))
         {
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_L") + std::to_string(T1_locus.locus);
+        }
+    }
+    s += std::string("\n");
+    
+    file.write(s);
+    file.close();
+}
+
+void OutputWriter::WriteOutputs_T5_AlleleFreq_header(OutputFile& file)
+{
+    file.open();
+
+    std::string s;
+    
+    s += std::string("Generation");
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (size_t T5_locus = 0 ; T5_locus < SSP->T5_nbBits ; T5_locus++)
+        {
+            s += std::string("\tP") + std::to_string(patch_index) + std::string("_L") + std::to_string(T5_locus);
         }
     }
     s += std::string("\n");
@@ -1391,6 +1423,39 @@ void OutputWriter::WriteOutputs_T1_AlleleFreq(Pop& pop, OutputFile& file)
                     }
                 }
                 s += s_tab + std::to_string(nbOnes / (SSP->patchSize[patch_index] * SSP->ploidy));
+            }
+                
+            file.write(s);
+        }
+    }
+    file.write(std::string("\n"));
+    file.close();
+}
+
+
+void OutputWriter::WriteOutputs_T5_AlleleFreq(Pop& pop, OutputFile& file)
+{
+    file.open();
+
+    file.write(std::to_string(GP->CurrentGeneration));
+
+    std::string s_tab("\t");   
+
+    auto obsFreqs = WriteOutputs_T5ComputeFrequencies(pop);
+    
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+        {
+            std::string s;
+            if (shouldNABePrinted(patch_index))
+            {
+                s += s_tab + "NA";
+            } else
+            {
+                s.reserve(SSP->patchSize[patch_index] * 2 + 40);
+                
+                s += s_tab + std::to_string(obsFreqs[patch_index][locus]);
             }
                 
             file.write(s);
@@ -2338,6 +2403,96 @@ void OutputWriter::WriteOutputs_T4_vcf(OutputFile& file)
 }
 
 
+void OutputWriter::WriteOutputs_T5_vcf(Pop& pop, OutputFile& file)
+{
+    //std::cout << "In OutputWriter::WriteOutputs_T5_vcf at generation " <<GP->CurrentGeneration<<"\n"
+
+
+    std::string s_tab = "\t";
+    std::string s_P   = "P";
+    std::string s_dotI = ".I";
+
+    file.open();
+
+    // Write header
+    {
+        std::string s;
+
+        s += std::string("##fileformat=VCFv4.2\n##Generation=") + std::to_string( GP->CurrentGeneration) + std::string("\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT");
+        s.reserve(s.size() + SSP->TotalpatchCapacity * 4);
+        
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+            {
+                s += s_tab + s_P + std::to_string(patch_index) + s_dotI + std::to_string(ind_index);
+            }
+        }
+        s += std::string("\n");
+        //std::cout << "writing: " << s << "\n";
+        file.write(s);
+    }
+      
+ 
+    // Write Data
+    std::string s_vert = "|";
+    for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+    {
+        // one allele
+        bool oneAllele;
+        for (int patch_index = GP->PatchNumber - 1 ; patch_index >= 0  ; patch_index--)
+        {
+            if (SSP->patchSize[patch_index] != 0)
+            {
+                oneAllele = pop.getPatch(patch_index).getInd(0).getHaplo(0).isT5Mutation(locus);
+                break;
+            }
+        }
+
+        // start writing as if it was polymorphic
+        bool isPolymorphic = false;
+        std::string s;
+        s.reserve(SSP->TotalpatchCapacity * 6);
+
+        std::vector<int>::iterator it = std::lower_bound(SSP->ChromosomeBoundaries.begin(), SSP->ChromosomeBoundaries.end(), locus);
+    
+        int WhichIndependentSegment = it - SSP->ChromosomeBoundaries.begin();
+        
+        s += std::to_string(WhichIndependentSegment + 1) + std::string("\t") + std::to_string(locus + 1) + std::string("\t.\tA\tT\t.\t.\t.\tGT");
+
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+            {
+                bool h0 =  pop.getPatch(patch_index).getInd(ind_index).getHaplo(0).isT5Mutation(locus);
+                bool h1 =  pop.getPatch(patch_index).getInd(ind_index).getHaplo(1).isT5Mutation(locus);
+
+                if (oneAllele != h0 || oneAllele != h1)
+                {
+                    isPolymorphic = true;
+                }
+
+                s += s_tab
+                +
+                std::to_string(h0)
+                +
+                s_vert
+                +
+                std::to_string(h1);
+            }
+        }
+
+        if (isPolymorphic)
+        {
+            s += "\n";
+            file.write(s);
+        }
+    }
+
+    
+    file.close();
+}
+
 
 void OutputWriter::WriteOutputs_T3_LargeOutput_header(OutputFile& file)
 {
@@ -2547,7 +2702,7 @@ void OutputWriter::WriteOutputs_extinction(OutputFile& file)
 }
 
 
-void OutputWriter::WriteOutputs_T1or4SFS_header(OutputFile& file)
+void OutputWriter::WriteOutputs_T1or4or5SFS_header(OutputFile& file)
 {
     std::string s;
     
@@ -2598,12 +2753,17 @@ void OutputWriter::WriteOutputs_T1or4SFS_header(OutputFile& file)
 
 void OutputWriter::WriteOutputs_T4SFS_header(OutputFile& file)
 {
-    WriteOutputs_T1or4SFS_header(file);
+    WriteOutputs_T1or4or5SFS_header(file);
 }
 
 void OutputWriter::WriteOutputs_T1SFS_header(OutputFile& file)
 {
-    WriteOutputs_T1or4SFS_header(file);
+    WriteOutputs_T1or4or5SFS_header(file);
+}
+
+void OutputWriter::WriteOutputs_T5SFS_header(OutputFile& file)
+{
+    WriteOutputs_T1or4or5SFS_header(file);
 }
 
 
@@ -2611,7 +2771,7 @@ void OutputWriter::WriteOutputs_T1SFS_header(OutputFile& file)
 void OutputWriter::WriteOutputs_T4SFS(OutputFile& file)
 {
     std::vector<std::vector<double>> obsFreqs = SSP->T4Tree.getCurrentStates_frequencies(); // obsFreqs[patch_index][locus]
-    WriteOutputs_T1or4SFS(obsFreqs, file);
+    WriteOutputs_T1or4or5SFS(obsFreqs, file);
 }
 
 void OutputWriter::WriteOutputs_T1SFS(Pop& pop, OutputFile& file)
@@ -2644,11 +2804,58 @@ void OutputWriter::WriteOutputs_T1SFS(Pop& pop, OutputFile& file)
     }
     
     
-    WriteOutputs_T1or4SFS(obsFreqs, file);
+    WriteOutputs_T1or4or5SFS(obsFreqs, file);
 }
 
 
-void OutputWriter::WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file)
+std::vector<std::vector<double>> OutputWriter::WriteOutputs_T5ComputeFrequencies(Pop& pop)
+{
+    // Build obsFreqs
+    std::vector<std::vector<double>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        // count
+        if (SSP->patchSize[patch_index] == 0)
+        {
+            obsFreqs[patch_index].resize(SSP->T5_nbBits, -2 * SSP->patchSize[patch_index]);
+        } else
+        {
+            obsFreqs[patch_index].resize(SSP->T5_nbBits, 0.0);
+            for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+            {
+                for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+                {
+                    Haplotype& haplo = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+                    for (auto it = haplo.T5_AllelesCBegin() ; it != haplo.T5_AllelesCEnd(); it++)
+                    {
+                        assert(*it >= 0 && *it < SSP->T5_nbBits);
+                        obsFreqs[patch_index][*it]++;
+                    }
+                }
+            }
+        }
+            
+        // divide
+        for (size_t locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+        {
+            obsFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+            assert(obsFreqs[patch_index][locus] == -1.0 || (obsFreqs[patch_index][locus] >= 0.0 && obsFreqs[patch_index][locus] <= 1.0));
+        }
+    }
+
+    return obsFreqs;
+}
+
+void OutputWriter::WriteOutputs_T5SFS(Pop& pop, OutputFile& file)
+{
+    auto obsFreqs = WriteOutputs_T5ComputeFrequencies(pop);
+    
+    
+    WriteOutputs_T1or4or5SFS(obsFreqs, file);
+}
+
+
+void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file)
 {
     // Format is obsFreqs[patch_index][locus]
 
@@ -2987,6 +3194,34 @@ std::cout << "Enters in 'WriteOutputs'\n";
 
     }
 
+     /*
+     ###########################
+     ### T5_Allele Frequency ###
+     ###########################
+     */
+    //std::cout << "line 2756\n";
+    if (this->isFile(T5_AlleleFreqFile))
+    {
+        if (SSP->T5_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T5_AlleleFreqFile);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T5_AlleleFreq_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T5_AlleleFreqFile\n";
+                    #endif
+                    this->WriteOutputs_T5_AlleleFreq(pop, file);
+                }
+            }
+        }
+    }
+
     /*
      ####################
      #### T1_MeanLD  ####
@@ -3232,6 +3467,29 @@ std::cout << "Enters in 'WriteOutputs'\n";
         }
     }
 
+    /*
+     ################
+     #### T5 vcf ####
+     ################
+     */
+    //std::cout << "line 2981\n";
+    if (this->isFile(T5_vcfFile))
+    {
+        if (SSP->T5_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T5_vcfFile);
+            for (auto& file : files)
+            {
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T5_vcfFile \n";
+                    #endif
+                    this->WriteOutputs_T5_vcf(pop, file);
+                }
+            }
+        }
+    }
 
 
     /*
@@ -3370,7 +3628,36 @@ std::cout << "Enters in 'WriteOutputs'\n";
         }
     }
     //std::cout << "line 3162\n";
-         /*
+    
+
+    /*
+     ###############
+     #### T1SFS ####
+     ###############
+     */
+    if (SSP->speciesIndex == 0 && this->isFile(T1_SFS))
+    {
+        if (SSP->T1_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T1SFS_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T1SFS\n";
+                    #endif
+                    this->WriteOutputs_T1SFS(pop, file);
+                }
+            }
+        }
+    }
+
+        /*
      ###############
      #### T4SFS ####
      ###############
@@ -3397,29 +3684,28 @@ std::cout << "Enters in 'WriteOutputs'\n";
         }
     }
 
-
-         /*
+        /*
      ###############
-     #### T1SFS ####
+     #### T5SFS ####
      ###############
      */
-    if (SSP->speciesIndex == 0 && this->isFile(T1_SFS))
+    if (SSP->speciesIndex == 0 && this->isFile(T5_SFS))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T4_nbBits)
         {
-            std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS);
+            std::vector<OutputFile>& files = this->get_OutputFiles(T5_SFS);
             for (auto& file : files)
             {
                 if ( GP->CurrentGeneration == GP->startAtGeneration)
                 {
-                    this->WriteOutputs_T1SFS_header(file);
+                    this->WriteOutputs_T5SFS_header(file);
                 }
                 if (file.isTime())
                 {
                     #ifdef DEBUG
-                    std::cout << "Write T1SFS\n";
+                    std::cout << "Write T5SFS\n";
                     #endif
-                    this->WriteOutputs_T1SFS(pop, file);
+                    this->WriteOutputs_T5SFS(pop,file);
                 }
             }
         }

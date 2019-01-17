@@ -208,7 +208,7 @@ void GeneralParameters::initializeAllSpeciesPatchSizes()
 void GeneralParameters::readTemporalChanges(std::vector<int>& T)
 {
 #ifdef DEBUG
-    std::cout << "For option '--T (--TemporalChanges)', the std::string that is read is: " << input.print() << std::endl;
+    std::cout << "Entering in 'readTemporalChanges'" << std::endl;
 #endif
     
     //assert(this->__GenerationChange.size() == 1); // as it should already contain 0

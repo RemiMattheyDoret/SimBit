@@ -24,12 +24,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
-
  */
 
 
@@ -61,7 +55,7 @@ double Individual::CalculateT1FitnessMultiplicity(const int& Habitat, int fitnes
 std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
 #endif   
 
-    assert(SSP->FitModel_T1_isMultiplicity);
+    assert(SSP->T1_isMultiplicitySelection);
 
     // Get the right fitness array
     auto& fits = SSP->T1_FitnessEffects[Habitat];
@@ -297,7 +291,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
     if (r != 1.0)
     {
         std::cout << "line 2187 r = "<< r << " ";
-        assert (SSP->FitModel_T1_isMultiplicity);
+        assert (SSP->T1_isMultiplicitySelection);
         for (int locus = 0 ; locus < SSP->T1_nbBits ; locus++)
         {
             int byte_index = locus / EIGHT;
@@ -566,19 +560,20 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
 {
     double rT1 = 1.0;
     double rT2 = 1.0;
-
     double rT1epistasis = 1.0;
     double rT3 = 1.0;
+    double rT5 = 1.0;
 
     // Trait 1 if multiplicity (excluding epistasis) and Trait 2
-    if ((SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection) || SSP->T2_isSelection)
+    if ((SSP->T1_isMultiplicitySelection && SSP->T1_isSelection) || (SSP->T5_isMultiplicitySelection && SSP->T5_isSelection) || SSP->T2_isSelection)
     {
         int T1_locusFrom = 0; // from included
         int T2_locusFrom = 0; // from included
+        int T5_locusFrom = 0; // from included
         for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap; fitnessMapIndex++)
         {
             // Trait 1
-            if (SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+            if (SSP->T1_isMultiplicitySelection && SSP->T1_isSelection)
             {
                 int T1_locusTo = SSP->FromLocusToFitnessMapBoundaries[fitnessMapIndex].T1; // to excluded
                 assert(T1_locusTo >= T1_locusFrom);
@@ -602,12 +597,26 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
                 // set from Locus
                 T2_locusFrom = T2_locusTo;
             }
+
+            // Trait 5
+            if (SSP->T5_isMultiplicitySelection && SSP->T5_isSelection)
+            {
+                int T5_locusTo = SSP->FromLocusToFitnessMapBoundaries[fitnessMapIndex].T5; // to excluded
+                assert(T5_locusTo >= T5_locusFrom);
+
+                //std::cout << "calculate T5 Fitness from " << T5_locusFrom << " to " << T5_locusTo << "\n";
+
+                rT5 *= this->CalculateT5FitnessMultiplicity(Habitat, fitnessMapIndex, T5_locusFrom, T5_locusTo);
+
+                // set from Locus
+                T5_locusFrom = T5_locusTo;
+            }
         }
 
     }
       
     // Trait 1 (excluding epistasis) 
-    if (!SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+    if (!SSP->T1_isMultiplicitySelection && SSP->T1_isSelection)
     {
         assert(rT1 == 1.0);
         rT1 = this->CalculateT1FitnessNoMultiplicity(Habitat);
@@ -627,7 +636,14 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
         rT3 = Individual::CalculateT3Fitness(Habitat); // calculate fitness associated to teh phenotype saved in the static attribute 'T3_IndPhenotype'
     }
 
-    return {rT1, rT2, rT1epistasis, rT3};
+    // Trait 5 
+    if (!SSP->T5_isMultiplicitySelection && SSP->T5_isSelection)
+    {
+        assert(rT5 == 1.0);
+        rT5 = this->CalculateT5FitnessNoMultiplicity(Habitat);
+    }
+
+    return {rT1, rT2, rT1epistasis, rT3, rT5};
 }
 
 double Individual::CalculateFitness(const int& patch_index)
@@ -643,7 +659,7 @@ std::cout << "Enters in 'CalculateFitness'\n";
     auto fitnessComponents = CalculateFitnessComponents(Habitat);
 
     // Get total fitness
-    double r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3];
+    double r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4];
     
     assert(r >= 0 && r <= 1);  
 
@@ -729,15 +745,15 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
 {
     double rT1 = 1.0;
     double rT2 = 1.0;
-
     double rT1epistasis = 1.0;
     double rT3 = 1.0;
+    double rT5 = 1.0;
 
     // Trait 1 if multiplicity (excluding epistasis) and Trait 2
-    if ((SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection) || SSP->T2_isSelection)
+    if ((SSP->T1_isMultiplicitySelection && SSP->T1_isSelection) || (SSP->T5_isMultiplicitySelection && SSP->T5_isSelection) || SSP->T2_isSelection)
     {    
         // Trait 1
-        if (SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+        if (SSP->T1_isMultiplicitySelection && SSP->T1_isSelection)
         {
             rT1 *= this->CalculateT1FitnessMultiplicityOnSubsetOfLoci(
                 Habitat,
@@ -753,10 +769,19 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
                 SSP->subsetT2LociForfitnessSubsetLoci_file[lociSetIndex]
             );
         }
+
+        // Trait 5
+        if (SSP->T5_isSelection)
+        {
+            rT5 *= this->CalculateT5FitnessMultiplicityOnSubsetOfLoci(
+                Habitat,
+                SSP->subsetT5LociForfitnessSubsetLoci_file[lociSetIndex]
+            );
+        }
     }
       
     // Trait 1 no multiplicity (excluding epistasis) 
-    if (!SSP->FitModel_T1_isMultiplicity && SSP->T1_isSelection)
+    if (!SSP->T1_isMultiplicitySelection && SSP->T1_isSelection)
     {
         assert(rT1 == 1.0);
         rT1 = this->CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(
@@ -786,7 +811,16 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
     }
     //std::cout << "rT1 = "<<rT1<< " rT2 = " <<rT2<<" rT1epistasis = "<<rT1epistasis<< " rT3 = " <<rT3<<"\n";
 
-    return {rT1, rT2, rT1epistasis, rT3};
+    if (SSP->T5_isMultiplicitySelection && SSP->T5_isSelection)
+    {
+        assert(rT5 == 1.0);
+        rT5 = this->CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(
+            Habitat,
+            SSP->subsetT5LociForfitnessSubsetLoci_file[lociSetIndex]
+        );
+    }
+
+    return {rT1, rT2, rT1epistasis, rT3, rT5};
 }
 
 
@@ -798,7 +832,7 @@ double Individual::CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habit
 std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
 #endif   
 
-    assert(SSP->FitModel_T1_isMultiplicity);
+    assert(SSP->T1_isMultiplicitySelection);
 
     // Get the right fitness array
     auto& fits = SSP->T1_FitnessEffects[Habitat];
@@ -989,3 +1023,252 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
         }
     }
 }
+
+
+
+double Individual::CalculateT5FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T5_locusFrom, int T5_locusTo)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
+#endif   
+
+    assert(SSP->T5_isMultiplicitySelection);
+    assert(T5_locusFrom <= T5_locusTo);
+
+    // Get the right fitness array
+    auto& fits = SSP->T5_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T5_nbBits);
+
+
+    if (haplo0.getW_T5(fitnessMapIndex) == -1.0)
+    {
+        
+        auto itFrom = haplo0.T5_AllelesCiterator(T5_locusFrom);
+        auto itEnd  = haplo0.T5_AllelesCiterator(T5_locusTo, itFrom);
+        
+
+        double W_T5haplo0 = 1.0;
+        for (auto it = itFrom ; it < itEnd ; it++)
+        {
+            W_T5haplo0 *= fits[*it];
+        }
+        haplo0.setW_T5(W_T5haplo0, fitnessMapIndex);
+    }
+
+    if (haplo1.getW_T5(fitnessMapIndex) == -1.0)
+    {
+        auto itFrom = haplo1.T5_AllelesCiterator(T5_locusFrom);
+        auto itEnd  = haplo1.T5_AllelesCiterator(T5_locusTo, itFrom);
+        double W_T5haplo1 = 1.0;
+        for (auto it = itFrom ; it < itEnd ; it++)
+        {
+            W_T5haplo1 *= fits[*it];
+        }
+        haplo1.setW_T5(W_T5haplo1, fitnessMapIndex);
+    }
+        
+    double r = haplo0.getW_T5(fitnessMapIndex) * haplo1.getW_T5(fitnessMapIndex);  
+
+    assert(r<=1.0 && r>=0.0);
+
+    return r;
+}
+
+
+double Individual::CalculateT5FitnessNoMultiplicity(const int& Habitat)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT5FitnessNoMultiplicity'\n";
+#endif   
+    auto& fits = SSP->T5_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T5_nbBits * 2);
+
+    double W_T5_WholeIndividual = 1.0;
+
+    auto itHaplo0 = haplo0.T5_AllelesCBegin();
+    auto itHaplo1 = haplo1.T5_AllelesCBegin();
+
+    auto itEndHaplo0  = haplo0.T5_AllelesCEnd();
+    auto itEndHaplo1  = haplo1.T5_AllelesCEnd();
+
+    /*
+    if (itHaplo0 != itEndHaplo0 || itHaplo1 != itEndHaplo1)
+    {
+        std::cout << "haplo0: ";
+        for (auto it = haplo0.T5_AllelesCBegin() ; it != itEndHaplo0 ; it++)
+            std::cout << *it << " ";
+        std::cout << "\nhaplo1: ";
+        for (auto it = haplo1.T5_AllelesCBegin() ; it != itEndHaplo1 ; it++)
+            std::cout << *it << " ";
+        std::cout << "\n";
+    }
+    */
+    
+
+    bool haplo0ReachedEnd = itHaplo0 == itEndHaplo0;
+    bool haplo1ReachedEnd = itHaplo1 == itEndHaplo1;
+
+    while (!haplo0ReachedEnd || !haplo1ReachedEnd )
+    {
+        //std::cout << "haplo0ReachedEnd = " << std::boolalpha <<  haplo0ReachedEnd << " haplo1ReachedEnd = " << std::boolalpha << haplo1ReachedEnd << "\n";
+        if (!haplo0ReachedEnd && !haplo1ReachedEnd)
+        {
+            //std::cout << "*itHaplo0 = " << *itHaplo0 << " *itHaplo1 = " << *itHaplo1 << "\n";
+            // No haplo has reached end of mutations
+            if (*itHaplo0 == *itHaplo1)
+            {
+                // homozygote mutant
+                W_T5_WholeIndividual *= fits[*itHaplo0 + 1]; // 1-s
+                itHaplo0++;
+                itHaplo1++;
+                if (itHaplo0 == itEndHaplo0)
+                    haplo1ReachedEnd = true;
+                if (itHaplo1 == itEndHaplo1)
+                    haplo1ReachedEnd = true;
+            } else if (*itHaplo0 > *itHaplo1)
+            {
+                // must wait for haplo1 to eventually find a homozygous
+                while (*itHaplo0 > *itHaplo1)
+                {
+                    W_T5_WholeIndividual *= fits[*itHaplo1]; // 1-hs
+                    itHaplo1++;
+                    if (itHaplo1 == itEndHaplo1)
+                    {
+                        haplo1ReachedEnd = true;
+                        break;
+                    }
+                }
+            } else // if (*itHaplo0 < *itHaplo1)
+            {
+                // must wait for haplo0 to eventually find a homozygous
+                while (*itHaplo0 < *itHaplo1)
+                {
+                    W_T5_WholeIndividual *= fits[*itHaplo0]; // 1-hs
+                    itHaplo0++;
+                    if (itHaplo0 == itEndHaplo0)
+                    {
+                        haplo0ReachedEnd = true;
+                        break;
+                    }
+                }
+            }
+        } else
+        {
+            // One of the two haplos has reached end of mutations
+            if (haplo0ReachedEnd)
+            {
+                //std::cout << "out *itHaplo1 = " << *itHaplo1 << "\n";
+                while (itHaplo1 != itEndHaplo1)
+                {
+                    //std::cout << "out *itHaplo1 = " << *itHaplo1 << "\n";
+                    W_T5_WholeIndividual *= fits[*itHaplo1]; // 1-hs
+                    itHaplo1++;
+                }
+                break;
+            } else
+            {
+                //std::cout << "out *itHaplo0 = " << *itHaplo0 << "\n";
+                while (itHaplo0 != itEndHaplo0)
+                {
+                    //std::cout << "*itHaplo0 = " << *itHaplo0 << "\n";
+                    W_T5_WholeIndividual *= fits[*itHaplo0]; // 1-hs
+                    itHaplo0++;
+                }
+                break;
+            }
+        }     
+    }
+
+
+    return W_T5_WholeIndividual;
+}
+
+double Individual::CalculateT5FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT5FitnessMultiplicityOnSubsetOfLoci'\n";
+#endif   
+
+    assert(SSP->T5_isMultiplicitySelection);
+
+    // Get the right fitness array
+    auto& fits = SSP->T5_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T5_nbBits);
+
+    auto itHaplo0 = haplo0.T5_AllelesCBegin();
+    auto itHaplo1 = haplo1.T5_AllelesCBegin();
+
+    double r = 1.0;
+
+
+    for (auto& locus : LociSet)
+    {
+        itHaplo0 = haplo0.T5_AllelesCiterator(locus, itHaplo0);
+        itHaplo1 = haplo1.T5_AllelesCiterator(locus, itHaplo1);
+
+        bool isHaplo0Mutant = itHaplo0 == haplo0.T5_AllelesCEnd() ? false : *itHaplo0 == locus ;
+        bool isHaplo1Mutant = itHaplo1 == haplo1.T5_AllelesCEnd() ? false : *itHaplo1 == locus ;
+
+        if (isHaplo0Mutant)
+        {
+            r *= fits[locus];
+        }
+        if (isHaplo1Mutant)
+        {
+            r *= fits[locus];
+        }
+    }
+
+    return r;
+}
+
+
+double Individual::CalculateT5FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT5FitnessNoMultiplicity'\n";
+#endif   
+    auto& fits = SSP->T5_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T5_nbBits * 2);
+
+    double r = 1.0;
+
+    auto itHaplo0 = haplo0.T5_AllelesCBegin();
+    auto itHaplo1 = haplo1.T5_AllelesCBegin();
+
+    for (auto& locus : LociSet)
+    {
+        itHaplo0 = haplo0.T5_AllelesCiterator(locus, itHaplo0);
+        itHaplo1 = haplo1.T5_AllelesCiterator(locus, itHaplo1);
+
+        bool isHaplo0Mutant = itHaplo0 == haplo0.T5_AllelesCEnd() ? false : *itHaplo0 == locus ;
+        bool isHaplo1Mutant = itHaplo1 == haplo1.T5_AllelesCEnd() ? false : *itHaplo1 == locus ;
+
+        if (isHaplo0Mutant && isHaplo1Mutant)
+        {
+            // homozygote mutant
+            r *= fits[*itHaplo0 + 1]; // 1-s
+            itHaplo0++;
+            itHaplo1++;
+        } else
+        {
+            
+            if (isHaplo0Mutant)
+            {
+                r *= fits[locus]; // 1-hs    
+                itHaplo0++;
+            }
+
+            if (isHaplo1Mutant)
+            {
+                r *= fits[locus]; // 1-hs
+                itHaplo1++;
+            }
+        }
+    }
+
+    return r;
+}
+
+
+

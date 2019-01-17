@@ -24,11 +24,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
  */
 
 
@@ -392,6 +387,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         
     } else if (breakpoints.size()>1)
     {
+        //std::cout << "breakpoints.size() " << breakpoints.size() << "\n";
         int Safety_T1_Absolutefrom = INT_MAX;
         int Safety_T1_Absoluteto   = -1;
         
@@ -404,15 +400,19 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         int Safety_T4_Absolutefrom = INT_MAX;
         int Safety_T4_Absoluteto   = -1;
         
+        int Safety_T5_Absolutefrom = INT_MAX;
+        int Safety_T5_Absoluteto   = -1;
         
         int T1_from = 0;
         int T2_from = 0;
         int T3_from = 0;
         int T4_from = 0;
+        int T5_from = 0;
         int T1_to = 0;
         int T2_to = 0;
         int T3_to = 0;
         int T4_to = 0;
+        int T5_to = 0;
         int fitnessMapIndexFrom = 0;
 
         if (segregationInfo == 0 || segregationInfo == 1)
@@ -424,6 +424,11 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         }
         int haplo_index = SegregationIndex;
         
+        if (SSP->T5_nbBits)
+        {
+            TransmittedChrom.clearT5Alleles();
+        }
+
         
         /*std::cout << "\t";
         for (auto& b : breakpoints)
@@ -442,6 +447,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->T2_nbChars;
                 T3_to = SSP->T3_nbChars;
                 T4_to = SSP->T4_nbBits;
+                T5_to = SSP->T5_nbBits;
                 b = SSP->TotalNbLoci - 1;
             } else
             {
@@ -451,6 +457,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->FromLocusToTXLocus[b].T2;
                 T3_to = SSP->FromLocusToTXLocus[b].T3;
                 T4_to = SSP->FromLocusToTXLocus[b].T4;
+                T5_to = SSP->FromLocusToTXLocus[b].T5;
             }
 
             #ifdef DEBUG
@@ -459,11 +466,12 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(T2_to <= SSP->T2_nbChars);
             assert(T3_to <= SSP->T3_nbChars);
             assert(T4_to <= SSP->T4_nbBits);
+            assert(T5_to <= SSP->T5_nbBits);
             
             #endif
 
             // Set Fitnesses
-            if (SSP->T1_isSelection || SSP->T2_isSelection)
+            if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T5_isSelection)
             {  
                 //std::cout << "b = " << b << "  SSP->FromLocusToFitnessMapIndex.size() = " << SSP->FromLocusToFitnessMapIndex.size() << " INT_MAX = " << INT_MAX << "\n";
 
@@ -541,8 +549,16 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 
                 
 
-                if (SSP->T1_isSelection && SSP->FitModel_T1_isMultiplicity && SSP->T2_isSelection)
+            
+                if (SSP->T1_isMultiplicitySelection)
                 {
+                    
+                    /*
+                    std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
+                    std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
+                    std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
+                    */
+
                     // Copy fitnesses that can be copied
                     for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
                     {
@@ -553,9 +569,56 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                                 parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex),
                                 fitnessMapIndex
                             );
+                        }
+                    }
 
+                    if (fitnessMapIndexToRecompute != -1)
+                    {
+                        // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
+                        TransmittedChrom.setW_T1(-1.0, fitnessMapIndexToRecompute);
+                    }
+                }
+
+                if (SSP->T2_isSelection)
+                {
+                    // Copy fitnesses that can be copied
+                    for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
+                    {
+                        if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                        {
+                            //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
                             TransmittedChrom.setW_T2(
                                 parent.getHaplo(haplo_index).getW_T2(fitnessMapIndex),
+                                fitnessMapIndex
+                            );
+                        }
+                    }
+
+                    // Set fitness of the affected fitnessMap part to -1.0. Will need to be recalculated
+                    if (fitnessMapIndexToRecompute != -1)
+                    {
+                        // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
+                        TransmittedChrom.setW_T2(-1.0, fitnessMapIndexToRecompute);
+                    }
+                }
+
+                if (SSP->T5_isMultiplicitySelection)
+                {
+                    
+                    /*
+                    std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
+                    std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
+                    std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
+                    */
+
+                    // Copy fitnesses that can be copied
+                    for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
+                    {
+                        if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                        {
+                            //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
+                            TransmittedChrom.setW_T5(
+                                parent.getHaplo(haplo_index).getW_T5(fitnessMapIndex),
                                 fitnessMapIndex
                             );
                         }
@@ -564,63 +627,11 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                     if (fitnessMapIndexToRecompute != -1)
                     {
                         // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                        TransmittedChrom.setW_T1(-1.0, fitnessMapIndexToRecompute);
-                        TransmittedChrom.setW_T2(-1.0, fitnessMapIndexToRecompute);
-                    }
-                } else
-                {
-                    if (SSP->T1_isSelection && SSP->FitModel_T1_isMultiplicity)
-                    {
-                        
-                        /*
-                        std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
-                        std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
-                        std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
-                        */
-
-                        // Copy fitnesses that can be copied
-                        for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
-                        {
-                            if (fitnessMapIndex != fitnessMapIndexToRecompute)
-                            {
-                                //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
-                                TransmittedChrom.setW_T1(
-                                    parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex),
-                                    fitnessMapIndex
-                                );
-                            }
-                        }
-
-                        if (fitnessMapIndexToRecompute != -1)
-                        {
-                            // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                            TransmittedChrom.setW_T1(-1.0, fitnessMapIndexToRecompute);
-                        }
-                    }
-
-                    if (SSP->T2_isSelection)
-                    {
-                        // Copy fitnesses that can be copied
-                        for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
-                        {
-                            if (fitnessMapIndex != fitnessMapIndexToRecompute)
-                            {
-                                //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
-                                TransmittedChrom.setW_T2(
-                                    parent.getHaplo(haplo_index).getW_T2(fitnessMapIndex),
-                                    fitnessMapIndex
-                                );
-                            }
-                        }
-
-                        // Set fitness of the affected fitnessMap part to -1.0. Will need to be recalculated
-                        if (fitnessMapIndexToRecompute != -1)
-                        {
-                            // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                            TransmittedChrom.setW_T2(-1.0, fitnessMapIndexToRecompute);
-                        }
+                        TransmittedChrom.setW_T5(-1.0, fitnessMapIndexToRecompute);
                     }
                 }
+
+                
                 if (fitnessMapIndexToRecompute == -1)
                 {
                     fitnessMapIndexFrom = fitnessMapIndexTo;
@@ -669,12 +680,23 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 Safety_T4_Absolutefrom = std::min(Safety_T4_Absolutefrom, T4_from);
                 Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
             }
+
+            // Copy for T5. from included, to excluded
+            if (T5_from < T5_to)
+            {
+                assert(T5_to > 0 && T5_to <= SSP->T5_nbBits + 1);
+                
+                TransmittedChrom.copyIntoT5(T5_from, T5_to, parent.getHaplo(haplo_index));
+                Safety_T5_Absolutefrom = std::min(Safety_T5_Absolutefrom, T5_from);
+                Safety_T5_Absoluteto = std::max(Safety_T5_Absoluteto, T5_to);
+            }
             
             // Set new 'from'
             T1_from = T1_to;
             T2_from = T2_to;
             T3_from = T3_to;
             T4_from = T4_to;
+            T5_from = T5_to;
             
             // Switch parent chromosome
             haplo_index = !haplo_index;
@@ -709,6 +731,13 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(Safety_T4_Absolutefrom == 0);
         }
 
+        if (SSP->T5_nbBits)
+        {
+            assert(T5_to == SSP->T5_nbBits);
+            assert(Safety_T5_Absoluteto == SSP->T5_nbBits);
+            assert(Safety_T5_Absolutefrom == 0);
+        }
+
         
     } else
     {
@@ -738,6 +767,7 @@ void LifeCycle::Mutate(Haplotype& TransmittedChrom, int Habitat)
     if (SSP->T1_Total_Mutation_rate>0) Mutate_T1(TransmittedChrom, Habitat);
     if (SSP->T2_Total_Mutation_rate>0) Mutate_T2(TransmittedChrom, Habitat);
     if (SSP->T3_Total_Mutation_rate>0) Mutate_T3(TransmittedChrom);
+    if (SSP->T5_Total_Mutation_rate>0) Mutate_T5(TransmittedChrom, Habitat);
 }
 
 
@@ -838,3 +868,35 @@ std::cout << "Enters in 'Mutate_T3'\n";
     }  
 }
 
+void LifeCycle::Mutate_T5(Haplotype& TransmittedChrom, int Habitat)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'Mutate_T5'\n";
+#endif     
+    int nbMuts = SSP->T5_rpois_nbMut(GP->mt);
+    
+    for (int i = 0 ; i < nbMuts ; i++)
+    {
+        //std::cout << "nbMuts = " << nbMuts << "\n";
+        int MutPosition;
+        double rnd;
+        // Find Position
+        //std::cout << "SSP->T5_MutationRate.size() = " << SSP->T5_MutationRate.size() << "\n";
+        if (SSP->T5_MutationRate.size() == 1)
+        {
+            MutPosition = SSP->T5_runiform_int_ForMutPos(GP->mt);
+        } else
+        {
+            rnd = SSP->T5_runiform_double_ForMutPos(GP->mt);
+            
+            // binary search
+            MutPosition = distance(SSP->T5_MutationRate.begin(),
+                                   std::upper_bound(SSP->T5_MutationRate.begin(), SSP->T5_MutationRate.end(), rnd)
+                                   );
+        }
+        
+        // Make the mutation
+        TransmittedChrom.toggleT5_Allele(MutPosition, Habitat);         // toggle bit
+        // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one
+    }
+}

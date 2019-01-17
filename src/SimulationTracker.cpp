@@ -38,7 +38,7 @@ void SimulationTracker::addMutation(int byte_index, int bit_index, int MutPositi
     if (SSP->recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations != -1 && SSP->T1_isSelection)
     {
         T1_locusDescription TrackedMutation(byte_index, bit_index, MutPosition);
-        if (SSP->FitModel_T1_isMultiplicity)
+        if (SSP->T1_isMultiplicitySelection)
         {
             //std::cout << MutPosition << " is in fitness block " << SSP->FromLocusToFitnessMapIndex[MutPosition] << "\n";
             T1SitesForFitnessMultiplicityCalculationMutationsForNextGeneration[ SSP->FromLocusToFitnessMapIndex[MutPosition] ].push_back(TrackedMutation);
@@ -68,7 +68,7 @@ void SimulationTracker::Initialization(Pop& pop)
     
     if (SSP->T1_isSelection)
     {
-        if (SSP->FitModel_T1_isMultiplicity)
+        if (SSP->T1_isMultiplicitySelection)
         {
             prepareFitnessMapIndexForT1SitesForFitnessMultiplicity();
             if (!SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations == -1)
@@ -102,7 +102,7 @@ void SimulationTracker::prepareT1SitesForFitness(Pop& pop)
     if (forceToRecomputeNextTime)
     {
         //std::cout << "being forced to recompute\n";
-        if (SSP->FitModel_T1_isMultiplicity)
+        if (SSP->T1_isMultiplicitySelection)
         {
             recomputeT1SitesForFitnessMultiplicityCalculation(pop);
         } else
@@ -112,7 +112,7 @@ void SimulationTracker::prepareT1SitesForFitness(Pop& pop)
 
     } else if (SSP->recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations != -1 && SSP->T1_isSelection)
     {
-        if (SSP->FitModel_T1_isMultiplicity)
+        if (SSP->T1_isMultiplicitySelection)
         {
             // add the new mutations
             addMutsSortAndRemoveDuplicateOfT1SitesForFitnessMultiplicity();
@@ -271,7 +271,7 @@ void SimulationTracker::setToMinus1LociThatShouldNotBeTracked(Pop& pop, std::vec
             // check if it is under selection and if the allele found is itself causing fitness loss
             for (int Habitat = 0 ; Habitat <= SSP->MaxHabitat ; Habitat++)
             {
-                if (SSP->FitModel_T1_isMultiplicity)
+                if (SSP->T1_isMultiplicitySelection)
                 {
                     if (SSP->T1_FitnessEffects[Habitat][T1Site.locus] != 1.0)
                     {
@@ -409,7 +409,7 @@ void SimulationTracker::setToMinus1LociThatShouldNotBeTracked(Pop& pop, std::vec
             // check if it is under selection and if the allele found is itself causing fitness loss
             for (int Habitat = 0 ; Habitat <= SSP->MaxHabitat ; Habitat++)
             {
-                if (SSP->FitModel_T1_isMultiplicity)
+                if (SSP->T1_isMultiplicitySelection)
                 {
                     if (SSP->T1_FitnessEffects[Habitat][T1Site->locus] != 1.0)
                     {

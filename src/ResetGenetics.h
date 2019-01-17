@@ -39,6 +39,7 @@ private:
     std::vector<int> T1loci;
     std::vector<int> T2loci;
     std::vector<int> T3loci;
+    std::vector<int> T5loci;
     std::vector<int> patches;
     std::vector<int> haplotypes;
     std::vector<std::vector<int>> individuals;
@@ -50,6 +51,7 @@ public:
         std::vector<int> T1l,
         std::vector<int> T2l,
         std::vector<int> T3l,
+        std::vector<int> T5l,
         std::vector<int> pa,
         std::vector<int> hap,
         std::vector<std::vector<int>> inds

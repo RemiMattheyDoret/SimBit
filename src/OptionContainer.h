@@ -57,9 +57,13 @@ public:
         {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
         {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},
 
-        // Genetics and Selection T3
+        // Genetics and Selection T4
         {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
         {{"T4_maxAverageNbNodesPerHaplotype"},          {"S", "L"}, false},
+
+        // Genetics and Selection T5
+        {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
+        {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed", "L"}, false},
         
 
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
@@ -97,6 +101,11 @@ public:
         {{"T4_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
+
+        {{"T5_vcf_file","T5_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T5_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T5_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration", "L"}, true},
+
         {{"outputSFSbinSize"},                      {"T4_SFS", "T1_SFS", "GP", "S", "startAtGeneration", "L"}, true},
 
         // Species interaction

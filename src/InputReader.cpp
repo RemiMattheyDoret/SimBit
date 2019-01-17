@@ -709,9 +709,9 @@ void InputReader::interpretKeywords()
                 
         } else if (currentKeyword == "seqInt")
         {
-            int from = std::stoi(V[vi+1]);
-            int to   = std::stoi(V[vi+2]);
-            int by   = std::stoi(V[vi+3]);
+            int from = (int) std::stod(V[vi+1]);
+            int to   = (int) std::stod(V[vi+2]);
+            int by   = (int) std::stod(V[vi+3]);
 
             for (auto i = from ; i <= to; i += by)
             {
@@ -721,7 +721,7 @@ void InputReader::interpretKeywords()
         } else if (currentKeyword == "rep" || currentKeyword == "repeach")
         {
             auto whatToRepeat_original = V[vi+1];
-            auto nbRepeats    = std::stoi(V[vi+2]);
+            auto nbRepeats    = (int) std::stod(V[vi+2]);
             std::vector<std::string> whatToRepeat;
             assert(whatToRepeat_original.size() >= 1);
 

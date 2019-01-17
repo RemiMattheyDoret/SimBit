@@ -124,6 +124,11 @@ double DispersalData::ComputeEffectiveNumberOfMigrants(
         //std::cout << "SSP->patchSize[patch_from] = " << SSP->patchSize[patch_from]  << "\n";
         assert(CumSumFits.size() == GP->PatchNumber);
         assert(patch_from < GP->PatchNumber);
+        /*
+        std::cout << "SSP->malesAndFemales = " << SSP->malesAndFemales << "\n";
+        std::cout << "SSP->DispWeightByFitness = " << SSP->DispWeightByFitness << "\n";
+        std::cout << "SSP->fecundityForFitnessOfOne = " << SSP->fecundityForFitnessOfOne << "\n";
+        */
         if (SSP->malesAndFemales)
         {
             assert(CumSumFits[patch_from].size() == 2);
@@ -142,17 +147,31 @@ double DispersalData::ComputeEffectiveNumberOfMigrants(
             effectiveNumberOfMigrants = 0.0;
         } else
         {
+            //std::cout << "line 150\n";
             if (SSP->DispWeightByFitness)
             {
+                //std::cout << "line 153\n";
                 if (SSP->fecundityForFitnessOfOne != -1.0)   
                 {
+                    //std::cout << "line 156\n";
                     effectiveNumberOfMigrants =
                         CumSumFits[patch_from][0].back() * // There is in here patchSize within CumSumFits[patch_from][0].back(). Note btw that CumSumFits[patch_from][0] is of length of the patchSize of patch_from
                         SSP->fecundityForFitnessOfOne *
                         this->FullFormForwardMigration[patch_from][patch_to]
                         ; 
+                    //std::cout << "line 162 effectiveNumberOfMigrants = " << effectiveNumberOfMigrants << "\n";
+                    /*
+                    if (effectiveNumberOfMigrants < 0)
+                    {
+                        std::cout << "line 164 effectiveNumberOfMigrants = " << effectiveNumberOfMigrants << "\n";
+                        std::cout << "CumSumFits[patch_from][0].back() = " << CumSumFits[patch_from][0].back() << "\n";
+                        std::cout << "SSP->fecundityForFitnessOfOne = " << SSP->fecundityForFitnessOfOne << "\n";
+                        std::cout << "this->FullFormForwardMigration["<<patch_from<<"]["<<patch_to<<"] = " << this->FullFormForwardMigration[patch_from][patch_to] << "\n";
+                    }
+                    */
                 } else
                 {
+                    //std::cout << "line 171\n";
                     effectiveNumberOfMigrants =
                         CumSumFits[patch_from][0].back() * // There is in here patchSize within CumSumFits[patch_from].back(). Note btw that CumSumFits[patch_from][0] is of length of the patchSize of patch_from
                         this->FullFormForwardMigration[patch_from][patch_to]
@@ -160,8 +179,10 @@ double DispersalData::ComputeEffectiveNumberOfMigrants(
                 }
             } else
             {
+                //std::cout << "line 179\n";
                 if (SSP->fecundityForFitnessOfOne != -1.0)
                 {
+                    //std::cout << "line 182\n";
                     // actually if SSP->fecundityForFitnessOfOne dispersal is necessarily weigthed by fitness
                     effectiveNumberOfMigrants =
                         CumSumFits[patch_from][0].back() * // There is in here patchSize within CumSumFits[patch_from].back(). Note btw that CumSumFits[patch_from][0] is of length of the patchSize of patch_from
@@ -170,13 +191,18 @@ double DispersalData::ComputeEffectiveNumberOfMigrants(
                         ; 
                 } else
                 {
+                    //std::cout << "line 190\n";
                     effectiveNumberOfMigrants =
                         (double) SSP->patchCapacity[patch_from] * 
                         this->FullFormForwardMigration[patch_from][patch_to]
                         ; 
                 }
             }
-            if (GP->nbSpecies > 1) effectiveNumberOfMigrants += ComputeEffectOfSpeciesEcologicalInteractions(patch_to);
+            if (GP->nbSpecies > 1)
+            {
+                effectiveNumberOfMigrants += ComputeEffectOfSpeciesEcologicalInteractions(patch_to);
+                if (effectiveNumberOfMigrants < 0) effectiveNumberOfMigrants = 0;
+            }
         }
     }
     
@@ -193,9 +219,10 @@ double DispersalData::ComputeEffectiveNumberOfMigrants(
 
     //std::cout << effectiveNumberOfMigrants << " eff. migants from " << patch_from << " to " << patch_to<< "\n";
     //std::cout << "SSP->patchSize[patch_from] = " << SSP->patchSize[patch_from]  << "\n";
-        
-    assert(effectiveNumberOfMigrants >= 0.0);
     //std::cout << "effectiveNumberOfMigrants = " << effectiveNumberOfMigrants << "\n";
+    //std::cout << "line 216 effectiveNumberOfMigrants = " << effectiveNumberOfMigrants << "\n";
+    assert(effectiveNumberOfMigrants >= 0.0);
+    
     if (!computingOriginal && effectiveNumberOfMigrants > 0.0)
     {
         assert(SSP->patchSize[patch_from] > 0);

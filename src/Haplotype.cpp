@@ -24,12 +24,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
-
  */
 
 bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
@@ -223,7 +217,7 @@ void Haplotype::toggleT1_Allele(int& MutPosition, int Habitat)
     SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
     //std::cout << "line 182\n";
 
-    if (SSP->T1_isSelection)
+    if (SSP->T1_isMultiplicitySelection)
     {
         //std::cout << "line 186\n";
         //std::cout << "MutPosition = " << MutPosition << "\n";
@@ -238,7 +232,7 @@ void Haplotype::toggleT1_Allele(int& MutPosition, int Habitat)
         if (w != -1.0)
         {
             //std::cout << "line 191\n";
-            if (SSP->FitModel_T1_isMultiplicity)
+            if (SSP->T1_isMultiplicitySelection)
             {
                 // Note that Toggle already happened. If it is mutant, it is because it just happened!
                 //std::cout << "line 196\n";
@@ -282,7 +276,7 @@ void Haplotype::toggleT1_Allele(int& MutPosition)
     SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
     //std::cout << "line 182\n";
 
-    if (SSP->T1_isSelection)
+    if (SSP->T1_isMultiplicitySelection)
     {
         //std::cout << "line 186\n";
         //std::cout << "MutPosition = " << MutPosition << "\n";
@@ -519,6 +513,13 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
 
     // Print T3_alleles
     file.writeBinary(reinterpret_cast<const char*>(&T3_Alleles[0]), T3_Alleles.size()*sizeof(char));
+
+    // Print T4_alleles
+    if (SSP->T4_nbBits)
+        std::cout << "\n\tWARNING: You are printing to a binary file while you have T4 loci. In the current version of SimBit, T4 loci cannot be printed on a binary file (sorry). The binary file will be produced ignoring T4 loci\n";
+
+    // Print T5_alleles
+    file.writeBinary(reinterpret_cast<const char*>(&T5_Alleles[0]), T5_Alleles.size()*sizeof(size_t));    
 }
 
 Haplotype::Haplotype(bool ShouldReadPopFromBinary)
@@ -540,7 +541,15 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     T3_Alleles.resize(SSP->T2_nbChars);
     GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->T3_nbChars*sizeof(char));
 
-    // Initiate W_T1 and W_T2
+    //.read T4_alleles
+    if (SSP->T4_nbBits)
+        std::cout << "\n\n\tWARNING: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data. Those loci will be initiated as perfectly unmutated\n\n";
+
+    //.read T5_alleles
+    T5_Alleles.resize(SSP->T5_nbBits);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5_Alleles[0]), SSP->T5_nbBits*sizeof(size_t));
+
+    // Initiate W_T1, W_T2 and W_T5
     if (SSP->T1_isSelection)
     {
         this->W_T1.resize(SSP->NbElementsInFitnessMap, -1.0);
@@ -548,12 +557,21 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     {
         this->W_T1.resize(SSP->NbElementsInFitnessMap,1.0);
     }
+
     if (SSP->T2_isSelection)
     {
         this->W_T2.resize(SSP->NbElementsInFitnessMap, -1.0);
     } else
     {
         this->W_T2.resize(SSP->NbElementsInFitnessMap, 1.0);
+    }
+
+    if (SSP->T5_isSelection)
+    {
+        this->W_T5.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T5.resize(SSP->NbElementsInFitnessMap, 1.0);
     }
 
     /*
@@ -573,7 +591,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
 #endif      
     (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
     assert(SSP!=nullptr);
-    assert(SSP->T1_nbChars + SSP->T2_nbChars + SSP->T3_nbChars + SSP->T4_nbBits > 0);
+    assert(SSP->T1_nbChars + SSP->T2_nbChars + SSP->T3_nbChars + SSP->T4_nbBits + SSP->T5_nbBits > 0);
 
     // Initiate W_T1 and W_T2
     if (SSP->T1_isSelection)
@@ -590,6 +608,14 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
     {
         this->W_T2.resize(SSP->NbElementsInFitnessMap, 1.0);
     }
+    if (SSP->T5_isSelection)
+    {
+        this->W_T5.resize(SSP->NbElementsInFitnessMap, -1.0);
+    } else
+    {
+        this->W_T5.resize(SSP->NbElementsInFitnessMap, 1.0);
+    }
+    //std::cout << "created at W_T5.size() = " << W_T5.size() << "\n";
     
     // Initiate T1_Alleles
     
@@ -672,6 +698,12 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
         }
         assert(T3_Alleles.size() == SSP->T3_nbChars);
     }
+
+    // Initiate T4_Alleles
+    // No initialization. Assume all are fixed at 0
+
+    // Initiate T5_Alleles
+    // No initialization. Assume all are fixed at 0
 }
 
 Haplotype::Haplotype(const Haplotype& other)
@@ -680,8 +712,10 @@ Haplotype::Haplotype(const Haplotype& other)
     T1_Alleles = other.T1_Alleles;
     T2_Alleles = other.T2_Alleles;
     T3_Alleles = other.T3_Alleles;
+    T5_Alleles = other.T5_Alleles;
     W_T1 = other.W_T1;
     W_T2 = other.W_T2;
+    W_T5 = other.W_T5;
 }
 
 Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment operator
@@ -690,8 +724,10 @@ Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment opera
     T1_Alleles = other.T1_Alleles;
     T2_Alleles = other.T2_Alleles;
     T3_Alleles = other.T3_Alleles;
+    T5_Alleles = other.T5_Alleles;
     W_T1 = other.W_T1;
     W_T2 = other.W_T2;
+    W_T5 = other.W_T5;
     return *this;
 }
 
@@ -701,11 +737,235 @@ Haplotype& Haplotype::operator=(Haplotype&& other) // move assignment operator
     T1_Alleles = std::move(other.T1_Alleles);
     T2_Alleles = std::move(other.T2_Alleles);
     T3_Alleles = std::move(other.T3_Alleles);
+    T5_Alleles = std::move(other.T5_Alleles);
     W_T1 = std::move(other.W_T1);
     W_T2 = std::move(other.W_T2);
-    assert(W_T1.size() == other.W_T1.size());
+    W_T5 = std::move(other.W_T5);
+    //assert(W_T1.size() == other.W_T1.size());
     return *this;
 }
 
 
+void Haplotype::setW_T5(double w, int fitnessMapIndex)
+{
+    assert(W_T5.size() > fitnessMapIndex && fitnessMapIndex >= 0);
+    W_T5[fitnessMapIndex] = w;
+}
 
+void Haplotype::setAllW_T5(double w)
+{
+    for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
+    {
+        this->setW_T5(w, fitnessMapIndex);
+    }
+}
+
+
+bool Haplotype::getT5_Allele(const int locus)
+{
+    // not to be used too often
+    return std::binary_search(T5_Alleles.begin(), T5_Alleles.end(), locus);
+}
+
+
+void Haplotype::setT5_Allele(const int& locus, const bool& value)
+{
+    auto position = std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), locus);
+
+    if (value)
+    {
+        if (position == T5_Alleles.end())
+        {
+            T5_Alleles.push_back(locus);
+        } else if (locus != (*position))
+        {
+            T5_Alleles.insert(position, locus);
+        }
+    } else
+    {
+        if (locus == (*position))
+        {
+            T5_Alleles.erase(position);
+        }
+    }
+}
+
+
+void Haplotype::setT5_AlleleToOne(int& locus)
+{
+    this->setT5_Allele(locus, true);
+}
+
+
+void Haplotype::setT5_AlleleToZero(int& locus)
+{
+    this->setT5_Allele(locus, false);
+}
+
+
+void Haplotype::toggleT5_Allele(int& MutPosition)
+{
+    auto position = std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), MutPosition);
+    if (MutPosition != (*position))
+    {
+        // not found
+        T5_Alleles.insert(position, MutPosition);
+    } else
+    {
+        // found
+        T5_Alleles.erase(position);
+    }
+
+    if (SSP->T5_isMultiplicitySelection)
+    {
+        //std::cout << "line 186\n";
+        //std::cout << "MutPosition = " << MutPosition << "\n";
+        //std::cout << "SSP->FromT1LocusToLocus.size() = " << SSP->FromT1LocusToLocus.size() << "\n";
+        //assert(MutPosition < SSP->FromT1LocusToLocus.size());
+        //std::cout << " SSP->FromT1LocusToLocus[MutPosition] = " << SSP->FromT1LocusToLocus[MutPosition] << "\n";
+        //assert(SSP->FromT1LocusToLocus[MutPosition] < SSP->FromLocusToFitnessMapIndex.size());
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT5LocusToLocus[MutPosition]];
+        //std::cout << "line 189\n";
+        this->setW_T5(-1.0, fitnessMapIndex );
+    }
+}
+
+double Haplotype::getW_T5(int fitnessMapIndex)
+{
+    //std::cout << "fitnessMapIndex = " << fitnessMapIndex << "\n";
+    //std::cout << "W_T5.size() = " << W_T5.size() << "\n";
+    assert(fitnessMapIndex >= 0 && fitnessMapIndex < W_T5.size());
+    return W_T5[fitnessMapIndex];
+}
+
+
+
+void Haplotype::toggleT5_Allele(int& MutPosition, int Habitat)
+{
+    //std::cout << "In Haplotype::toggleT5_Allele, MutPosition = " << MutPosition << "\n";
+    auto position = std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), MutPosition);
+    bool newAllele;
+    //std::cout << "position is " << position - T5_Alleles.begin() << "\n";
+    if (position == T5_Alleles.end())
+    {
+        // not found
+        T5_Alleles.push_back(MutPosition);
+        newAllele = true;   
+    } else
+    {
+        if ( MutPosition != (*position))
+        {
+            // not found
+            T5_Alleles.insert(position, MutPosition);
+            newAllele = true;
+            
+        } else
+        {
+            // found
+            T5_Alleles.erase(position);
+            newAllele = false;
+        }
+
+    }
+
+    if (SSP->T5_isMultiplicitySelection)
+    {
+        //std::cout << "MutPosition = " << MutPosition << "\n";
+        //std::cout << "SSP->FromT1LocusToLocus.size() = " << SSP->FromT1LocusToLocus.size() << "\n";
+        //assert(MutPosition < SSP->FromT1LocusToLocus.size());
+        //std::cout << " SSP->FromT1LocusToLocus[MutPosition] = " << SSP->FromT1LocusToLocus[MutPosition] << "\n";
+        //assert(SSP->FromT1LocusToLocus[MutPosition] < SSP->FromLocusToFitnessMapIndex.size());
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT5LocusToLocus[MutPosition]];
+        //std::cout << "In Haplotype::toggleT5_Allele, fitnessMapIndex = "<<fitnessMapIndex<<"\n";
+
+        double w = this->getW_T5(fitnessMapIndex);
+        if (w != -1.0)
+        {
+            // Note that Toggle already happened. If it is mutant, it is because it just happened!
+            //std::cout << "line 196\n";
+            if ( newAllele )
+            {
+                w *= SSP->T5_FitnessEffects[Habitat][MutPosition];
+                assert(w >= 0.0 && w <= 1.0);
+            } else
+            {
+                if (SSP->T5_FitnessEffects[Habitat][MutPosition] == 0)
+                {
+                    w = -1.0;
+                } else
+                {
+                    w /= SSP->T5_FitnessEffects[Habitat][MutPosition];
+                    assert(w >= 0.0 && w <= 1.0);
+                }
+            }
+            this->setW_T5( w,   fitnessMapIndex );
+        
+        }
+    }
+}
+
+void Haplotype::clearT5Alleles()
+{
+    T5_Alleles.clear();
+}
+
+void Haplotype::copyIntoT5(int from, int to, Haplotype& SourceChromo)
+{
+    // Must have been emptied first
+    
+    assert(from >= 0);
+    assert(to > from);
+    
+    auto itFrom = lower_bound(SourceChromo.T5_AllelesCBegin(), SourceChromo.T5_AllelesCEnd(), from);
+    auto itTo   = lower_bound(itFrom, SourceChromo.T5_AllelesCEnd(), to);
+    
+    //std::cout << "inserting " << itTo - itFrom << " elements after a T5_Alleles of " << T5_Alleles.size() << " elements\n";
+    T5_Alleles.insert(T5_Alleles.end(), itFrom, itTo);
+}
+
+std::vector<size_t>::const_iterator Haplotype::T5_AllelesCBegin()
+{
+    return T5_Alleles.cbegin();
+}
+
+std::vector<size_t>::const_iterator Haplotype::T5_AllelesCEnd()
+{
+    return T5_Alleles.cend();
+}
+
+std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus, std::vector<size_t>::const_iterator from)
+{
+    if (from == T5_Alleles.cend())
+    {
+        return from;   
+    }
+
+    if (locus == *from)
+    {
+        return from;
+    }
+
+    if (locus == SSP->T5_nbBits)
+    {
+        return T5_Alleles.cend();
+    }
+
+    return std::lower_bound(from, T5_Alleles.cend(), locus);
+}
+
+std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus)
+{
+    if (locus == 0)
+    {
+        return T5_Alleles.cbegin();
+    } else if (locus == SSP->T5_nbBits)
+    {
+        return T5_Alleles.cend();
+    }
+    return std::lower_bound(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
+}
+
+bool Haplotype::isT5Mutation(size_t locus)
+{
+    return std::binary_search(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
+}

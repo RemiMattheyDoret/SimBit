@@ -307,3 +307,8 @@ SimBit_4.0.9
 SimBit_4.1.0
 	Fix rare bug when reading input to flag --eco
 
+SimBit_4.2.0
+	First attempt at implementing T5 (SLiM style but binary; no weird infinite allele model)
+
+SimBit_4.2.1
+	T5 debugging

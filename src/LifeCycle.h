@@ -24,11 +24,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
  */
 
 class LifeCycle
@@ -42,6 +37,7 @@ private:
     static void Mutate_T1(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T2(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T3(Haplotype& TransmittedChrom);
+    static void Mutate_T5(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate(Haplotype& TransmittedChrom, int Habitat);
 
 public:

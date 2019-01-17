@@ -100,6 +100,8 @@ public:
     void WriteOutputs_fitnessStats(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_AlleleFreq_header(OutputFile& file);
     void WriteOutputs_T1_AlleleFreq(Pop& pop, OutputFile& file);
+    void WriteOutputs_T5_AlleleFreq_header(OutputFile& file);
+    void WriteOutputs_T5_AlleleFreq(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_MeanLD_header(OutputFile& file);
     void WriteOutputs_T1_MeanLD(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_LongestRun_header(OutputFile& file);
@@ -116,6 +118,7 @@ public:
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_vcf(OutputFile& file);
+    void WriteOutputs_T5_vcf(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);
@@ -123,18 +126,22 @@ public:
     void WriteOutputs_extraGeneticInfo(OutputFile& file);
     void WriteOutputs_T1_FST_header(OutputFile& file);
     void WriteOutputs_T1_FST(Pop& pop, OutputFile& file);
-    void WriteOutputs_T4SFS(OutputFile& file);
-    void WriteOutputs_T4SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4SFS_header(OutputFile& file);
     void WriteOutputs_T1SFS(Pop& pop, OutputFile& file);
     void WriteOutputs_T1SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file);
+    void WriteOutputs_T4SFS(OutputFile& file);
+    void WriteOutputs_T4SFS_header(OutputFile& file);
+    void WriteOutputs_T5SFS(Pop& pop, OutputFile& file);
+    void WriteOutputs_T5SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4or5SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file);
     void WriteOutputs_extinction(OutputFile& file);
     void WriteOutputs(Pop& realPop);
     void WriteOutputs_forDefinedPop(Pop& pop);
     void imitateSequencingError(Pop& pop);
     void imitateSequencingError(Haplotype& TransmittedChrom);
     void PrintGeneration();
+
+    std::vector<std::vector<double>> WriteOutputs_T5ComputeFrequencies(Pop& pop);
 
     bool shouldNABePrinted(int patch_index);
     bool shouldNABePrinted(int patch_index, int ind_index);

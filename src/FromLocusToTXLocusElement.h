@@ -24,12 +24,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 
-
-Note for Remi of things to do:
-    Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
-
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
-
  */
 
 
@@ -40,10 +34,11 @@ public:
     int T2;
     int T3;
     int T4;
+    int T5;
     char TType;
 
     // It always contain the index of the following locus.
 
-    FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int TT);
+    FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int inT5, int TT);
 };
 
