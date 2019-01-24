@@ -2,13 +2,18 @@
 	 / ___|(_)_ __ ___ | __ )(_) |_ 
 	 \___ \| | '_ ` _ \|  _ \| | __|
 	  ___) | | | | | | | |_) | | |_ 
-	 |____/|_|_| |_| |_|____/|_|\__| version 4.2.1
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.2.6
+
+	WARNING: This is a version that will need further debugging of new features before being released
 
 Random seed:
-	1555743831
+	12
 
 User Input:
-	--PN 1 --N unif 5000 --L T5 1e+07 --T5_mu unif 1e-06 --T5_fit unif 1 0.999 --r rate unif 1e-06 --nbGens 10000 --m island 0.99
+	--PN 1 --N unif 500 --L T1 1e3 --T1_mu unif 1e-6 --r rate unif 1e-5 --T1_fit MultiplicityUnif 0.98 --nbGens 4 --T1_vcf_file T1test 1 --Overwrite 2 --seed 12 
 
-		Time for initialization: 1 seconds (1.445 seconds)
+		Time for initialization: 0 seconds (0.05081 seconds)
 
+		Time for the simulation: 0 seconds (0.2245 seconds)
+
+		------ Simulation is over. Good Job! ----

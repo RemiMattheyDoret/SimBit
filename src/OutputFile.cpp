@@ -64,12 +64,13 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "fitnessSubsetLoci",
     "T4_LargeOutputFile",
     "T4_vcfFile",
-    "T4_SFS",
-    "T1_SFS",
+    "T4_SFS_file",
+    "T1_SFS_file",
     "T4_printTree",
     "T5_vcfFile",
-    "T5_SFS",
-    "T5_AlleleFreqFile"
+    "T5_SFS_file",
+    "T5_AlleleFreqFile",
+    "T5_LargeOutputFile"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -95,12 +96,13 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not Logfile
     // not T4_LargeOutputFile,
     // not T4_vcfFile
-    // not T4_SFS
-    T1_SFS,
+    // not T4_SFS_file
+    T1_SFS_file,
     // not T4_printTree
-    // T5_vcfFile
-    // T5_SFS
-    // T5_AlleleFreqFile
+    // not T5_vcfFile
+    // not T5_SFS_file
+    // not T5_AlleleFreqFile
+    // not T5_LargeOutputFile
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -174,10 +176,24 @@ std::string OutputFile::getPath()
         if (this->isGenerationSpecific)
         {
             // This is the complete path!
-            return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
+            if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
+            {
+                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
+            } else
+            {
+                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;    
+            }
+            
         } else
         {
-            return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;
+            if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
+            {
+                return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+            } else
+            {
+                return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;    
+            }
+            
         }
         
     } else
@@ -197,8 +213,14 @@ std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific()
     if (this->isSpeciesSpecific)
     {
         assert(SSP != nullptr);
-        
-        return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;
+
+        if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
+        {
+            return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+        } else
+        {
+            return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;    
+        }
         
     } else
     {
@@ -213,7 +235,13 @@ std::string OutputFile::getPath(int generation)
     {
         assert(SSP != nullptr);
 
-        return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+        if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
+        {
+            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+        } else
+        {
+            return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+        }
         
     } else
     {
@@ -619,14 +647,14 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T4_SFS)
+    } else if (t == T4_SFS_file)
     {
         this->extension = std::string(".T4SFS");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T1_SFS)
+    } else if (t == T1_SFS_file)
     {
         this->extension = std::string(".T1SFS");
         isGenerationSpecific = false;
@@ -647,7 +675,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T5_SFS)
+    } else if (t == T5_SFS_file)
     {
         this->extension = std::string(".T5SFS");
         isGenerationSpecific = false;
@@ -658,6 +686,13 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
     } else if (t == T5_AlleleFreqFile)
     {
         this->extension = std::string(".T5AllFreq");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+    } else if (t == T5_LargeOutputFile)
+    {
+        this->extension = std::string(".T5LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;

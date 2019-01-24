@@ -50,12 +50,13 @@ typedef enum {
     fitnessSubsetLoci = 20,
     T4_LargeOutputFile = 21,
     T4_vcfFile = 22,
-    T4_SFS = 23,
-    T1_SFS = 24,
+    T4_SFS_file = 23,
+    T1_SFS_file = 24,
     T4_printTree = 25, // special type that is not going in outputWriter
     T5_vcfFile= 26,
-    T5_SFS = 27,
-    T5_AlleleFreqFile = 28
+    T5_SFS_file = 27,
+    T5_AlleleFreqFile = 28,
+    T5_LargeOutputFile = 29
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific

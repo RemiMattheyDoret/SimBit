@@ -112,6 +112,8 @@ public:
     void WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T4_LargeOutput(OutputFile& file);
+    void WriteOutputs_T5_LargeOutput_header(OutputFile& file);
+    void WriteOutputs_T5_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
     void WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);

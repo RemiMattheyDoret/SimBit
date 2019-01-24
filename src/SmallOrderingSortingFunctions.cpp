@@ -81,28 +81,36 @@ void reorder(std::vector<T> &v, std::vector<size_t> const &order )  {
 
 // String manipulation
 
-std::string trimString(const std::string& str,
-                 const std::string& whitespace = " \t")
-{
-    const auto strBegin = str.find_first_not_of(whitespace);
-    if (strBegin == std::string::npos)
-        return ""; // no content
-
-    const auto strEnd = str.find_last_not_of(whitespace);
-    const auto strRange = strEnd - strBegin + 1;
-
-    return str.substr(strBegin, strRange);
+// trim from start
+static inline std::string &ltrimString(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
 }
 
-std::string reduceString(const std::string& str,
-                   const std::string& fill = " ",
-                   const std::string& whitespace = " \t")
+// trim from end
+static inline std::string &rtrimString(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static inline std::string &trimString(std::string &s) {
+    return ltrimString(rtrimString(s));
+}
+
+
+void reduceString(std::string& str)
 {
     // trim first
-    auto result = trimString(str, whitespace);
+    trimString(str);
+
+    // replace '\t' with ' '
+    std::replace( str.begin(), str.end(), '\t', ' ');
 
     // replace sub ranges
-    auto beginSpace = result.find_first_of(whitespace);
+    /*auto beginSpace = result.find_first_of(whitespace);
     while (beginSpace != std::string::npos)
     {
         const auto endSpace = result.find_first_not_of(whitespace, beginSpace);
@@ -112,9 +120,7 @@ std::string reduceString(const std::string& str,
 
         const auto newStart = beginSpace + fill.length();
         beginSpace = result.find_first_of(whitespace, newStart);
-    }
-
-    return result;
+    }*/
 }
 
 // matrix manipulation

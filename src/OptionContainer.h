@@ -40,6 +40,7 @@ public:
         
         // Selection
         {{"additiveEffectAmongLoci"},                   {"S"}, false},
+        {{"selectionOn"},                               {"L","S"}, false},
 
         // Genetics and Selection T1
         {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}, false},
@@ -64,7 +65,7 @@ public:
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
         {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed", "L"}, false},
-        
+        {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L"}, false},
 
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
@@ -77,7 +78,7 @@ public:
         {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration", "L"}, false},
+        {{"Log","Logfile", "Logfile_file"},         {"GP", "S", "startAtGeneration", "L","LogfileType"}, false},
         {{"T1_MeanLD_file"},                        {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_LongestRun_file"},                    {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_HybridIndex_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
@@ -98,15 +99,16 @@ public:
         {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration", "L"}, false},
         {{"T4_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T4_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T1_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T1_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
 
         {{"T5_vcf_file","T5_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T5_SFS"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T5_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T5_AlleleFreq_file"},                    {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T5_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
 
-        {{"outputSFSbinSize"},                      {"T4_SFS", "T1_SFS", "GP", "S", "startAtGeneration", "L"}, true},
+        {{"outputSFSbinSize"},                      {"T4_SFS_file", "T1_SFS_file", "GP", "S", "startAtGeneration", "L"}, true},
 
         // Species interaction
         {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},

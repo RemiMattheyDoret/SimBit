@@ -525,8 +525,8 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         abort();
     }
     if (
-        std::count(s.begin(), s.end(), '.') > 0
-        || 
+        //std::count(s.begin(), s.end(), '.') > 0
+        //|| 
             (s.at(0) != '-' && !isdigit(s.at(0)))
         ||
             !isdigit(s.at(s.size() - 1))
@@ -548,7 +548,7 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         double fraction = d - ((long)d);
         if (fraction > 0.00001 || fraction < -0.00001)
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit (but it is surprising it did not get caught the the first of the three security gates)! (error caught at the second security gate)" <<std::endl;
+            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
         }
         r = (int) std::stod(s);
     }

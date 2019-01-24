@@ -74,6 +74,8 @@ void SpeciesSpecificParameters::setRandomDistributions()
     this->T3_rpois_nbMut                          = tmp3h;
     std::poisson_distribution<int>             tmp3i(T5_Total_Mutation_rate);
     this->T5_rpois_nbMut                          = tmp3i;
+    std::cout << "T1_Total_Mutation_rate = " << T1_Total_Mutation_rate << "\n";
+    std::cout << "T5_Total_Mutation_rate = " << T5_Total_Mutation_rate << "\n";
     
     std::uniform_int_distribution<int>         tmp4(0, TotalNbLoci-2);
     this->runiform_int_ForRecPos                  = tmp4;
@@ -270,7 +272,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
 
             // Get Recombination Rate info
             double r;
-            if (locusType == 1 || locusType == 2)
+            if (locusType == 1 || locusType == 2 || locusType == 5)
             {
                 if (this->RecombinationRate.size() == 1) // which is the case if the rate is constant between any two loci.
                 {
@@ -289,6 +291,10 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             } else
             {
                 r = 0.0;
+            }
+            if (locusType == 5)
+            {
+                r /= 10;
             }
             
 
@@ -607,7 +613,7 @@ void SpeciesSpecificParameters::readSelfingRate(InputReader& input)
     this->selfingRate = input.GetNextElementDouble();
     if ((this->selfingRate > 1.0 || this->selfingRate < 0.0) || this->selfingRate != -1.0)
     {
-        std::cout << "In --selfingRate, received a cloning rate that is either lower than zero or greater than one. cloningRate receveid is " << this->selfingRate << ". Note that a selfingRate of -1.0 would be acceptible as it would refer to a simple Wright-Fisher model where the selfing rate is at 1/2N (a little bit lower with migration)\n";
+        std::cout << "In --selfingRate, received a selfing rate that is either lower than zero or greater than one. selfing rate receveid is " << this->selfingRate << ". Note that a selfingRate of -1 (default) refers to a simple Wright-Fisher model where the selfing rate is at 1/2N (a little bit lower with migration)\n";
         abort();
     }
 }
@@ -1025,7 +1031,7 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
                 //std::cout << "TotalpatchCapacity * averageMu * 4 * a = " << TotalpatchCapacity * averageMu * 4 * a << "\n";
                 if (TotalpatchCapacity * averageMu * 4 * a < 1.0)
                 {
-                    recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = 10;
+                    recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = 20;
                 } else
                 {
                     recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = -1;
@@ -1305,6 +1311,147 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
     }
 }
 
+
+void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option --T5_Initial_AlleleFreqs, the std::string that is read is: " << input.print() << std::endl;
+#endif
+    if (input.PeakNextElementString() == "NA")
+    {
+        if (this->T5_nbBits != 0)
+        {
+            std::cout << "For option --T5_Initial_AlleleFreqs, received 'NA' however there are T5 loci as indiciated by --L (--Loci) (this->T5_nbBits = "<<this->T5_nbBits<<")" << "\n";
+            abort();
+        }
+        input.skipElement();
+    } else
+    {
+        std::string Mode;
+
+        Mode = input.GetNextElementString();
+
+        this->T5_Initial_AlleleFreqs_AllZeros = false; // Set to true laster if received "AllZeros"
+        this->T5_Initial_AlleleFreqs_AllOnes = false;  // Set to true laster if received "AllOnes"
+        
+        if (Mode.compare("A") == 0)
+        {
+            for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
+            {
+                int nbRepeatsLeft = 0;
+                double freq;
+                std::vector<double> OneLine;
+                for (int T5Locus = 0 ; T5Locus < this->T5_nbBits ; T5Locus++)
+                {
+                    if (nbRepeatsLeft == 0 && input.PeakNextElementString() == "R")
+                    {
+                        input.skipElement();
+                        freq = input.GetNextElementDouble();
+                        nbRepeatsLeft = input.GetNextElementInt();
+                        if (nbRepeatsLeft < 0)
+                        {
+                            std::cout << "In '--T5_Initial_AlleleFreqs', received a number of repeats lower than zero. Number of repeats received is " << nbRepeatsLeft << "\n";
+                            abort();
+                        }
+                    }
+                    if (nbRepeatsLeft == 0)
+                    {
+                        freq = input.GetNextElementDouble();
+                    } else
+                    {
+                        nbRepeatsLeft--;
+                    }
+                    
+                    if (freq < 0.0 || freq > 1.0)
+                    {
+                        std::cout << "In '--T5_Initial_AlleleFreqs', received an impossible allele frequency. Received '" << freq << "'\n";
+                        abort();
+                    }
+                    //std::cout << "T1Locus = " << T1Locus << " x = " << x << " nbRepeatsLeft = "<<nbRepeatsLeft<<"\n";
+                    OneLine.push_back(freq);
+                }
+                assert(nbRepeatsLeft >= 0);
+                if (nbRepeatsLeft != 0)
+                {
+                    std::cout << "In '--T1_Initial_AlleleFreqs', too many values received!'\n";
+                    abort();
+                }
+                assert(OneLine.size() == this->T5_nbBits);
+                this->T5_Initial_AlleleFreqs.push_back(OneLine);
+            }
+        } else if (Mode.compare("Shift")==0)
+        {
+            int shiftPosition = input.GetNextElementInt();
+            if (shiftPosition < 0 || shiftPosition > GP->__PatchNumber[0])
+            {
+                std::cout << "In '--T5_Initial_AlleleFreqs', received an impossible shiftPosition. Received '" << shiftPosition << ". For information, the simulation is starting with " << GP->__PatchNumber[0] << " as indicated in option '--PN (--PatchNumber)'\n";
+                abort();
+            }
+            
+            for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
+            {
+                std::vector<double> line;
+                for (int T5Locus = 0 ; T5Locus < this->T5_nbBits ; T5Locus++)
+                {
+                    if (patch_index < shiftPosition)
+                    {
+                        line.push_back(0.0);
+                    } else
+                    {
+                        line.push_back(1.0);
+                    }
+                }
+                assert(line.size() == this->T5_nbBits);
+                this->T5_Initial_AlleleFreqs.push_back(line);
+            }
+        } else if (Mode.compare("AllZeros") == 0)
+        {
+            this->T5_Initial_AlleleFreqs_AllZeros = true;
+        } else if (Mode.compare("AllOnes") == 0)
+        {
+            this->T5_Initial_AlleleFreqs_AllOnes = true;
+        } else
+        {
+            std::cout << "Sorry, for '--T5_Initial_AlleleFreqs', the Mode " << Mode << " has not been implemented yet. Only Modes 'A', 'AllZeros', 'AllOnes' and 'Shift' are accepted for the moment.";
+            abort();
+        }
+    }
+
+    // Security check
+    if (!this->T5_Initial_AlleleFreqs_AllZeros && !this->T5_Initial_AlleleFreqs_AllOnes)
+    {
+        assert(this->T5_Initial_AlleleFreqs.size() == GP->__PatchNumber[0]);
+        for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
+        {
+            assert(this->T5_Initial_AlleleFreqs[patch_index].size() == this->T5_nbBits);
+        }
+    }
+}
+
+void SpeciesSpecificParameters::readSelectionOn(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option '--selectionOn', the std::string that is read is: " << input.print() << std::endl;
+#endif    
+
+    std::string s = input.GetNextElementString();
+
+    if (s == "fertility")
+    {
+        selectionOn = 0;
+    } else if (s == "viability")
+    {
+        selectionOn = 1;
+    } else if (s == "both" || s == "fertilityAndViability")
+    {
+        selectionOn = 2;
+    } else
+    {
+        std::cout << "For option '--selectionOn', expected either 'fertility' (which should be the default), 'viability' or 'fertilityAndViability' (aka. 'both'). Instead it received '" << s << "'.\n";
+        abort();
+    }
+}
+
 void SpeciesSpecificParameters::readGrowthK(InputReader& input)
 {
 #ifdef DEBUG
@@ -1331,7 +1478,7 @@ void SpeciesSpecificParameters::readGrowthK(InputReader& input)
                 {
                     input.skipElement();
                     assert(this->__patchCapacity[generation_index][patch_index] > 0);
-                    x = -1.0 / ((double) this->__patchCapacity[generation_index][patch_index]);
+                    x = -1.0;
                 } else
                 {
                     x = input.GetNextElementDouble();
@@ -1342,30 +1489,19 @@ void SpeciesSpecificParameters::readGrowthK(InputReader& input)
         } else if (Mode == "unif")
         {
             std::string s = input.PeakNextElementString();
-            double xsave;
+            double x;
             if (s == "def" || s == "Def")
             {
+                x = -1;
                 input.skipElement();
-                
             } else
             {
-                xsave = input.GetNextElementDouble();
+                x = input.GetNextElementDouble();
             }
 
             for (int patch_index = 0 ; patch_index < currentPatchNumber ; patch_index++)
             {
-                double x;
-                if (s == "def" || s == "Def")
-                {
-                    assert(this->__patchCapacity[generation_index][patch_index] >= 0);
-                    x = -1.0 / ((double) this->__patchCapacity[generation_index][patch_index]);
-                } else
-                {
-                    x = xsave;
-                }
-
                 this->__growthK[generation_index][patch_index] = x;
-                    
             }
         } else
         {
@@ -1744,7 +1880,7 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                         abort();
                     }
                     ForASingleHabitat.push_back(fit01);
-                    entry_index += 2;
+                    entry_index++;
                 }
                 if (ForASingleHabitat.size() != this->T5_nbBits)
                 {
@@ -3289,7 +3425,7 @@ void SpeciesSpecificParameters::IsThereSelection()
     bool ShouldIbreak = false;
     T1_isSelection=0;
     
-    if (T1_nbChars)
+    if (T1_nbBits)
     {
         assert(this->T1_FitnessEffects.size() == this->MaxHabitat + 1);
         for (int Habitat = 0 ; Habitat <= this->MaxHabitat ; Habitat++)
@@ -3334,7 +3470,7 @@ void SpeciesSpecificParameters::IsThereSelection()
 #endif
     ShouldIbreak = false;
     this->T1_isEpistasis = false;
-    if (this->T1_nbChars)
+    if (this->T1_nbBits)
     {
         //std::cout << "this->T1_nbChars = " << this->T1_nbChars << "\n";
         int howManyWarningGiven = 0;

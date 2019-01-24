@@ -256,8 +256,10 @@ int Pop::SelectionParent(int& patch_from, int sex)
     assert(this->CumSumFits[patch_from].size() > sex);
     
     int parent_index;
-    if (SSP->T1_isSelection || SSP->T1_isEpistasis || SSP->T2_isSelection || SSP->T3_isSelection)
+    if (SSP->selectionOn != 1 && (SSP->T1_isSelection || SSP->T1_isEpistasis || SSP->T2_isSelection || SSP->T3_isSelection || SSP->T5_isSelection))
     {
+        // selection on fertility
+
         //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].size() = " << this->CumSumFits[patch_from][sex].size() << "\n";
         //assert(this->CumSumFits[patch_from][sex].back() > 0.0);
         std::uniform_real_distribution<double> runiform_double_0andSumOfFit(0.0, this->CumSumFits[patch_from][sex].back()); // CumSumFits must be of patchSize length, not of patchCapacity length
@@ -283,6 +285,8 @@ int Pop::SelectionParent(int& patch_from, int sex)
         }
     } else
     {
+        // no selection on fertility
+        
         if (SSP->malesAndFemales)
         {
             if (sex == 0)
@@ -469,6 +473,19 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
                     {
                         assert(pop1.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T2(fitnessMapIndex) == 1.0);
                         assert(pop2.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T2(fitnessMapIndex) == 1.0);
+                    }
+                }
+
+                if (SSP->T5_isSelection)
+                {
+                    pop1.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).setAllW_T5(-1);
+                    pop2.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).setAllW_T5(-1);
+                } else
+                {
+                    for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
+                    {
+                        assert(pop1.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T5(fitnessMapIndex) == 1.0);
+                        assert(pop2.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T5(fitnessMapIndex) == 1.0);
                     }
                 }
             }

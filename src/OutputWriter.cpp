@@ -404,7 +404,6 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBitsLastByte,"T1_nbBitsLastByte");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBitsLastByte,"T1_nbBitsLastByte");
 
                 // Genetics and selection T2
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbChars,"T2_nbChars");
@@ -428,12 +427,13 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 // Genetics T4
                 this->ExtendStringForAdvancedLogFile(s, SSP->T4_nbBits,"T4_nbBits");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation,"T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T4_MutationRate,"T3_MutationRate");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_MutationRate,"T4_MutationRate");
 
 
                 // Genetics T5
                 this->ExtendStringForAdvancedLogFile(s, SSP->T5_nbBits,"T5_nbBits");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T5_FitnessEffects,"T5_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_MutationRate,"T5_MutationRate");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T5_isSelection,"T5_isSelection");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T5_isMultiplicitySelection,"T5_isMultiplicitySelection");
 
@@ -450,6 +450,96 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->subsetT1epistasisLociForfitnessSubsetLoci_file,"subsetT1epistasisLociForfitnessSubsetLoci_file");
 
             }
+
+            SSP = nullptr;
+            s += "###################\n\n";
+
+            file.write(s);
+        }
+
+        if (this->LogfileType==102105116)
+        {
+            // fitness info only
+            std::string s;
+            s.reserve(1000);
+        
+            s += "################### General Parameters ###################\n\n";
+
+            this->ExtendStringForAdvancedLogFile(s, OutputFile::GeneralPath, "GeneralPath");
+            
+            this->ExtendStringForAdvancedLogFile(s, GP->__PatchNumber,"__PatchNumber");
+            this->ExtendStringForAdvancedLogFile(s, GP->__GenerationChange,"__GenerationChange");
+
+            // nbGenerations
+            this->ExtendStringForAdvancedLogFile(s, GP->nbGenerations,"nbGenerations");
+            this->ExtendStringForAdvancedLogFile(s, GP->CurrentGeneration,"CurrentGeneration");
+
+            // nbSpecies
+            this->ExtendStringForAdvancedLogFile(s, GP->nbSpecies,"nbSpecies");
+
+            assert(SSP == nullptr);
+
+            s += "################### Species Specific Parameters ###################\n\n";
+
+            for (int species_index = 0 ; species_index < GP->nbSpecies ; species_index++)
+            {
+                SSP = allParameters.getSSPaddress(species_index);
+
+                // Demarcation
+                s += "##### species: " + SSP->speciesName + "\n\n";
+
+                // Genetics 
+                this->ExtendStringForAdvancedLogFile(s, SSP->TotalNbLoci,"TotalNbLoci");
+
+                
+                // Genetics and selection T1
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_isMultiplicitySelection,"T1_isMultiplicitySelection");
+                
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbChars,"T1_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBits,"T1_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_FitnessEffects,"T1_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_isSelection,"T1_isSelection");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_isEpistasis,"T1_isEpistasis");
+                
+                //this->ExtendStringForAdvancedLogFile(s, SSP->ProgrammedT1Mutations,"ProgrammedT1Mutations");
+                //this->ExtendStringForAdvancedLogFile(s, SSP->ProgrammedT1MutationsIndexToDo,"ProgrammedT1MutationsIndexToDo");
+
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_LociIndices,"T1_Epistasis_LociIndices");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBitsLastByte,"T1_nbBitsLastByte");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
+
+                // Genetics and selection T2
+                this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbChars,"T2_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T2_FitnessEffects,"T2_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T2_isSelection,"T2_isSelection");
+
+
+                // Genetics and selection T3
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_nbChars,"T3_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_PhenotypicEffects,"T3_PhenotypicEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeOptimum,"T3_fitnessLandscapeOptimum");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeLinearGradient,"T3_fitnessLandscapeLinearGradient");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_isSelection,"T3_isSelection");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeType,"T3_fitnessLandscapeType");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_PhenoNbDimensions,"T3_PhenoNbDimensions");
+
+                // Genetics T4
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_nbBits,"T4_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation,"T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation");
+
+                // Genetics T5
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_nbBits,"T5_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_FitnessEffects,"T5_FitnessEffects");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_isSelection,"T5_isSelection");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_isMultiplicitySelection,"T5_isMultiplicitySelection");
+
+
+                // Ecology
+                this->ExtendStringForAdvancedLogFile(s, SSP->__Habitats,"__Habitats");
+                this->ExtendStringForAdvancedLogFile(s, SSP->MaxHabitat,"MaxHabitat");
+            }
+
             SSP = nullptr;
             s += "###################\n\n";
 
@@ -1962,6 +2052,73 @@ void OutputWriter::WriteOutputs_T2_LargeOutput(Pop& pop, OutputFile& file)
     file.close();
 }
 
+void OutputWriter::WriteOutputs_T5_LargeOutput_header(OutputFile& file)
+{
+    file.open();
+    
+    std::string s("Generation");
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
+            {
+                for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+                {
+                    s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + std::string("_H") + std::to_string(haplo_index) + std::string("_L") + std::to_string(locus);
+                }
+            }
+        }
+    }
+    s += std::string("\n");
+    file.write(s);
+    file.close();
+}
+
+void OutputWriter::WriteOutputs_T5_LargeOutput(Pop& pop, OutputFile& file)
+{
+    std::string s;
+    std::string s_tab = "\t";
+    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbBits * 3);
+    
+    s += std::to_string( GP->CurrentGeneration);
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
+        {
+            for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
+            {
+                auto it = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).T5_AllelesCBegin();
+                auto itEnd = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).T5_AllelesCEnd();
+                for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+                {
+                    if (shouldNABePrinted(patch_index,ind_index))
+                    {
+                        s += s_tab + "NA";
+                    } else
+                    {
+                        if (it != itEnd && *it == locus)
+                        {
+                            it++;
+                            s += s_tab + "1";
+                        } else
+                        {
+                            s += s_tab + "0";
+                        }
+                    }
+                }
+                assert(it==itEnd);
+            }
+        }
+    }
+    s +=std::string("\n");
+    file.open();
+    file.write(s);
+    file.close();
+}
+
+
+
 void OutputWriter::WriteOutputs_T1_LargeOutput_header(OutputFile& file)
 {
     file.open();
@@ -3332,6 +3489,32 @@ std::cout << "Enters in 'WriteOutputs'\n";
         }
     }
 
+    /*
+     ##########################
+     #### T5_LargeOutput  #####
+     ##########################
+     */
+    if (this->isFile(T5_LargeOutputFile))
+    {
+        if (SSP->T5_nbBits)
+        {
+            std::vector<OutputFile>& files = this->get_OutputFiles(T5_LargeOutputFile);
+            for (auto& file : files)
+            {
+                if ( GP->CurrentGeneration == GP->startAtGeneration)
+                {
+                    this->WriteOutputs_T5_LargeOutput_header(file);
+                }
+                if (file.isTime())
+                {
+                    #ifdef DEBUG
+                    std::cout << "Write T5_LargeOutputFile\n";
+                    #endif
+                    this->WriteOutputs_T5_LargeOutput(pop, file);
+                }
+            }
+        }
+    }
 
     /*
      ##########################
@@ -3635,11 +3818,11 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T1SFS ####
      ###############
      */
-    if (SSP->speciesIndex == 0 && this->isFile(T1_SFS))
+    if (SSP->speciesIndex == 0 && this->isFile(T1_SFS_file))
     {
         if (SSP->T1_nbBits)
         {
-            std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS);
+            std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS_file);
             for (auto& file : files)
             {
                 if ( GP->CurrentGeneration == GP->startAtGeneration)
@@ -3662,11 +3845,11 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T4SFS ####
      ###############
      */
-    if (SSP->speciesIndex == 0 && this->isFile(T4_SFS))
+    if (SSP->speciesIndex == 0 && this->isFile(T4_SFS_file))
     {
         if (SSP->T4_nbBits)
         {
-            std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS);
+            std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS_file);
             for (auto& file : files)
             {
                 if ( GP->CurrentGeneration == GP->startAtGeneration)
@@ -3689,11 +3872,11 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T5SFS ####
      ###############
      */
-    if (SSP->speciesIndex == 0 && this->isFile(T5_SFS))
+    if (SSP->speciesIndex == 0 && this->isFile(T5_SFS_file))
     {
         if (SSP->T4_nbBits)
         {
-            std::vector<OutputFile>& files = this->get_OutputFiles(T5_SFS);
+            std::vector<OutputFile>& files = this->get_OutputFiles(T5_SFS_file);
             for (auto& file : files)
             {
                 if ( GP->CurrentGeneration == GP->startAtGeneration)

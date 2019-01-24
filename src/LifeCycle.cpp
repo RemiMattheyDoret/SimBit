@@ -35,7 +35,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     #ifdef DEBUG
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
-    */
+    */   
 
     if (SSP->T4_nbBits > 0)
     {
@@ -46,6 +46,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     // Calculate fitness
     SSP->simTracker.prepareT1SitesForFitness(Parent_pop);
     Parent_pop.CalculateFitnesses(); // also set Index First Male;
+
 
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     std::vector<int> patchSizeNextGeneration;
@@ -76,9 +77,14 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         {
             //std::cout << "LifeCycle line 74 offspring_index = "<<offspring_index<<"\n";
             //std::cout << " patchSizeNextGeneration["<<patch_index<<"] = " <<  patchSizeNextGeneration[patch_index] << "   GP->PatchNumber = "<<GP->PatchNumber<<"\n";
+
             // Get offspring haplotypes
             Haplotype& Offspring_mHaplo = Offspring_pop.getPatch(patch_index).getInd(offspring_index).getHaplo(0); // maternally inherited haplotype
             Haplotype& Offspring_fHaplo = Offspring_pop.getPatch(patch_index).getInd(offspring_index).getHaplo(1); // paternally inherited haplotype
+
+
+            redoOffspring: // will be used in goto statement in viability selection
+
 
             // 3: select where the mother came from
             int mother_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
@@ -88,7 +94,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
             // 4: Select parents.
             // Select the mother
-            int mother_index = Parent_pop.SelectionParent(mother_patch_from,0);
+            int mother_index = Parent_pop.SelectionParent(mother_patch_from,0); // selection on fertility in there
 
             bool shouldIClone = false;
             if (SSP->cloningRate != 0.0)
@@ -129,16 +135,34 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     father_patch_from = mother_patch_from;
                 } else
                 {
-                    if (SSP->gameteDispersal)
+                    if (SSP->selfingRate == 0.0)
                     {
-                        father_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
+                        father_index = -1;
+                        father_patch_from = -1;
+                        while(father_index == mother_index && father_patch_from == mother_patch_from)
+                        {
+                            if (SSP->gameteDispersal)
+                            {
+                                father_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
+                            } else
+                            {
+                                father_patch_from = mother_patch_from;
+                            }
+                            father_index = Parent_pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
+                        }
                     } else
                     {
-                        father_patch_from = mother_patch_from;
-                    }
-                        
-                    father_index = Parent_pop.SelectionParent(father_patch_from, SSP->malesAndFemales);
+                        if (SSP->gameteDispersal)
+                        {
+                            father_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
+                        } else
+                        {
+                            father_patch_from = mother_patch_from;
+                        }
+                        father_index = Parent_pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
+                    }                        
                 }
+
                 Individual& father = Parent_pop.getPatch(father_patch_from).getInd(father_index);
 
                 // 6. The function 'recombination' direclty write the offsprings (one chromosome per call of 'recombination' in 'Offsrping_pop'   
@@ -146,10 +170,12 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 {
                     SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
                 }
+
                 recombination(
                    mother,
                    Offspring_mHaplo
                 );
+
 
                 if (SSP->T4_nbBits > 0)
                 {
@@ -165,7 +191,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     SSP->T4Tree.addChildHaplotype_finished(patch_index);
                 }
 
-            } // end of if ShouldIClone         
+            } // end of if ShouldIClone   
+
+
             // Mutate
             Mutate(
                 Offspring_mHaplo,
@@ -176,6 +204,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 Offspring_fHaplo,
                 SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
             );
+
             // 1. Fitness for next generation. Set fitness to zero if the habitat has changed
             if (SSP->Habitats[patch_index] != SSP->Habitats[mother_patch_from])
             {
@@ -199,6 +228,20 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     Offspring_fHaplo.setAllW_T2(-1.0);
                 }
             }
+
+
+            // Selection on viability
+            if (SSP->selectionOn != 0)
+            {
+                double fitness = Offspring_pop.getPatch(patch_index).getInd(offspring_index).CalculateFitness(patch_index);
+                std::uniform_real_distribution<double> dist(0.0,1.0);
+                if (dist(GP->mt) > fitness)
+                {
+                    goto redoOffspring;
+                }
+            }
+
+
             // 4.5 Genealogy. Will do something only if the last isTime was true
             SSP->simTracker.genealogy.addOffspringIfIsTime(patch_index, offspring_index, mother_patch_from, mother_index, father_patch_from, father_index);         
         }
@@ -777,6 +820,7 @@ void LifeCycle::Mutate_T1(Haplotype& TransmittedChrom, int Habitat)
 std::cout << "Enters in 'Mutate_T1'\n";
 #endif     
     int nbMuts = SSP->T1_rpois_nbMut(GP->mt);
+    //std::cout << "nbMuts = " << nbMuts << "\n";
     
     for (int i = 0 ; i < nbMuts ; i++)
     {
@@ -874,6 +918,7 @@ void LifeCycle::Mutate_T5(Haplotype& TransmittedChrom, int Habitat)
 std::cout << "Enters in 'Mutate_T5'\n";
 #endif     
     int nbMuts = SSP->T5_rpois_nbMut(GP->mt);
+    //std::cout << "nbMuts = " << nbMuts << "\n";
     
     for (int i = 0 ; i < nbMuts ; i++)
     {
@@ -896,6 +941,7 @@ std::cout << "Enters in 'Mutate_T5'\n";
         }
         
         // Make the mutation
+        //std::cout << "MutPosition = " << MutPosition << "\n";
         TransmittedChrom.toggleT5_Allele(MutPosition, Habitat);         // toggle bit
         // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one
     }

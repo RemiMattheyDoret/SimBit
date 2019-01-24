@@ -87,13 +87,13 @@ std::string AllParameters::readNthLine(const std::string& filename, int N)
     std::ifstream in(filename.c_str());
     if (!in.is_open()) // test if file is open
     { 
-        std::cout << "Sorry, SimBit failed to open the optionFile " << filename << std::endl;
+        std::cout << "Sorry, SimBit failed to open the optionFile (the optionFile is the file where the input parameters are indicated when you do something like './SimBit f optionFile 1') '" << filename << "'" <<std::endl;
         abort();
     }
 
     std::string s;
     //for performance
-    s.reserve(99999);    
+    s.reserve(9999);    
 
     //skip N lines
     for(int i = 0; i < N; ++i)
@@ -158,7 +158,7 @@ std::cout << "Enters in 'SetParameters'\n";
 
     OptionContainer optionContainer;
 
-    // set to default a priori... Not sure why this would be needed
+    // set LogfileType to default a priori... This is actually not needed anymore
     outputWriter.LogfileType = 1;
 
     if (argc <= 1)
@@ -277,8 +277,9 @@ std::cout << "Enters in 'SetParameters'\n";
     std::string flag;
     //std::cout << "AllInputInLongString = '" << AllInputInLongString << "'\n";
 
-    AllInputInLongString.erase(std::remove(AllInputInLongString.begin(), AllInputInLongString.end(), '\''), AllInputInLongString.end());
-    AllInputInLongString.erase(std::remove(AllInputInLongString.begin(), AllInputInLongString.end(), '\"'), AllInputInLongString.end());
+    AllInputInLongString.erase(std::remove_if(AllInputInLongString.begin(), AllInputInLongString.end(),  [](char c){if (c=='\'' || c=='\"') return true; return false;}  ), AllInputInLongString.end());
+    //AllInputInLongString.erase(std::remove(AllInputInLongString.begin(), AllInputInLongString.end(), '\''), AllInputInLongString.end());
+    //AllInputInLongString.erase(std::remove(AllInputInLongString.begin(), AllInputInLongString.end(), '\"'), AllInputInLongString.end());
 
     for (int char_index = 0 ; char_index < AllInputInLongString.size() ; char_index++ )
     {
@@ -309,13 +310,13 @@ std::cout << "Enters in 'SetParameters'\n";
                             
                             if (entryLength <= 0)
                             {
-                                std::cout << "Oops. Something went wrong when trying to parse input. There is maybe two options that follow each other without entry in between or maybe something like '----' or '-- --'. Please verify your input.\n";
+                                std::cout << "Oops. Something went wrong when trying to parse input. This could be caused by two options that follow each other without entry in between or maybe something like '----' or '-- --'. Please check your input.\n";
                                 abort();
                             }
                             std::string entry = AllInputInLongString.substr(previous_flag_to + 1, entryLength);
 
-                            entry = reduceString(entry);
-                            flag = reduceString(flag);
+                            reduceString(entry);
+                            reduceString(flag);
 
                             assert(entry.size() > 0);
                             assert(flag.size() > 0);
@@ -373,8 +374,8 @@ std::cout << "Enters in 'SetParameters'\n";
         }
         std::string entry = AllInputInLongString.substr(previous_flag_to, entryLength);
 
-        entry = reduceString(entry);
-        flag = reduceString(flag);
+        reduceString(entry);
+        reduceString(flag);
 
         assert(entry.size() > 0);
         assert(flag.size() > 0);
@@ -830,6 +831,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
+    else if (flag == "T5_LargeOutput_file")
+    {
+        // Nothing to do
+    }
     else if (flag == "T1_AlleleFreq_file")
     {
         // Nothing to do
@@ -941,15 +946,15 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     }
-    else if (flag == "T4_SFS")
+    else if (flag == "T4_SFS_file")
     {
         // Nothing to do
     }
-    else if (flag == "T1_SFS")
+    else if (flag == "T1_SFS_file")
     {
         // Nothing to do
     }
-    else if (flag == "T5_SFS")
+    else if (flag == "T5_SFS_file")
     {
         // Nothing to do
     }
@@ -1007,7 +1012,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "selfingRate")
     {
         for (auto& SSPi : this->SSPs)
-            SSPi.selfingRate = 0.0; // No difference between 0 and -1. It just means it selves at rate 1/2N
+            SSPi.selfingRate = -1; // -1 means it selves at rate 1/2N
     }
     else if (flag == "m")
     {
@@ -1119,6 +1124,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 no"), "In Default value for --additiveEffectAmongLoci,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readadditiveEffectAmongLoci);   
+    } 
+    else if (flag == "selectionOn")
+    {
+        InputReader input(std::string("@S0 fertility"), "In Default value for --selectionOn,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSelectionOn);
     }
     else if (flag == "T1_fit")
     {
@@ -1134,6 +1144,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 AllZeros"), "In Default value for --T1_ini,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_Initial_AlleleFreqs);
+    }
+    else if (flag == "T5_ini")
+    {
+        InputReader input(std::string("@S0 AllZeros"), "In Default value for --T5_ini,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_Initial_AlleleFreqs);
     }
     else if (flag == "T1_epistasis")
     {
@@ -1305,7 +1320,13 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
-    }  else if (flag == "T1_AlleleFreq_file")
+    } else if (flag == "T5_LargeOutput_file")
+    {
+        OutputFile file(input.GetNextElementString(), T5_LargeOutputFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    } else if (flag == "T1_AlleleFreq_file")
     {
         OutputFile file(input.GetNextElementString(), T1_AlleleFreqFile);
         file.interpretTimeAndSubsetInput(input);
@@ -1486,23 +1507,23 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         outputWriter.insertOutputFile(std::move(file));
 
     }
-    else if (flag == "T4_SFS")
+    else if (flag == "T4_SFS_file")
     {
-        OutputFile file(input.GetNextElementString(), T4_SFS);
+        OutputFile file(input.GetNextElementString(), T4_SFS_file);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
     } 
-    else if (flag == "T1_SFS")
+    else if (flag == "T1_SFS_file")
     {
-        OutputFile file(input.GetNextElementString(), T1_SFS);
+        OutputFile file(input.GetNextElementString(), T1_SFS_file);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
     }
-    else if (flag == "T5_SFS")
+    else if (flag == "T5_SFS_file")
     {
-        OutputFile file(input.GetNextElementString(), T5_SFS);
+        OutputFile file(input.GetNextElementString(), T5_SFS_file);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1521,8 +1542,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         outputWriter.LogfileType = input.GetNextElementInt();
         if (outputWriter.LogfileType > 2)
         {
-            std::cout << "LogfileType received is " << outputWriter.LogfileType << ". Only 0, 1 and 2 are accepted for the moment.\n";
-            abort();
+            if (outputWriter.LogfileType != 102105116) // 102105116 (stands for 'fit' in ascii) outputs the fitness arrays only
+            {
+                std::cout << "LogfileType received is " << outputWriter.LogfileType << ". Only 0, 1 and 2 are accepted for the moment.\n";
+                abort();
+            }
         }
     } else if (flag == "sequencingErrorRate")
     {
@@ -1645,9 +1669,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "additiveEffectAmongLoci")
     {
-        std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
+        std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Sorry! Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
         abort();
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readadditiveEffectAmongLoci);
+    } else if (flag == "selectionOn")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSelectionOn);
     } else if (flag == "T1_FitnessEffects" || flag == "T1_fit")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
@@ -1656,11 +1683,15 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_FitnessEffects);
         
-    }  else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
+    } else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
     {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_Initial_AlleleFreqs);
         
-    }  else if (flag == "T1_EpistaticFitnessEffects" || flag == "T1_epistasis")
+    } else if (flag == "T5_Initial_AlleleFreqs" || flag == "T5_ini")
+    {   
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_Initial_AlleleFreqs);
+        
+    } else if (flag == "T1_EpistaticFitnessEffects" || flag == "T1_epistasis")
     {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_EpistaticFitnessEffects);
     

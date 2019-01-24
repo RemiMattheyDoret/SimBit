@@ -57,6 +57,10 @@ public:
     double                                          sexRatio;
 
 
+    // basic selection
+    char                                            selectionOn;
+
+
     // Dispersal
     DispersalData                                   dispersalData;
     bool                                            DispWeightByFitness;
@@ -151,6 +155,9 @@ public:
     std::vector<std::vector<double>>                T5_FitnessEffects;
     bool                                            T5_isSelection;
     bool                                            T5_isMuliplicitySelection;
+    std::vector<std::vector<double>>                T5_Initial_AlleleFreqs;
+    bool                                            T5_Initial_AlleleFreqs_AllZeros;
+    bool                                            T5_Initial_AlleleFreqs_AllOnes;
 
     // Ecology
     std::vector<int>                                Habitats;
@@ -191,6 +198,7 @@ public:
     // methods
     void readLoci(InputReader& input);
     void readT1_Initial_AlleleFreqs(InputReader& input);
+    void readT5_Initial_AlleleFreqs(InputReader& input);
     void readnbSubGenerations(InputReader& input);
     void readRecombinationRate(InputReader& input);
     void readRecRateOnMismatch(InputReader& input);
@@ -210,6 +218,7 @@ public:
     void readT5_FitnessEffects(InputReader& input);
     void readResetGenetics(InputReader& input);
     void readHabitats(InputReader& input);
+    void readSelectionOn(InputReader& input);
     void readGrowthK(InputReader& input);
     void readResetTrackedT1Muts(InputReader& input);
     void readGameteDispersal(InputReader& input);

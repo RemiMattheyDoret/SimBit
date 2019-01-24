@@ -36,7 +36,14 @@ double DispersalData::ComputeEffectOfSpeciesEcologicalInteractions(int patch_ind
 {
     if (GP->nbSpecies == 1)
     {
-        return 0.0;
+        if (SSP->growthK[patch_index] > 0)
+        {
+            int focal_speciesIndex = SSP->speciesIndex;
+            return GP->allSpeciesPatchSizes[patch_index][focal_speciesIndex] * SSP->growthK[patch_index];
+        } else
+        {
+            return 0.0;
+        }
     } else
     {   
         int focal_speciesIndex = SSP->speciesIndex;
@@ -56,9 +63,10 @@ double DispersalData::ComputeEffectOfSpeciesEcologicalInteractions(int patch_ind
 
             if (speciesIndex == focal_speciesIndex)
             {
-                assert(GP->speciesEcoRel_type[focal_speciesIndex][speciesIndex] == '0');
-                assert(GP->speciesEcoRel_effect[focal_speciesIndex][speciesIndex] == 0.0);
-                effectOnEntirePatch *= SSP->growthK[patch_index];
+                //assert(GP->speciesEcoRel_type[focal_speciesIndex][speciesIndex] == '0');
+                //assert(GP->speciesEcoRel_effect[focal_speciesIndex][speciesIndex] == 0.0);
+                if (SSP->growthK[patch_index] > 0)
+                    effectOnEntirePatch *= SSP->growthK[patch_index];
             } else
             {
                 effectOnEntirePatch *= GP->speciesEcoRel_effect[focal_speciesIndex][speciesIndex];

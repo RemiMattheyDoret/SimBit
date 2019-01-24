@@ -312,3 +312,31 @@ SimBit_4.2.0
 
 SimBit_4.2.1
 	T5 debugging
+
+SimBit_4.2.2
+	Still unsure about ecologicalInteractions. This version is not ready to be released
+
+SimBit_4.2.3
+	Improve --LogFileType
+
+SimBit_4.2.4
+	Add viability selection and option --selectionOn
+	Fix selfing rate of 0 who did not mean 0 but meant Wright-Fisher
+
+SimBit_4.2.5
+	Remove _sp_ from file names when no species has ben specified
+
+SimBit_4.2.6
+	Fix inputting a coma for integer values such as 2.5e4	
+	Fix bug with selection on T5 loci
+
+
+
+
+
+
+
+
+
+
+

@@ -1041,35 +1041,43 @@ std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
 
 
     if (haplo0.getW_T5(fitnessMapIndex) == -1.0)
-    {
-        
+    {  
         auto itFrom = haplo0.T5_AllelesCiterator(T5_locusFrom);
         auto itEnd  = haplo0.T5_AllelesCiterator(T5_locusTo, itFrom);
         
+        //std::cout << "Computing W_T5haplo: mutations at ";
 
         double W_T5haplo0 = 1.0;
         for (auto it = itFrom ; it < itEnd ; it++)
         {
             W_T5haplo0 *= fits[*it];
+            //std::cout << *it << " ";
         }
         haplo0.setW_T5(W_T5haplo0, fitnessMapIndex);
+        //std::cout << "\n";
     }
 
     if (haplo1.getW_T5(fitnessMapIndex) == -1.0)
     {
         auto itFrom = haplo1.T5_AllelesCiterator(T5_locusFrom);
         auto itEnd  = haplo1.T5_AllelesCiterator(T5_locusTo, itFrom);
+
+        //std::cout << "Computing W_T5hapl1: mutations at ";
         double W_T5haplo1 = 1.0;
         for (auto it = itFrom ; it < itEnd ; it++)
         {
             W_T5haplo1 *= fits[*it];
+            //std::cout << *it << " ";
         }
+        //std::cout << "\n";
         haplo1.setW_T5(W_T5haplo1, fitnessMapIndex);
     }
         
     double r = haplo0.getW_T5(fitnessMapIndex) * haplo1.getW_T5(fitnessMapIndex);  
 
     assert(r<=1.0 && r>=0.0);
+
+    //std::cout << "r = " << r << "\n";
 
     return r;
 }

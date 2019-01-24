@@ -8,7 +8,7 @@ class Option
     bool wasRenamedYet;
     bool canGetSeveralInputs;
 
-    Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, int CGSI);
+    Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, bool CGSI);
     
     bool operator==(std::string other);
     std::string getNamesToPrint();

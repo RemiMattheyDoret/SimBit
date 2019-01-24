@@ -1,5 +1,5 @@
 
-Option::Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, int CGSI)
+Option::Option(std::vector<std::string> oN, std::vector<std::string> oTMBRB, bool CGSI)
 : optionNames(oN), optionsThatMustBeReadBefore(oTMBRB), howManyTimesReceivedYet(0), wasRenamedYet(false), canGetSeveralInputs(CGSI)
 {}
 

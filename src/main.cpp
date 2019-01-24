@@ -147,7 +147,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.2.1");
+    std::string VERSION("version 4.2.6");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -155,7 +155,7 @@ std::string getSimBitVersionLogo()
     s += "\t \\___ \\| | '_ ` _ \\|  _ \\| | __|\n";
     s += "\t  ___) | | | | | | | |_) | | |_ \n";
     s += "\t |____/|_|_| |_| |_|____/|_|\\__| ";
-    s += VERSION + "\n\n";
+    s += VERSION + "\n\n" + "\tWARNING: This is a version that will need further debugging of new features before being released\n\n" ;
     return s;
 }
 
@@ -351,6 +351,7 @@ int main(int argc, char *argv[])
     ############## Generation loop ##############
     #############################################
     */
+        
 
     // Loop through each generation
     bool isGenerationOdd = false;

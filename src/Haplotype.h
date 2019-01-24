@@ -72,6 +72,7 @@ public:
     void setT2_Allele(const int char_index, const unsigned char value);
     void setT3_Allele(const int char_index, const char value);
     void setT5_Allele(const int& locus, const bool& value);
+    void setEntireT5_Allele(std::vector<size_t>& t5a);
     void setT5_AlleleToOne(int& locus);
     void setT5_AlleleToZero(int& locus);
 

@@ -584,7 +584,7 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
 }
 
 Haplotype::Haplotype(const int patch_index, char Abiogenesis)
-: T1_Alleles(SSP->T1_nbChars), T2_Alleles(SSP->T2_nbChars), T3_Alleles(SSP->T3_nbChars)
+: T1_Alleles(SSP->T1_nbChars), T2_Alleles(SSP->T2_nbChars), T3_Alleles(SSP->T3_nbChars) // No initilization for T5_Alleles
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in 'Haplotype::Haplotype(const int patch_index, char Abiogenesis)'\n";
@@ -618,7 +618,6 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
     //std::cout << "created at W_T5.size() = " << W_T5.size() << "\n";
     
     // Initiate T1_Alleles
-    
     if (SSP->T1_nbBits > 0)
     {        
         if (SSP->T1_Initial_AlleleFreqs_AllZeros) // The whole chromosome must be 0s
@@ -703,7 +702,56 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
     // No initialization. Assume all are fixed at 0
 
     // Initiate T5_Alleles
-    // No initialization. Assume all are fixed at 0
+    if (SSP->T5_nbBits > 0)
+    {        
+        if (SSP->T5_Initial_AlleleFreqs_AllZeros) // The whole chromosome must be 0s
+        {
+            // Nothing to do
+        } else if (SSP->T5_Initial_AlleleFreqs_AllOnes) // The whole chromosome must be 1s
+        {
+            // That's a shitty choice from the user by the way!
+            std::cout << "\tWARNING: All T5 loci are initialized at the value 1. That is likely not to be a good choice as T5 loci are much faster when there are lots of zeros and very few ones.\n";
+
+            std::vector<size_t> t5a;
+            t5a.reserve(SSP->T5_nbBits);
+            for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+            {
+                t5a.push_back(locus);
+            }
+            this->setEntireT5_Allele(t5a);
+        } else 
+        {
+            assert(SSP->T5_Initial_AlleleFreqs.size() > patch_index);
+            for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
+            {
+                assert(SSP->T5_Initial_AlleleFreqs[patch_index].size() > locus);
+                if (SSP->T5_Initial_AlleleFreqs[patch_index][locus] == 1.0)
+                {
+                    this->setT5_AlleleToOne(locus);
+                } else if (SSP->T5_Initial_AlleleFreqs[patch_index][locus] == 0.0)
+                {
+                    this->setT5_AlleleToZero(locus);
+                    
+                } else
+                {
+                    double rnd = GP->random_0and1(GP->mt);
+                    if (rnd < SSP->T1_Initial_AlleleFreqs[patch_index][locus])
+                    {
+                        this->setT5_AlleleToOne(locus);
+                    }
+                    else
+                    {
+                        this->setT5_AlleleToZero(locus);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Haplotype::setEntireT5_Allele(std::vector<size_t>& t5a)
+{
+    this->T5_Alleles = t5a;
 }
 
 Haplotype::Haplotype(const Haplotype& other)
