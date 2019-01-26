@@ -155,7 +155,7 @@ std::string getSimBitVersionLogo()
     s += "\t \\___ \\| | '_ ` _ \\|  _ \\| | __|\n";
     s += "\t  ___) | | | | | | | |_) | | |_ \n";
     s += "\t |____/|_|_| |_| |_|____/|_|\\__| ";
-    s += VERSION + "\n\n" + "\tWARNING: This is a version that will need further debugging of new features before being released\n\n" ;
+    s += VERSION + "\n\n"; //+ "\tWARNING: This is a version that will need further debugging of new features before being released\n\n" ;
     return s;
 }
 

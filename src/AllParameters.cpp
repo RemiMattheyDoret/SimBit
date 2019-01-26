@@ -1831,6 +1831,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             std::cout << "While reading --speciesNames, it appears that zero species names have been indicated. You need at least one species to simulate something.\n";
             abort();
         }
+        if (GP->nbSpecies > 1)
+        {
+            std::cout << "WARNING: The current version is not ready for released because the system of species interaction is currently being modified. Please either simulate a single species at a time or consider a previously released version (or wait a little bit that I finish making these changes). Thank you and sorry!\n";
+            abort();   
+        }
     }  else if (flag == "eco" || flag == "ecoRelation" || flag == "speciesEcologicalRelationships")
     {   
         
