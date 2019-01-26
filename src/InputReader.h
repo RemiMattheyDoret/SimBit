@@ -76,5 +76,6 @@ public:
     void interpretKeywords();
     int getVIndex();
     size_t getSizeOfV();
+    void markedAsRead();
 };
 

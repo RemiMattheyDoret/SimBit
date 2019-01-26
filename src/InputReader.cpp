@@ -821,3 +821,8 @@ size_t InputReader::getSizeOfV()
 {
     return V.size();
 }
+
+void InputReader::markedAsRead()
+{
+    VIndex = V.size();
+}

@@ -1440,6 +1440,8 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
         outputWriter.insertOutputFile(std::move(file));
 
+        input.markedAsRead();
+
     } else if (flag == "fitnessStats_file" )
     {
         OutputFile file(input.GetNextElementString(), fitnessStats);
