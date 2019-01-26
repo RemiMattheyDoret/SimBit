@@ -80,6 +80,7 @@ public:
     std::vector<FromLocusToTXLocusElement>          FromLocusToFitnessMapBoundaries;
     int                                             NbElementsInFitnessMap;
     double                                          FitnessMapProbOfEvent;
+    double                                          FitnessMapT5WeightProbOfEvent;
     double                                          FitnessMapCoefficient;
     int                                             FitnessMapMinimNbLoci;
 

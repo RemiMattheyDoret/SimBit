@@ -330,6 +330,9 @@ SimBit_4.2.6
 	Fix inputting a coma for integer values such as 2.5e4	
 	Fix bug with selection on T5 loci
 
+SimBit_4.2.7
+	Reduce time needed to initialize populations when using T1_ini or T5_ini
+
 
 
 

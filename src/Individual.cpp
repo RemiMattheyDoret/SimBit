@@ -570,6 +570,7 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
         int T1_locusFrom = 0; // from included
         int T2_locusFrom = 0; // from included
         int T5_locusFrom = 0; // from included
+        
         for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap; fitnessMapIndex++)
         {
             // Trait 1
@@ -694,13 +695,13 @@ std::cout << "Enters in 'Individual::Individual(bool ShouldReadPopFromBinary)'\n
     haplo1 = c1;
 }
 
-Individual::Individual(const int patch_index, char Abiogenesis)
+Individual::Individual(const int patch_index, char Abiogenesis, int ind_index)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'Individual::Individual(const int patch_index, char Abiogenesis)'\n";
 #endif
-    Haplotype c0(patch_index,Abiogenesis);
-    Haplotype c1(patch_index,Abiogenesis);
+    Haplotype c0(patch_index,Abiogenesis, (double) (ind_index*2));
+    Haplotype c1(patch_index,Abiogenesis, (double) (ind_index*2+1));
     haplo0 = c0;
     haplo1 = c1;
 }

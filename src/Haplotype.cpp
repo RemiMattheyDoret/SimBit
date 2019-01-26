@@ -519,7 +519,7 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
         std::cout << "\n\tWARNING: You are printing to a binary file while you have T4 loci. In the current version of SimBit, T4 loci cannot be printed on a binary file (sorry). The binary file will be produced ignoring T4 loci\n";
 
     // Print T5_alleles
-    file.writeBinary(reinterpret_cast<const char*>(&T5_Alleles[0]), T5_Alleles.size()*sizeof(size_t));    
+    file.writeBinary(reinterpret_cast<const char*>(&T5_Alleles[0]), T5_Alleles.size()*sizeof(unsigned int));    
 }
 
 Haplotype::Haplotype(bool ShouldReadPopFromBinary)
@@ -547,7 +547,7 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
 
     //.read T5_alleles
     T5_Alleles.resize(SSP->T5_nbBits);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5_Alleles[0]), SSP->T5_nbBits*sizeof(size_t));
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5_Alleles[0]), SSP->T5_nbBits*sizeof(unsigned int));
 
     // Initiate W_T1, W_T2 and W_T5
     if (SSP->T1_isSelection)
@@ -583,7 +583,7 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     */
 }
 
-Haplotype::Haplotype(const int patch_index, char Abiogenesis)
+Haplotype::Haplotype(const int patch_index, char Abiogenesis, double indHaplo_index) // indHaplo_index is a double for faster comparison
 : T1_Alleles(SSP->T1_nbChars), T2_Alleles(SSP->T2_nbChars), T3_Alleles(SSP->T3_nbChars) // No initilization for T5_Alleles
 {
 #ifdef CALLENTRANCEFUNCTIONS
@@ -649,22 +649,22 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
                 }
                 for (int bit_index=0 ; bit_index < bit_index_to ; bit_index++ )
                 {
-                    assert(SSP->T1_Initial_AlleleFreqs[patch_index].size() > byte_index * EIGHT + bit_index);
-                    if (SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index] == 1.0)
+                    int locus = byte_index * EIGHT + bit_index;
+
+                    assert(SSP->T1_Initial_AlleleFreqs[patch_index].size() > locus);
+                    if (SSP->T1_Initial_AlleleFreqs[patch_index][locus] == 1.0)
                     {
                         this->setT1_AlleleToOne(byte_index,bit_index);
-                    } else if (SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index] == 0.0)
+                    } else if (SSP->T1_Initial_AlleleFreqs[patch_index][locus] == 0.0)
                     {
                         this->setT1_AlleleToZero(byte_index,bit_index);
-                        
+                    
                     } else
                     {
-                        double rnd = GP->random_0and1(GP->mt);
-                        if (rnd < SSP->T1_Initial_AlleleFreqs[patch_index][byte_index * EIGHT + bit_index])
+                        if ( indHaplo_index <= (SSP->T1_Initial_AlleleFreqs[patch_index][locus] * 2.0 * (double) SSP->patchSize[patch_index]))
                         {
                             this->setT1_AlleleToOne(byte_index,bit_index);
-                        }
-                        else
+                        } else
                         {
                             this->setT1_AlleleToZero(byte_index,bit_index);
                         }
@@ -710,9 +710,9 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
         } else if (SSP->T5_Initial_AlleleFreqs_AllOnes) // The whole chromosome must be 1s
         {
             // That's a shitty choice from the user by the way!
-            std::cout << "\tWARNING: All T5 loci are initialized at the value 1. That is likely not to be a good choice as T5 loci are much faster when there are lots of zeros and very few ones.\n";
+            std::cout << "\tWARNING: All T5 loci are initialized at the value 1. That is likely not to be a good choice as T5 loci are much faster when there are lots of zeros and very few ones. T1 loci might (or might not, it is just a guess) be a better choice here.\n";
 
-            std::vector<size_t> t5a;
+            std::vector<unsigned int> t5a;
             t5a.reserve(SSP->T5_nbBits);
             for (int locus = 0 ; locus < SSP->T5_nbBits ; locus++)
             {
@@ -727,29 +727,24 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis)
                 assert(SSP->T5_Initial_AlleleFreqs[patch_index].size() > locus);
                 if (SSP->T5_Initial_AlleleFreqs[patch_index][locus] == 1.0)
                 {
-                    this->setT5_AlleleToOne(locus);
+                    this->setT5_AlleleToOne_JustPushBack(locus);
                 } else if (SSP->T5_Initial_AlleleFreqs[patch_index][locus] == 0.0)
                 {
-                    this->setT5_AlleleToZero(locus);
+                    // Nothing to do
                     
                 } else
                 {
-                    double rnd = GP->random_0and1(GP->mt);
-                    if (rnd < SSP->T1_Initial_AlleleFreqs[patch_index][locus])
+                    if ( indHaplo_index <= (SSP->T5_Initial_AlleleFreqs[patch_index][locus] * 2.0 * (double) SSP->patchSize[patch_index]))
                     {
-                        this->setT5_AlleleToOne(locus);
-                    }
-                    else
-                    {
-                        this->setT5_AlleleToZero(locus);
-                    }
+                        this->setT5_AlleleToOne_JustPushBack(locus);
+                    } // nothing to do for else
                 }
             }
         }
     }
 }
 
-void Haplotype::setEntireT5_Allele(std::vector<size_t>& t5a)
+void Haplotype::setEntireT5_Allele(std::vector<unsigned int>& t5a)
 {
     this->T5_Alleles = t5a;
 }
@@ -818,8 +813,13 @@ bool Haplotype::getT5_Allele(const int locus)
 
 void Haplotype::setT5_Allele(const int& locus, const bool& value)
 {
-    auto position = std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), locus);
 
+    //std::cout << "value = " << value << "\n";
+    //std::cout << "locus = " << locus << "\n";
+    //std::cout << "T5_Alleles.size() = " << T5_Alleles.size() << "\n";
+
+    auto position = std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), locus);
+   
     if (value)
     {
         if (position == T5_Alleles.end())
@@ -831,13 +831,20 @@ void Haplotype::setT5_Allele(const int& locus, const bool& value)
         }
     } else
     {
-        if (locus == (*position))
+        if (position != T5_Alleles.end())
         {
-            T5_Alleles.erase(position);
+            if (locus == (*position))
+            {
+                T5_Alleles.erase(position);
+            }
         }
     }
 }
 
+void Haplotype::setT5_AlleleToOne_JustPushBack(int& locus)
+{
+    T5_Alleles.push_back(locus);
+}
 
 void Haplotype::setT5_AlleleToOne(int& locus)
 {
@@ -971,17 +978,17 @@ void Haplotype::copyIntoT5(int from, int to, Haplotype& SourceChromo)
     T5_Alleles.insert(T5_Alleles.end(), itFrom, itTo);
 }
 
-std::vector<size_t>::const_iterator Haplotype::T5_AllelesCBegin()
+std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCBegin()
 {
     return T5_Alleles.cbegin();
 }
 
-std::vector<size_t>::const_iterator Haplotype::T5_AllelesCEnd()
+std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCEnd()
 {
     return T5_Alleles.cend();
 }
 
-std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus, std::vector<size_t>::const_iterator from)
+std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from)
 {
     if (from == T5_Alleles.cend())
     {
@@ -1001,7 +1008,7 @@ std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus, st
     return std::lower_bound(from, T5_Alleles.cend(), locus);
 }
 
-std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus)
+std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int locus)
 {
     if (locus == 0)
     {
@@ -1013,7 +1020,9 @@ std::vector<size_t>::const_iterator Haplotype::T5_AllelesCiterator(int locus)
     return std::lower_bound(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
 }
 
-bool Haplotype::isT5Mutation(size_t locus)
+bool Haplotype::isT5Mutation(unsigned int locus)
 {
     return std::binary_search(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
 }
+
+

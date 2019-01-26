@@ -63,7 +63,7 @@ public:
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
     Individual(Haplotype& matChrom, Haplotype& patChrom);
-    Individual(const int patch_index,char Abiogenesis);
+    Individual(const int patch_index,char Abiogenesis, int ind_index);
     Individual(bool ShouldReadPopFromBinary);
     Individual(Haplotype& knownHaplotype, char Abiogenesis);
     Individual(const Haplotype& knownHaplotype);   // copy constructor

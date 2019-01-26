@@ -103,9 +103,13 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
 #endif
 
 
-    if (SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->T1_Initial_AlleleFreqs_AllOnes)
+    if (
+        (SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->T1_Initial_AlleleFreqs_AllOnes)
+        &&
+        (SSP->T5_Initial_AlleleFreqs_AllZeros || SSP->T5_Initial_AlleleFreqs_AllOnes)
+        )
     {   
-        Haplotype ConstantHaplotype(patch_index, Abiogenesis);
+        Haplotype ConstantHaplotype(patch_index, Abiogenesis, -1.0);
         Individual ConstantInd(ConstantHaplotype, Abiogenesis);
 
         assert(patch_index < SSP->patchCapacity.size());
@@ -117,7 +121,7 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
     {
         for (int ind_index = 0 ; ind_index < SSP->patchCapacity[patch_index] ; ++ind_index)
         {
-            Individual ind(patch_index, Abiogenesis);
+            Individual ind(patch_index, Abiogenesis, ind_index);
             inds.push_back(std::move(ind));
         }
     }

@@ -2900,7 +2900,7 @@ void OutputWriter::WriteOutputs_T1or4or5SFS_header(OutputFile& file)
         }
     }
 
-    s += "\tnbSNPs";
+    s += "\tnbSNPs\n";
 
     file.open();
     file.write(s);
@@ -3110,7 +3110,7 @@ void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>> obs
         assert(totalNbLociFound == nbLoci);
     }
 
-    s += "\t" + std::to_string(nbSNPs);
+    s += "\t" + std::to_string(nbSNPs) + "\n";
 
     file.open();
     file.write(s);
@@ -3872,9 +3872,9 @@ std::cout << "Enters in 'WriteOutputs'\n";
      #### T5SFS ####
      ###############
      */
-    if (SSP->speciesIndex == 0 && this->isFile(T5_SFS_file))
+    if (this->isFile(T5_SFS_file))
     {
-        if (SSP->T4_nbBits)
+        if (SSP->T5_nbBits)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T5_SFS_file);
             for (auto& file : files)

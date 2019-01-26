@@ -147,7 +147,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.2.6");
+    std::string VERSION("version 4.2.7");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -316,8 +316,7 @@ int main(int argc, char *argv[])
 
             //SSP->ClearT1_Initial_AlleleFreqs(); // We don't need the vector 'T1_Initial_AlleleFreqs' Anymore
 
-            std::pair<Pop,Pop> popPair(std::move(pop_odd), std::move(pop_even));
-            allSpecies.push_back(std::move(popPair));
+            allSpecies.push_back(std::pair<Pop,Pop>(std::move(pop_odd), std::move(pop_even)));
 
             #ifdef DEBUG
                 std::cout << "-------- pop even and odd added to 'allSpecies' --------" << std::endl;

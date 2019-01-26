@@ -36,13 +36,12 @@ private:
 
     // T4 types are tracked with T4Tree
 
-    std::vector<size_t> T5_Alleles;          // Type 5 Just like T1 except that only 
+    std::vector<unsigned int> T5_Alleles;          // Type 5 Just like T1 except that only 
 
     std::vector<double> W_T1;
     std::vector<double> W_T2;
     std::vector<double> W_T5;
     // No W_T3 as the fitness makes sense for the individual only
-    
 public:
 
 
@@ -72,9 +71,10 @@ public:
     void setT2_Allele(const int char_index, const unsigned char value);
     void setT3_Allele(const int char_index, const char value);
     void setT5_Allele(const int& locus, const bool& value);
-    void setEntireT5_Allele(std::vector<size_t>& t5a);
+    void setEntireT5_Allele(std::vector<unsigned int>& t5a);
     void setT5_AlleleToOne(int& locus);
     void setT5_AlleleToZero(int& locus);
+    void setT5_AlleleToOne_JustPushBack(int& locus);
 
     void toggleT1_Allele(int& MutPosition);
     void toggleT1_Allele(int& MutPosition, int Habitat);
@@ -94,7 +94,7 @@ public:
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
-    Haplotype(const int patch_index,char Abiogenesis);
+    Haplotype(const int patch_index,char Abiogenesis, double indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);
     Haplotype();                             // default constructor
     Haplotype(const Haplotype& other);             // copy constructor
@@ -110,10 +110,11 @@ public:
     bool isFreeFromMutations();
     bool isFreeFromMutations(int T1_locusFrom, int T1_locusTo);
 
-    std::vector<size_t>::const_iterator T5_AllelesCBegin();
-    std::vector<size_t>::const_iterator T5_AllelesCEnd();
-    bool isT5Mutation(size_t locus);
-    std::vector<size_t>::const_iterator T5_AllelesCiterator(int locus, std::vector<size_t>::const_iterator from);
-    std::vector<size_t>::const_iterator T5_AllelesCiterator(int locus);
+    std::vector<unsigned int>::const_iterator T5_AllelesCBegin();
+    std::vector<unsigned int>::const_iterator T5_AllelesCEnd();
+    bool isT5Mutation(unsigned int locus);
+    std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
+    std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus);
+
 };
 

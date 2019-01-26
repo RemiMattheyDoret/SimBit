@@ -74,8 +74,8 @@ void SpeciesSpecificParameters::setRandomDistributions()
     this->T3_rpois_nbMut                          = tmp3h;
     std::poisson_distribution<int>             tmp3i(T5_Total_Mutation_rate);
     this->T5_rpois_nbMut                          = tmp3i;
-    std::cout << "T1_Total_Mutation_rate = " << T1_Total_Mutation_rate << "\n";
-    std::cout << "T5_Total_Mutation_rate = " << T5_Total_Mutation_rate << "\n";
+    //std::cout << "T1_Total_Mutation_rate = " << T1_Total_Mutation_rate << "\n";
+    //std::cout << "T5_Total_Mutation_rate = " << T5_Total_Mutation_rate << "\n";
     
     std::uniform_int_distribution<int>         tmp4(0, TotalNbLoci-2);
     this->runiform_int_ForRecPos                  = tmp4;
@@ -294,7 +294,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             }
             if (locusType == 5)
             {
-                r /= 10;
+                r *= this->FitnessMapT5WeightProbOfEvent;
             }
             
 
@@ -388,16 +388,18 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     assert(NbElementsInFitnessMap == FromLocusToFitnessMapIndex.back()+1);
     
     // print to console
-#ifdef DEBUG
-    if (NbElementsInFitnessMap == 1)
+    if ( ShouldThereBeSeveralFitnessBlocks )
     {
-        std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " element\n\n";
-    } else
-    {
-        assert(NbElementsInFitnessMap > 1);
-        std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " elements\n\n";
+        if (NbElementsInFitnessMap == 1)
+        {
+            std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " element\n\n";
+        } else
+        {
+            assert(NbElementsInFitnessMap > 1);
+            std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " elements\n\n";
+        }
     }
-#endif 
+
     /*
     std::cout << "FromLocusToFitnessMapBoundaries";
     std::cout << "("<<FromLocusToFitnessMapBoundaries.size()<<"):\n";
@@ -1075,7 +1077,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
     this->FitnessMapMinimNbLoci = 0; // This is set to a different value only if used default
     std::string mode;
-    if (!this->T1_isMultiplicitySelection && this->T2_nbChars == 0)
+    if (!this->T1_isMultiplicitySelection && !this->T5_isMultiplicitySelection &&  this->T2_nbChars == 0)
     {
         mode = "prob";
         this->FitnessMapProbOfEvent = DBL_MAX;
@@ -1083,6 +1085,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
         {
             input.skipElement();
         }
+        this->FitnessMapT5WeightProbOfEvent = 0.1;
     } else
     {
         mode = input.GetNextElementString();
@@ -1091,7 +1094,14 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
             this->FitnessMapProbOfEvent = input.GetNextElementDouble();
             if (this->FitnessMapProbOfEvent <= 0.0)
             {
-                std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received not strictly positive (received "<<this->FitnessMapProbOfEvent<<").\n";
+                std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received not strictly positive value for 'FitnessMapProbOfEvent' (received "<<this->FitnessMapProbOfEvent<<").\n";
+                abort();        
+            }
+
+            this->FitnessMapT5WeightProbOfEvent = input.GetNextElementDouble();
+            if (this->FitnessMapT5WeightProbOfEvent <= 0.0)
+            {
+                std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received not strictly positive value for 'FitnessMapT5WeightProbOfEvent'(received "<<this->FitnessMapT5WeightProbOfEvent<<").\n";
                 abort();        
             }
 
@@ -1107,6 +1117,13 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
                 std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received a not strictly positive value (received "<<this->FitnessMapCoefficient<<").\n";
                 abort();        
             }
+
+            this->FitnessMapT5WeightProbOfEvent = input.GetNextElementDouble();
+            if (this->FitnessMapT5WeightProbOfEvent <= 0.0)
+            {
+                std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received not strictly positive value for 'FitnessMapT5WeightProbOfEvent'(received "<<this->FitnessMapT5WeightProbOfEvent<<").\n";
+                abort();        
+            }
         } else
         {
             std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo, received mode = " << mode << ". Sorry only modes 'prob' and 'coef' are allowed\n";
@@ -1114,6 +1131,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
             abort(); 
         }
     }
+    //std::cout << "\n\n\n\n\n\nin SSP : FitnessMapT5WeightProbOfEvent = " << FitnessMapT5WeightProbOfEvent << "\n\n\n\n\n\n\n";
 }
 
 void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)

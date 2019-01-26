@@ -26,7 +26,10 @@
 
  */
 
-Pop::Pop(){}
+Pop::Pop(){
+    std::cout << "Internal error: This Pop::Pop() constructor should not be used\n";
+    abort();
+}
 
 Pop::Pop(bool ShouldReadPopFromBinary)
 {
