@@ -47,7 +47,14 @@ public:
     double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
     void CalculateT3Phenotype(const int& Habitat);
     static double CalculateT3Fitness(const int& Habitat);
-    double CalculateT5FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T1_locusFrom, int T1_locusTo);
+    double CalculateT5FitnessMultiplicity(
+        const int& Habitat,
+        int fitnessMapIndex,
+        int& haplo0From,
+        int& haplo0To,
+        int& haplo1From,
+        int& haplo1To
+    );
     double CalculateT5FitnessNoMultiplicity(const int& Habitat);
 
 

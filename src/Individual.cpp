@@ -570,9 +570,13 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
         int T1_locusFrom = 0; // from included
         int T2_locusFrom = 0; // from included
         int T5_locusFrom = 0; // from included
+        int T5_haplo0From = 0;
+        int T5_haplo1From = 0;
         
         for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap; fitnessMapIndex++)
         {
+            //std::cout << "fitnessMapIndex = " << fitnessMapIndex << "\n";
+            
             // Trait 1
             if (SSP->T1_isMultiplicitySelection && SSP->T1_isSelection)
             {
@@ -605,9 +609,13 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
                 int T5_locusTo = SSP->FromLocusToFitnessMapBoundaries[fitnessMapIndex].T5; // to excluded
                 assert(T5_locusTo >= T5_locusFrom);
 
+                auto T5_haplo0To = haplo0.T5_AllelesPosition(T5_locusTo, T5_haplo0From);
+                auto T5_haplo1To = haplo0.T5_AllelesPosition(T5_locusTo, T5_haplo1From);
+
+
                 //std::cout << "calculate T5 Fitness from " << T5_locusFrom << " to " << T5_locusTo << "\n";
 
-                rT5 *= this->CalculateT5FitnessMultiplicity(Habitat, fitnessMapIndex, T5_locusFrom, T5_locusTo);
+                rT5 *= this->CalculateT5FitnessMultiplicity(Habitat, fitnessMapIndex, T5_haplo0From, T5_haplo0To, T5_haplo1From, T5_haplo1To); // Will directly set the two "from" iterators to the "to" iterators for the next fitness block
 
                 // set from Locus
                 T5_locusFrom = T5_locusTo;
@@ -1027,14 +1035,18 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
 
 
 
-double Individual::CalculateT5FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T5_locusFrom, int T5_locusTo)
+double Individual::CalculateT5FitnessMultiplicity(
+    const int& Habitat,
+    int fitnessMapIndex,
+    int& haplo0From,
+    int& haplo0To,
+    int& haplo1From,
+    int& haplo1To
+)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
 #endif   
-
-    assert(SSP->T5_isMultiplicitySelection);
-    assert(T5_locusFrom <= T5_locusTo);
 
     // Get the right fitness array
     auto& fits = SSP->T5_FitnessEffects[Habitat];
@@ -1043,15 +1055,12 @@ std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
 
     if (haplo0.getW_T5(fitnessMapIndex) == -1.0)
     {  
-        auto itFrom = haplo0.T5_AllelesCiterator(T5_locusFrom);
-        auto itEnd  = haplo0.T5_AllelesCiterator(T5_locusTo, itFrom);
-        
         //std::cout << "Computing W_T5haplo: mutations at ";
 
         double W_T5haplo0 = 1.0;
-        for (auto it = itFrom ; it < itEnd ; it++)
+        for ( ; haplo0From < haplo0To ; haplo0From++)
         {
-            W_T5haplo0 *= fits[*it];
+            W_T5haplo0 *= fits[haplo0From];
             //std::cout << *it << " ";
         }
         haplo0.setW_T5(W_T5haplo0, fitnessMapIndex);
@@ -1060,14 +1069,12 @@ std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
 
     if (haplo1.getW_T5(fitnessMapIndex) == -1.0)
     {
-        auto itFrom = haplo1.T5_AllelesCiterator(T5_locusFrom);
-        auto itEnd  = haplo1.T5_AllelesCiterator(T5_locusTo, itFrom);
 
         //std::cout << "Computing W_T5hapl1: mutations at ";
         double W_T5haplo1 = 1.0;
-        for (auto it = itFrom ; it < itEnd ; it++)
+        for ( ; haplo1From < haplo1To ; haplo1From++)
         {
-            W_T5haplo1 *= fits[*it];
+            W_T5haplo1 *= fits[haplo1From];
             //std::cout << *it << " ";
         }
         //std::cout << "\n";

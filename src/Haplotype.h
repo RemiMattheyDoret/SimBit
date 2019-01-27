@@ -115,6 +115,8 @@ public:
     bool isT5Mutation(unsigned int locus);
     std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
     std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus);
+    int T5_AllelesPosition(int locus, int from);
+    int T5_AllelesPosition(int locus);
 
 };
 

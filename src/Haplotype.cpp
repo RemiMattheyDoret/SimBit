@@ -1008,6 +1008,26 @@ std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int loc
     return std::lower_bound(from, T5_Alleles.cend(), locus);
 }
 
+int Haplotype::T5_AllelesPosition(int locus, int from)
+{
+    if (from == T5_Alleles.size())
+    {
+        return from;   
+    }
+
+    if (locus == T5_Alleles[from])
+    {
+        return from;
+    }
+
+    if (locus == SSP->T5_nbBits)
+    {
+        return T5_Alleles.size();
+    }
+
+    return std::lower_bound(T5_Alleles.begin() + from, T5_Alleles.end(), locus) - T5_Alleles.begin();
+}
+
 std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int locus)
 {
     if (locus == 0)
@@ -1018,6 +1038,18 @@ std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int loc
         return T5_Alleles.cend();
     }
     return std::lower_bound(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
+}
+
+int Haplotype::T5_AllelesPosition(int locus)
+{
+    if (locus == 0)
+    {
+        return 0;
+    } else if (locus == SSP->T5_nbBits)
+    {
+        return T5_Alleles.size();
+    }
+    return std::lower_bound(T5_Alleles.begin(), T5_Alleles.end(), locus) - T5_Alleles.begin();
 }
 
 bool Haplotype::isT5Mutation(unsigned int locus)
