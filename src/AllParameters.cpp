@@ -1079,7 +1079,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
             SSPi.FitnessMapMinimNbLoci = 120;
             SSPi.FitnessMapProbOfEvent = 0.008; // This is a default value but the optimal value will vary a lot depending upon what exactly is being simulated! I can definitely improve the decision of the FitnessMap Boundaries
     
-            SSPi.FitnessMapT5WeightProbOfEvent = 0.1;
+            SSPi.FitnessMapT5WeightProbOfEvent = 0.08;
             SSPi.FitnessMapCoefficient = -9.0; 
         }
     }

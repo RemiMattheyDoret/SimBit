@@ -2,16 +2,13 @@
 	 / ___|(_)_ __ ___ | __ )(_) |_ 
 	 \___ \| | '_ ` _ \|  _ \| | __|
 	  ___) | | | | | | | |_) | | |_ 
-	 |____/|_|_| |_| |_|____/|_|\__| version 4.2.9
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.2.13
 
 Random seed:
-	12
+	19
 
 User Input:
-	--PN 1 --N unif 500 --L t1 100 --T1_mu unif 1e-5 --r rate unif 1e-8 --nbGens 500 --T1_AlleleFreq_file test 500 --T1_fit MultiplicityUnif 0.99 --seed 12 --Overwrite 2 
+	--PN 1 --N unif 1.5e4 --L t5 1e7 --T5_mu unif 1e-7 --T5_fit MultiplicityUnif 0.9999 --r rate unif 1e-7 --nbGens 1e3 --seed 19 
 
-		Time for initialization: 0 seconds (0.005145 seconds)
+		Time for initialization: 1 seconds (1.246 seconds)
 
-		Time for the simulation: 0 seconds (0.2799 seconds)
-
-		------ Simulation is over. Good Job! ----

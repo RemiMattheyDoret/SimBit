@@ -50,10 +50,10 @@ public:
     double CalculateT5FitnessMultiplicity(
         const int& Habitat,
         int fitnessMapIndex,
-        int& haplo0From,
-        int& haplo0To,
-        int& haplo1From,
-        int& haplo1To
+        std::vector<unsigned int>::const_iterator& haplo0From,
+        std::vector<unsigned int>::const_iterator& haplo0To,
+        std::vector<unsigned int>::const_iterator& haplo1From,
+        std::vector<unsigned int>::const_iterator& haplo1To
     );
     double CalculateT5FitnessNoMultiplicity(const int& Habitat);
 

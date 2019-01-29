@@ -1085,7 +1085,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
         {
             input.skipElement();
         }
-        this->FitnessMapT5WeightProbOfEvent = 0.1;
+        this->FitnessMapT5WeightProbOfEvent = 1.0; // whatever
     } else
     {
         mode = input.GetNextElementString();

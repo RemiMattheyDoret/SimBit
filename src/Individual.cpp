@@ -558,6 +558,7 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
 
 std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
 {
+    //std::cout << "Enters in Individual::CalculateFitnessComponents\n";
     double rT1 = 1.0;
     double rT2 = 1.0;
     double rT1epistasis = 1.0;
@@ -570,8 +571,8 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
         int T1_locusFrom = 0; // from included
         int T2_locusFrom = 0; // from included
         int T5_locusFrom = 0; // from included
-        int T5_haplo0From = 0;
-        int T5_haplo1From = 0;
+        std::vector<unsigned int>::const_iterator T5_haplo0it = haplo0.T5_AllelesCBegin();
+        std::vector<unsigned int>::const_iterator T5_haplo1it = haplo1.T5_AllelesCBegin();
         
         for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap; fitnessMapIndex++)
         {
@@ -609,13 +610,14 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
                 int T5_locusTo = SSP->FromLocusToFitnessMapBoundaries[fitnessMapIndex].T5; // to excluded
                 assert(T5_locusTo >= T5_locusFrom);
 
-                auto T5_haplo0To = haplo0.T5_AllelesPosition(T5_locusTo, T5_haplo0From);
-                auto T5_haplo1To = haplo0.T5_AllelesPosition(T5_locusTo, T5_haplo1From);
+                auto T5_haplo0Toit = haplo0.T5_AllelesCiterator(T5_locusTo, T5_haplo0it);
+                auto T5_haplo1Toit = haplo1.T5_AllelesCiterator(T5_locusTo, T5_haplo1it);
 
+                //std::cout << "calculate T5 Fitness from " << T5_locusFrom << " to " << T5_locusTo << " (fitnessMapIndex = "<<fitnessMapIndex<<")\n";
 
-                //std::cout << "calculate T5 Fitness from " << T5_locusFrom << " to " << T5_locusTo << "\n";
-
-                rT5 *= this->CalculateT5FitnessMultiplicity(Habitat, fitnessMapIndex, T5_haplo0From, T5_haplo0To, T5_haplo1From, T5_haplo1To); // Will directly set the two "from" iterators to the "to" iterators for the next fitness block
+                rT5 *= this->CalculateT5FitnessMultiplicity(Habitat, fitnessMapIndex, T5_haplo0it, T5_haplo0Toit, T5_haplo1it, T5_haplo1Toit); // Will directly set the two "from" iterators to the "to" iterators for the next fitness block
+                assert(T5_haplo0it == T5_haplo0Toit);
+                assert(T5_haplo1it == T5_haplo1Toit);
 
                 // set from Locus
                 T5_locusFrom = T5_locusTo;
@@ -652,6 +654,9 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
         rT5 = this->CalculateT5FitnessNoMultiplicity(Habitat);
     }
 
+    //std::cout << "has " << haplo0.T5_howManyMutations() + haplo1.T5_howManyMutations() << " mutations\n";
+    //std::cout << "rT5 = " <<rT5 << "\n";
+    //std::cout << "Exits in Individual::CalculateFitnessComponents\n";
     return {rT1, rT2, rT1epistasis, rT3, rT5};
 }
 
@@ -1038,15 +1043,26 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
 double Individual::CalculateT5FitnessMultiplicity(
     const int& Habitat,
     int fitnessMapIndex,
-    int& haplo0From,
-    int& haplo0To,
-    int& haplo1From,
-    int& haplo1To
-)
+    std::vector<unsigned int>::const_iterator& haplo0From,
+    std::vector<unsigned int>::const_iterator& haplo0To,
+    std::vector<unsigned int>::const_iterator& haplo1From,
+    std::vector<unsigned int>::const_iterator& haplo1To)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
 #endif   
+
+    
+    /*std::cout << "haplo0From = " <<haplo0From  << "\n";
+    std::cout << "haplo0To = " <<haplo0To  << "\n";
+    std::cout << "haplo1From = " << haplo1From << "\n";
+    std::cout << "haplo1To = " << haplo1To << "\n";
+    
+    assert(haplo0From == 0);
+    assert(haplo1From == 0);
+    assert(haplo0To == haplo0.T5_howManyMutations());
+    assert(haplo1To == haplo0.T5_howManyMutations());*/
+
 
     // Get the right fitness array
     auto& fits = SSP->T5_FitnessEffects[Habitat];
@@ -1060,11 +1076,14 @@ std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
         double W_T5haplo0 = 1.0;
         for ( ; haplo0From < haplo0To ; haplo0From++)
         {
-            W_T5haplo0 *= fits[haplo0From];
+            W_T5haplo0 *= fits[*haplo0From];
             //std::cout << *it << " ";
         }
         haplo0.setW_T5(W_T5haplo0, fitnessMapIndex);
         //std::cout << "\n";
+    } else
+    {
+        haplo0From = haplo0To;
     }
 
     if (haplo1.getW_T5(fitnessMapIndex) == -1.0)
@@ -1074,11 +1093,14 @@ std::cout << "Enters in 'CalculateT5FitnessMultiplicity'\n";
         double W_T5haplo1 = 1.0;
         for ( ; haplo1From < haplo1To ; haplo1From++)
         {
-            W_T5haplo1 *= fits[haplo1From];
+            W_T5haplo1 *= fits[*haplo1From];
             //std::cout << *it << " ";
         }
         //std::cout << "\n";
         haplo1.setW_T5(W_T5haplo1, fitnessMapIndex);
+    } else
+    {
+        haplo1From = haplo1To;
     }
         
     double r = haplo0.getW_T5(fitnessMapIndex) * haplo1.getW_T5(fitnessMapIndex);  

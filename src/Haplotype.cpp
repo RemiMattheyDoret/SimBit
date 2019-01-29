@@ -908,6 +908,15 @@ void Haplotype::toggleT5_Allele(int& MutPosition, int Habitat)
         newAllele = true;   
     } else
     {
+        /*
+        std::cout << "All T5_Alleles: ";
+            for (auto elem : T5_Alleles)
+                std::cout << elem << " ";
+            std::cout << std::endl;
+        std::cout << "position is at " << position - T5_Alleles.begin() << "\n";
+        std::cout << "(*position) = " << (*position) << "\n";
+        std::cout << "MutPosition = " << MutPosition << "\n"; 
+        */
         if ( MutPosition != (*position))
         {
             // not found
@@ -925,26 +934,21 @@ void Haplotype::toggleT5_Allele(int& MutPosition, int Habitat)
 
     if (SSP->T5_isMultiplicitySelection)
     {
-        //std::cout << "MutPosition = " << MutPosition << "\n";
-        //std::cout << "SSP->FromT1LocusToLocus.size() = " << SSP->FromT1LocusToLocus.size() << "\n";
-        //assert(MutPosition < SSP->FromT1LocusToLocus.size());
-        //std::cout << " SSP->FromT1LocusToLocus[MutPosition] = " << SSP->FromT1LocusToLocus[MutPosition] << "\n";
-        //assert(SSP->FromT1LocusToLocus[MutPosition] < SSP->FromLocusToFitnessMapIndex.size());
         int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT5LocusToLocus[MutPosition]];
-        //std::cout << "In Haplotype::toggleT5_Allele, fitnessMapIndex = "<<fitnessMapIndex<<"\n";
 
         double w = this->getW_T5(fitnessMapIndex);
+
         if (w != -1.0)
         {
             // Note that Toggle already happened. If it is mutant, it is because it just happened!
-            //std::cout << "line 196\n";
             if ( newAllele )
             {
                 w *= SSP->T5_FitnessEffects[Habitat][MutPosition];
                 assert(w >= 0.0 && w <= 1.0);
             } else
             {
-                if (SSP->T5_FitnessEffects[Habitat][MutPosition] == 0)
+                
+                if (SSP->T5_FitnessEffects[Habitat][MutPosition] == 0.0)
                 {
                     w = -1.0;
                 } else
@@ -979,7 +983,7 @@ void Haplotype::copyIntoT5(int from, int to, Haplotype& SourceChromo)
 }
 
 std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCBegin()
-{
+{ 
     return T5_Alleles.cbegin();
 }
 
@@ -990,9 +994,18 @@ std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCEnd()
 
 std::vector<unsigned int>::const_iterator Haplotype::T5_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from)
 {
+    /*
+    std::cout << "T5_Alleles.size() = " << T5_Alleles.size() << "\n";
+    std::cout << "&(*T5_Alleles.cbegin()) = " << &(*T5_Alleles.cbegin()) << "\n";
+    std::cout << "&(*T5_Alleles.cend()) = " << &(*T5_Alleles.cend()) << "\n";
+    std::cout << "&(*from) = " << &(*from) << "\n";
+    */
+    assert(from <= T5_Alleles.cend() );
+    assert(from >= T5_Alleles.cbegin() );
+
     if (from == T5_Alleles.cend())
     {
-        return from;   
+        return from;
     }
 
     if (locus == *from)
@@ -1057,4 +1070,13 @@ bool Haplotype::isT5Mutation(unsigned int locus)
     return std::binary_search(T5_Alleles.cbegin(), T5_Alleles.cend(), locus);
 }
 
+int Haplotype::T5_howManyMutations()
+{
+    return T5_Alleles.size();
+}
 
+
+size_t Haplotype::getT5_nthMutation(const int n)
+{
+    return T5_Alleles[n];
+}

@@ -62,6 +62,7 @@ public:
     unsigned char getT2_Allele(const int char_index);
     char getT3_Allele(const int char_index);
     bool getT5_Allele(const int Locus);
+    size_t getT5_nthMutation(const int n);
 
     void setT1_Allele(const int& char_index, const int& bit_index, const int& value);
     void setT1_AlleleToOne(int& char_index, int& bit_index);
@@ -117,6 +118,7 @@ public:
     std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus);
     int T5_AllelesPosition(int locus, int from);
     int T5_AllelesPosition(int locus);
+    int T5_howManyMutations();
 
 };
 

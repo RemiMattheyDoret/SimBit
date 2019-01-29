@@ -648,11 +648,11 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 if (SSP->T5_isMultiplicitySelection)
                 {
                     
-                    /*
-                    std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
-                    std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
-                    std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
-                    */
+                    
+                    //std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
+                    //std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
+                    //std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
+                    
 
                     // Copy fitnesses that can be copied
                     for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
