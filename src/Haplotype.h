@@ -36,12 +36,16 @@ private:
 
     // T4 types are tracked with T4Tree
 
-    std::vector<unsigned int> T5_Alleles;          // Type 5 Just like T1 except that only 
+    std::vector<unsigned int> T5sel_Alleles;          // Type 5 SLimM style. Just like T1 except that only mutations are keeping tracked of
+    std::vector<unsigned int> T5ntrl_Alleles;      
 
     std::vector<double> W_T1;
     std::vector<double> W_T2;
     std::vector<double> W_T5;
     // No W_T3 as the fitness makes sense for the individual only
+
+    template<typename INT>
+    bool toggleT5_Allele(std::vector<unsigned int>& alleles, INT MutPosition);
 public:
 
 
@@ -61,8 +65,10 @@ public:
     bool getT1_Allele(const int char_index, const int bit_index);
     unsigned char getT2_Allele(const int char_index);
     char getT3_Allele(const int char_index);
-    bool getT5_Allele(const int Locus);
-    size_t getT5_nthMutation(const int n);
+    //bool getT5ntrl_Allele(const int Locus);
+    //bool getT5sel_Allele(const int Locus);
+    int getT5ntrl_nthMutation(const int n);
+    int getT5sel_nthMutation(const int n);
 
     void setT1_Allele(const int& char_index, const int& bit_index, const int& value);
     void setT1_AlleleToOne(int& char_index, int& bit_index);
@@ -71,26 +77,38 @@ public:
     void setT1_char(int& T1_char_index, unsigned char&& c);
     void setT2_Allele(const int char_index, const unsigned char value);
     void setT3_Allele(const int char_index, const char value);
-    void setT5_Allele(const int& locus, const bool& value);
+    
     void setEntireT5_Allele(std::vector<unsigned int>& t5a);
-    void setT5_AlleleToOne(int& locus);
-    void setT5_AlleleToZero(int& locus);
-    void setT5_AlleleToOne_JustPushBack(int& locus);
+    void setT5_Allele(const int& T5locus, const bool& value);
+    void setT5ntrl_Allele(const int& locus, const bool& value);
+    void setT5sel_Allele(const int& locus, const bool& value);
+
+
+    void setT5sel_AlleleToOne(int& locus);
+    void setT5sel_AlleleToZero(int& locus);
+    void setT5sel_AlleleToOne_JustPushBack(int& locus);
+    void setT5ntrl_AlleleToOne(int& locus);
+    void setT5ntrl_AlleleToZero(int& locus);
+    void setT5ntrl_AlleleToOne_JustPushBack(int& locus);
 
     void toggleT1_Allele(int& MutPosition);
     void toggleT1_Allele(int& MutPosition, int Habitat);
     void AddMutT2_Allele(int& char_index);
     void AddMutT2_Allele(int& char_index, int Habitat);
     void AddMutT3_Allele(int& char_index);
-    void toggleT5_Allele(int& MutPosition);
-    void toggleT5_Allele(int& MutPosition, int Habitat);
+    
+    template<typename INT>
+    void toggleT5ntrl_Allele(INT MutPosition);
+    template<typename INT>
+    void toggleT5sel_Allele(INT MutPosition, int Habitat);
     
 
     void copyIntoT1(int from, int to, Haplotype& SourceChromo);
     void copyIntoT2(int from, int to, Haplotype& SourceChromo);
     void copyIntoT3(int from, int to, Haplotype& SourceChromo);
     void clearT5Alleles();
-    void copyIntoT5(int from, int to, Haplotype& SourceChromo);
+    void copyIntoT5ntrl(int from, int to, Haplotype& SourceChromo);
+    void copyIntoT5sel(int from, int to, Haplotype& SourceChromo);
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
@@ -111,14 +129,29 @@ public:
     bool isFreeFromMutations();
     bool isFreeFromMutations(int T1_locusFrom, int T1_locusTo);
 
-    std::vector<unsigned int>::const_iterator T5_AllelesCBegin();
-    std::vector<unsigned int>::const_iterator T5_AllelesCEnd();
-    bool isT5Mutation(unsigned int locus);
-    std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
-    std::vector<unsigned int>::const_iterator T5_AllelesCiterator(int locus);
-    int T5_AllelesPosition(int locus, int from);
-    int T5_AllelesPosition(int locus);
-    int T5_howManyMutations();
+    std::vector<unsigned int>::const_iterator T5sel_AllelesCBegin();
+    std::vector<unsigned int>::const_iterator T5sel_AllelesCEnd();
+    std::vector<unsigned int>::const_iterator T5sel_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
+    std::vector<unsigned int>::const_iterator T5sel_AllelesCiterator(int locus);
+
+
+    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCBegin();
+    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCEnd();
+    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
+    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCiterator(int locus);
+
+    //int T5_AllelesPosition(int locus, int from);
+    //int T5_AllelesPosition(int locus);
+    //int T5_howManyMutations();
+    void toggleT5ntrlLoci(std::vector<int> lociToToggle);
+    void toggleT5ntrl_Allele(int& MutPosition, unsigned int& from);
+
+    int getNbT5ntrl();
+
+    bool isT5ntrlMutation(int locus);
+    bool isT5selMutation(int locus);
+
+    void assertT5orderAndUniqueness();
 
 };
 

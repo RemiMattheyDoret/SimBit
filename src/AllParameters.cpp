@@ -510,6 +510,12 @@ std::cout << "Enters in 'SetParameters'\n";
         option.received(optionContainer);
         //std::cout << "Flag " << flag << "\n";
 
+        if (flag == "T5_fit" || flag == "T5_FitnessEffects")
+        {
+            //std::cout << "About to enter in quickScreenAtOptionL\n\n\n\n\n\n\n\n\n";
+            quickScreenAtOptionL(UserEntries);
+        }
+
         // if flag not found in UserEntries
         if (UserInputIndexForFlags.size() == 0) 
         {
@@ -1109,17 +1115,13 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "T5_mu")
     {
-        for (auto& SSPi : this->SSPs)
-        {
-            if (SSPi.T5_nbBits)
-            {
-                std::cout << "You asked for T5 loci for species "<< SSPi.speciesName <<" but option '--T5_MutationRate' is missing!\n";
-                abort();
-            } else
-            {
-                SSPi.T5_Total_Mutation_rate = 0.0;
-            }
-        }
+        InputReader input("default", "In default value fot --T5_mu,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_MutationRate);
+    }
+    else if (flag == "T5_fixedNtrlMuts")
+    {
+        InputReader input(std::string("@S0 5e3"), "In Default value for --T5_fixedNtrlMuts,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_fixedNtrlMuts);   
     }
     else if (flag == "additiveEffectAmongLoci")
     {
@@ -1671,7 +1673,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_MutationRate);
 
-    } else if (flag == "additiveEffectAmongLoci")
+    } 
+    else if (flag == "T5_fixedNtrlMuts")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_fixedNtrlMuts);
+    }
+    else if (flag == "additiveEffectAmongLoci")
     {
         std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Sorry! Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
         abort();
@@ -1978,5 +1985,18 @@ bool AllParameters::isSpeciesIndexReadFromBinary(int speciesIndex)
 
 
 
-
+void AllParameters::quickScreenAtOptionL(std::vector<std::pair<std::string, std::string>>& UserEntries)
+{
+    int entryIndex = 0;
+    for (; entryIndex < UserEntries.size(); entryIndex++ )
+    {
+        if (UserEntries[entryIndex].first == "L" || UserEntries[entryIndex].first == "Loci")
+        {
+            break;
+        }
+    }
+    InputReader input(UserEntries[entryIndex].second, "While making a quick screen of option L, ");
+    wrapperOverSpecies(input, &SpeciesSpecificParameters::readQuickScreenOfOptionL);
+    input.workDone();
+}
 

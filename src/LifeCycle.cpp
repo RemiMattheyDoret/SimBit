@@ -111,10 +111,18 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             int father_patch_from;
             int father_index;
 
+
+            if (SSP->T5sel_nbBits || SSP->T5ntrl_nbBits)
+            {
+                Offspring_mHaplo.clearT5Alleles();
+                Offspring_fHaplo.clearT5Alleles();
+            }
+
             if (shouldIClone)
             {
-                Offspring_mHaplo = mother.getHaplo(0);
-                Offspring_fHaplo = mother.getHaplo(1);
+                std::vector<int> breakpoints = {INT_MAX};
+                recombination_copyOver(mother, Offspring_mHaplo, breakpoints, -1); // name is a bit unfortunate. It won't recombine
+                recombination_copyOver(mother, Offspring_fHaplo, breakpoints, -1); // name is a bit unfortunate. It won't recombine
                 father_index = mother_index;
                 father_patch_from = mother_patch_from;
                 if (SSP->T4_nbBits > 0)
@@ -182,7 +190,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     SSP->T4Tree.addChildHaplotype_finished(patch_index);
                     SSP->T4Tree.addChildHaplotype_setParentInfo(father_patch_from, father_index);
                 }
-                recombination(
+                recombination( 
                    father,
                    Offspring_fHaplo
                 );
@@ -280,6 +288,8 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         SSP->T4Tree.pruneDeadLineages();
     }
 
+    if (SSP->T5ntrl_nbBits)
+        Offspring_pop.toggleT5FixedNtrlMutationsIfNeeded();
 }
 
 
@@ -443,19 +453,24 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         int Safety_T4_Absolutefrom = INT_MAX;
         int Safety_T4_Absoluteto   = -1;
         
-        int Safety_T5_Absolutefrom = INT_MAX;
-        int Safety_T5_Absoluteto   = -1;
+        int Safety_T5ntrl_Absolutefrom = INT_MAX;
+        int Safety_T5ntrl_Absoluteto   = -1;
+
+        int Safety_T5sel_Absolutefrom = INT_MAX;
+        int Safety_T5sel_Absoluteto   = -1;
         
         int T1_from = 0;
         int T2_from = 0;
         int T3_from = 0;
         int T4_from = 0;
-        int T5_from = 0;
+        int T5ntrl_from = 0;
+        int T5sel_from = 0;
         int T1_to = 0;
         int T2_to = 0;
         int T3_to = 0;
         int T4_to = 0;
-        int T5_to = 0;
+        int T5ntrl_to = 0;
+        int T5sel_to = 0;
         int fitnessMapIndexFrom = 0;
 
         if (segregationInfo == 0 || segregationInfo == 1)
@@ -466,11 +481,6 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             SegregationIndex = GP->random_0or1(GP->mt); // Here is first chromosome segregation happening.
         }
         int haplo_index = SegregationIndex;
-        
-        if (SSP->T5_nbBits)
-        {
-            TransmittedChrom.clearT5Alleles();
-        }
 
         
         /*std::cout << "\t";
@@ -490,7 +500,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->T2_nbChars;
                 T3_to = SSP->T3_nbChars;
                 T4_to = SSP->T4_nbBits;
-                T5_to = SSP->T5_nbBits;
+                T5ntrl_to = SSP->T5ntrl_nbBits;
+                T5sel_to = SSP->T5sel_nbBits;
                 b = SSP->TotalNbLoci - 1;
             } else
             {
@@ -500,7 +511,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->FromLocusToTXLocus[b].T2;
                 T3_to = SSP->FromLocusToTXLocus[b].T3;
                 T4_to = SSP->FromLocusToTXLocus[b].T4;
-                T5_to = SSP->FromLocusToTXLocus[b].T5;
+                T5ntrl_to = SSP->FromLocusToTXLocus[b].T5ntrl;
+                T5sel_to = SSP->FromLocusToTXLocus[b].T5sel;
             }
 
             #ifdef DEBUG
@@ -509,7 +521,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(T2_to <= SSP->T2_nbChars);
             assert(T3_to <= SSP->T3_nbChars);
             assert(T4_to <= SSP->T4_nbBits);
-            assert(T5_to <= SSP->T5_nbBits);
+            assert(T5ntrl_to <= SSP->T5ntrl_nbBits);
+            assert(T5sel_to <= SSP->T5sel_nbBits);
             
             #endif
 
@@ -559,37 +572,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                     fitnessMapIndexFrom = fitnessMapIndexAfter;
                 }
 
-                /*std::cout << "\n";
-                std::cout << "T1_from = " << T1_from << " SSP->FromT1LocusToLocus[T1_from] = " << SSP->FromT1LocusToLocus[T1_from] << " SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_from]] = " << SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_from]] << "\n";
-                if (T1_to == SSP->TotalNbLoci)
-                {
-                    std::cout << "T1_to == SSP->TotalNbLoci\n";
-                } else
-                {
-                    std::cout << "T1_to = " << T1_to << " SSP->FromT1LocusToLocus[T1_to] = " << SSP->FromT1LocusToLocus[T1_to] << " SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_to]] = " << SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_to]] << "\n";
-                }
-                
-                std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n"; 
-                std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
-                std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";*/
-
-                /*assert(SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_from]] <= fitnessMapIndexFrom);
-                if (T1_to != SSP->TotalNbLoci)
-                {
-                    assert(SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[T1_to]] >= fitnessMapIndexTo);
-                }*/
-
-
-                /*if (!(fitnessMapIndexFrom <= fitnessMapIndexTo))
-                {
-                    std::cout << "SSP->FromLocusToFitnessMapIndex:\n";
-                    for (auto& e : SSP->FromLocusToFitnessMapIndex)
-                    {
-                        std::cout << e << " ";
-                    }
-                    std::cout << "\n";
-                }*/
-                
+                            
                 
 
             
@@ -724,14 +707,24 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
             }
 
-            // Copy for T5. from included, to excluded
-            if (T5_from < T5_to)
+            // Copy for T5ntrl. from included, to excluded
+            if (T5ntrl_from < T5ntrl_to)
             {
-                assert(T5_to > 0 && T5_to <= SSP->T5_nbBits + 1);
+                assert(T5ntrl_to > 0 && T5ntrl_to <= SSP->T5ntrl_nbBits + 1);
                 
-                TransmittedChrom.copyIntoT5(T5_from, T5_to, parent.getHaplo(haplo_index));
-                Safety_T5_Absolutefrom = std::min(Safety_T5_Absolutefrom, T5_from);
-                Safety_T5_Absoluteto = std::max(Safety_T5_Absoluteto, T5_to);
+                TransmittedChrom.copyIntoT5ntrl(T5ntrl_from, T5ntrl_to, parent.getHaplo(haplo_index));
+                Safety_T5ntrl_Absolutefrom = std::min(Safety_T5ntrl_Absolutefrom, T5ntrl_from);
+                Safety_T5ntrl_Absoluteto = std::max(Safety_T5ntrl_Absoluteto, T5ntrl_to);
+            }
+
+            // Copy for T5sel. from included, to excluded
+            if (T5sel_from < T5sel_to)
+            {
+                assert(T5sel_to > 0 && T5sel_to <= SSP->T5sel_nbBits + 1);
+                
+                TransmittedChrom.copyIntoT5sel(T5sel_from, T5sel_to, parent.getHaplo(haplo_index));
+                Safety_T5sel_Absolutefrom = std::min(Safety_T5sel_Absolutefrom, T5sel_from);
+                Safety_T5sel_Absoluteto = std::max(Safety_T5sel_Absoluteto, T5sel_to);
             }
             
             // Set new 'from'
@@ -739,7 +732,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             T2_from = T2_to;
             T3_from = T3_to;
             T4_from = T4_to;
-            T5_from = T5_to;
+            T5ntrl_from = T5ntrl_to;
+            T5sel_from = T5sel_to;
             
             // Switch parent chromosome
             haplo_index = !haplo_index;
@@ -774,11 +768,18 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(Safety_T4_Absolutefrom == 0);
         }
 
-        if (SSP->T5_nbBits)
+        if (SSP->T5ntrl_nbBits)
         {
-            assert(T5_to == SSP->T5_nbBits);
-            assert(Safety_T5_Absoluteto == SSP->T5_nbBits);
-            assert(Safety_T5_Absolutefrom == 0);
+            assert(T5ntrl_to == SSP->T5ntrl_nbBits);
+            assert(Safety_T5ntrl_Absoluteto == SSP->T5ntrl_nbBits);
+            assert(Safety_T5ntrl_Absolutefrom == 0);
+        }
+
+        if (SSP->T5sel_nbBits)
+        {
+            assert(T5sel_to == SSP->T5sel_nbBits);
+            assert(Safety_T5sel_Absoluteto == SSP->T5sel_nbBits);
+            assert(Safety_T5sel_Absolutefrom == 0);
         }
 
         
@@ -787,6 +788,10 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         std::cout << "Internal error. 'breakpoints' has size of zero. It should always contain at least the element INT_MAX\n";
         abort();
     }
+
+#ifdef DEBUG
+    TransmittedChrom.assertT5orderAndUniqueness();
+#endif
 }
 
 void LifeCycle::recombination(Individual& parent,Haplotype& TransmittedChrom)
@@ -794,6 +799,7 @@ void LifeCycle::recombination(Individual& parent,Haplotype& TransmittedChrom)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'recombination'\n";
 #endif     
+
     int nbRecs = recombination_nbRecs();
 
     std::vector<int> breakpoints;
@@ -940,9 +946,17 @@ std::cout << "Enters in 'Mutate_T5'\n";
                                    );
         }
         
-        // Make the mutation
+        // Make the mutation - toggle bit
         //std::cout << "MutPosition = " << MutPosition << "\n";
-        TransmittedChrom.toggleT5_Allele(MutPosition, Habitat);         // toggle bit
-        // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one
+
+        auto& locusGender = SSP->FromT5LocusToT5genderLocus[MutPosition];
+        //std::cout << "locusGender.second = " << locusGender.second << "\n";
+        if (locusGender.first)
+        {
+            TransmittedChrom.toggleT5ntrl_Allele(locusGender.second);
+        } else
+        {
+            TransmittedChrom.toggleT5sel_Allele(locusGender.second, Habitat);
+        }
     }
 }

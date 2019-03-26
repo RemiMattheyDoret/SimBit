@@ -16,9 +16,11 @@ public:
         {{"PN","PatchNumber"},                          {}, false},
         {{"H", "Habitats"},                           	{"S","PN",}, false}, // not all species need to have same habitat distinction
     
+        // T5_fit
+        {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed"}, false}, // First quickScreenOfL, then read T5_fit and finally read --L. In --L the T5_FitnessEffects objects is reduced to remove what is not under selection.
         
         // Genetics and Selection Both T1, T2 and T3 (first part)
-        {{"L","Loci"},                           		{"S", "nbSubGens"}, false},
+        {{"L","Loci"},                           		{"S", "nbSubGens", "T5_fit"}, false},
         {{"ploidy"},                      				{"S"}, false},
         {{"fec","fecundityForFitnessOfOne"},            {"S"}, false},
 
@@ -64,8 +66,9 @@ public:
 
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
-        {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed", "L"}, false},
+        // T5_fit appears before --L
         {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L"}, false},
+        {{"T5_fixedNtrlMuts"},                          {"S", "L"}, false},
 
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},

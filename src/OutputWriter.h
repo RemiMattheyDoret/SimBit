@@ -143,8 +143,6 @@ public:
     void imitateSequencingError(Haplotype& TransmittedChrom);
     void PrintGeneration();
 
-    std::vector<std::vector<double>> WriteOutputs_T5ComputeFrequencies(Pop& pop);
-
     bool shouldNABePrinted(int patch_index);
     bool shouldNABePrinted(int patch_index, int ind_index);
 

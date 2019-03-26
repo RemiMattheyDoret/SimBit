@@ -283,20 +283,51 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
                         for (int& T5locus : event.T5loci)
                         {
                             assert(SSP->Habitats.size() > patch_index);
+
+                            auto& T5genderlocus = SSP->FromT5LocusToT5genderLocus[T5locus];
+                            int T5locusInGender = (int) T5genderlocus.second;
+
                             if (event.mutationType == 2)
                             {
-                                haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                                if (T5genderlocus.first)
+                                {
+                                    // sel
+                                    haplo.toggleT5sel_Allele(T5locusInGender, SSP->Habitats[patch_index]);
+                                } else
+                                {
+                                    // ntrl
+                                    haplo.toggleT5ntrl_Allele(T5locusInGender);
+                                }
+                                    
                             } else if (event.mutationType == 0)
                             {
-                                if (haplo.getT5_Allele(T5locus))
+                                if (T5genderlocus.first)
                                 {
-                                    haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                                    // sel
+                                    haplo.setT5sel_AlleleToZero(T5locusInGender);
+                                    if (SSP->T5_isMultiplicitySelection)
+                                    {
+                                        haplo.setW_T5(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT5selLocusToLocus[T5locus]]);
+                                    }
+                                } else
+                                {   
+                                    // ntrl
+                                    haplo.setT5ntrl_AlleleToZero(T5locusInGender); // setT5ntrl_AlleleToZero should be able to deal with flip meaning system thingy
                                 }
                             } else if (event.mutationType == 1)
                             {
-                                if (!haplo.getT5_Allele(T5locus))
+                                if (T5genderlocus.first)
                                 {
-                                    haplo.toggleT5_Allele(T5locus, SSP->Habitats[patch_index]);
+                                    // sel
+                                    haplo.setT5sel_AlleleToOne(T5locusInGender);
+                                    if (SSP->T5_isMultiplicitySelection)
+                                    {
+                                        haplo.setW_T5(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT5selLocusToLocus[T5locus]]);
+                                    }
+                                } else
+                                {   
+                                    // ntrl
+                                    haplo.setT5ntrl_AlleleToOne(T5locusInGender); // setT5ntrl_AlleleToOne should be able to deal with flip meaning system thingy
                                 }
                             }
                         }

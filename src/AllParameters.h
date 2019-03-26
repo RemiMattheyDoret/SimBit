@@ -39,6 +39,8 @@ private:
     std::vector<SpeciesSpecificParameters> SSPs;
     GeneralParameters GlobalP;
 
+    void quickScreenAtOptionL(std::vector<std::pair<std::string, std::string>>& UserEntries);
+
 public:
     GeneralParameters* getGPaddress();
     SpeciesSpecificParameters* getSSPaddress(int speciesIndex);

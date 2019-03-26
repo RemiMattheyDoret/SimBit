@@ -73,7 +73,10 @@ public:
     std::vector<int>                                FromT2LocusToLocus;
     std::vector<int>                                FromT3LocusToLocus;
     std::vector<int>                                FromT4LocusToLocus;
-    std::vector<int>                                FromT5LocusToLocus;
+    std::vector<int>                                FromT5selLocusToLocus;
+    std::vector<int>                                FromT5ntrlLocusToLocus;
+    std::vector<std::pair<bool, size_t>>            FromT5LocusToT5genderLocus; // true means ntrl.
+    std::vector<bool>                               isT5neutral;
 
     // Fitness Map
     std::vector<int>                                FromLocusToFitnessMapIndex;
@@ -151,6 +154,9 @@ public:
 
     // Genetics T5
     int                                             T5_nbBits;
+    int                                             T5ntrl_nbBits;
+    int                                             T5sel_nbBits;
+    int                                             quickScreenAtL_T5_nbBits;
     std::vector<double>                             T5_MutationRate;  // cumulative
     double                                          T5_Total_Mutation_rate;
     std::vector<std::vector<double>>                T5_FitnessEffects;
@@ -159,12 +165,18 @@ public:
     std::vector<std::vector<double>>                T5_Initial_AlleleFreqs;
     bool                                            T5_Initial_AlleleFreqs_AllZeros;
     bool                                            T5_Initial_AlleleFreqs_AllOnes;
+    int                                             T5_fixedNtrlMuts;
+    int                                             T5_fixedNtrlMuts_nextGeneration;
+    std::vector<bool>                               T5ntrl_isMeaningFlipped;
+
 
     // Ecology
     std::vector<int>                                Habitats;
     std::vector<std::vector<int>>                   __Habitats;
     int                                             MaxHabitat;
     std::vector<int>                                __MaxHabitat;
+    int                                             MaxEverHabitat;
+
     
     // Random Distributions. If change number of distributions, don't forget to change the incremenet of 'nbParamSet' in 'setRandomDistributions'
     std::poisson_distribution<int>                   rpois_nbRecombination;
@@ -233,6 +245,7 @@ public:
     void readDispWeightByFitness(InputReader& input);
     void readPloidy(InputReader& input);
     void readFitnessMapInfo(InputReader& input);
+    void readT5_fixedNtrlMuts(InputReader& input);
     void readfecundityForFitnessOfOne(InputReader& input);
     void readMatingSystem(InputReader& input);
     void readReadPopFromBinary(InputReader& input);
@@ -252,4 +265,8 @@ public:
 
     SpeciesSpecificParameters(std::string sN, int sI);
     ~SpeciesSpecificParameters();
+
+
+    void readQuickScreenOfOptionL(InputReader& input);
+
 };

@@ -41,8 +41,13 @@ public:
     Patch(const int patch_index, char Abiogenesis);
     Patch(const int patch_index, bool ShouldReadPopFromBinary);
     void PrintBinaryFile(OutputFile& file, int patch_index);
+
+    void toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle);
     //Patch(Patch&&) = default;
     //Patch& operator=(Patch&& ) = default;
+
+    std::vector<double> computeT5ntrlFrequencies();
+    std::vector<double> computeT5selFrequencies();
 };
 
 

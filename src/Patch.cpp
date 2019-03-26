@@ -127,3 +127,10 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
     }
 }
 
+
+void Patch::toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle)
+{
+    for (auto& ind : inds)
+        ind.toggleT5ntrlLociFromHaplotypes(lociToToggle);
+}
+

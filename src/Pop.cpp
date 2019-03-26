@@ -485,11 +485,11 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
                     pop2.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).setAllW_T5(-1);
                 } else
                 {
-                    for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
+                    /*for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
                     {
                         assert(pop1.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T5(fitnessMapIndex) == 1.0);
                         assert(pop2.getPatch(patch_index).getInd(ind_index, patch_index).getHaplo(haplo_index).getW_T5(fitnessMapIndex) == 1.0);
-                    }
+                    }*/
                 }
             }
         }
@@ -617,5 +617,332 @@ int Pop::correctT2Loci()
 }
 
 
+void Pop::toggleT5FixedNtrlMutations()
+{
+    assert(SSP->T5_nbBits);
+
+    // compute popFreqs
+    std::vector<double> popFreqs = this->computeT5ntrlFrequencies();
+    
+
+    // look for what is to toggle
+    assert(SSP->T5ntrl_isMeaningFlipped.size() == SSP->T5ntrl_nbBits);
+    std::vector<int> lociToToggle;
+    //std::cout << "SSP->T5ntrl_nbBits = " << SSP->T5ntrl_nbBits << "\n";
+    for (int locus = 0 ; locus < SSP->T5ntrl_nbBits ; locus++)
+    {
+        // Wow hard part because frequency is already reversed in computeT5ntrlFrequencies
+        if (SSP->T5ntrl_isMeaningFlipped[locus] && popFreqs[locus] < 0.2)
+        {
+            //std::cout << "locus " << locus << " was fixed for "<<SSP->T5_was1LastFixed[locus]<<", now fixed for " << !SSP->T5_was1LastFixed[locus] << "\n";
+            SSP->T5ntrl_isMeaningFlipped[locus] = !SSP->T5ntrl_isMeaningFlipped[locus];
+            lociToToggle.push_back(locus);
+        }
+        else if (!SSP->T5ntrl_isMeaningFlipped[locus] && popFreqs[locus] > 0.8)
+        {
+            //std::cout << "locus " << locus << " was fixed for "<<SSP->T5_was1LastFixed[locus]<<", now fixed for " << !SSP->T5_was1LastFixed[locus] << "\n";
+            SSP->T5ntrl_isMeaningFlipped[locus] = !SSP->T5ntrl_isMeaningFlipped[locus];
+            lociToToggle.push_back(locus);
+        }
+    }
+    
+    /*
+    if (lociToToggle.size() > 0)
+    {
+        std::cout << "lociToToggle :";
+        for (auto& elem : lociToToggle)
+            std::cout << elem << " ";
+        std::cout << "\n";
+    }
+    */
+    
+    this->toggleT5ntrlLociFromEveryone(lociToToggle);
+    //std::cout << "loci toggled\n";
+}
+
+void Pop::toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle)
+{
+    for (auto& patch : patches)
+        patch.toggleT5ntrlLociFromEveryone(lociToToggle);
+}
+
+void Pop::toggleT5FixedNtrlMutationsIfNeeded()
+{
+    //std::cout << "Enters in Pop::toggleT5FixedNtrlMutationsIfNeeded\n";
+    if (GP->__GenerationChange.size() == 1) // no temporal changes
+    {
+        if (SSP->T5_fixedNtrlMuts_nextGeneration == GP->CurrentGeneration)
+        {
+            SSP->T5_fixedNtrlMuts_nextGeneration += SSP->T5_fixedNtrlMuts;
+            
+            this->toggleT5FixedNtrlMutations();
+        }
+    }
+    //std::cout << "Exits Pop::toggleT5FixedNtrlMutationsIfNeeded\n";
+}
 
 
+
+std::vector<std::vector<double>> Pop::computePatchSpecificT5ntrlFrequencies()
+{
+    // Build obsFreqs
+    std::vector<std::vector<double>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
+
+    // count
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {        
+        obsFreqs[patch_index].resize(SSP->T5ntrl_nbBits, 0.0);
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        {
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+            {
+                Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+
+                for (auto it = haplo.T5ntrl_AllelesCBegin() ; it != haplo.T5ntrl_AllelesCEnd(); it++)
+                {
+                    assert(*it >= 0 && *it < SSP->T5ntrl_nbBits);
+                    obsFreqs[patch_index][*it]++;
+                }
+            }
+        }
+
+
+        for (size_t locus = 0 ; locus < SSP->T5ntrl_nbBits ; locus++)
+        {
+            // divide
+            obsFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+
+            // correct for meaningFlipped
+            if (SSP->T5ntrl_isMeaningFlipped[locus])
+                obsFreqs[patch_index][locus] = 1 - obsFreqs[patch_index][locus];                
+
+            // assert
+            if (SSP->patchSize[patch_index] != 0)
+            {
+                assert(obsFreqs[patch_index][locus] >= 0.0 && obsFreqs[patch_index][locus] <= 1.0);
+            } else
+            {
+                obsFreqs[patch_index][locus] = -1.0;
+            }
+                
+        }
+    }
+        
+
+    return obsFreqs;
+}
+
+
+std::vector<std::vector<double>> Pop::computePatchSpecificT5selFrequencies()
+{    
+    // Build obsFreqs
+    std::vector<std::vector<double>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
+
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        // count
+        
+        obsFreqs[patch_index].resize(SSP->T5sel_nbBits, 0.0);
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        {
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+            {
+                Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+                for (auto it = haplo.T5sel_AllelesCBegin() ; it != haplo.T5sel_AllelesCEnd(); it++)
+                {
+                    assert(*it >= 0 && *it < SSP->T5sel_nbBits);
+                    obsFreqs[patch_index][*it]++;
+                }
+            }
+        }
+            
+        for (size_t locus = 0 ; locus < SSP->T5sel_nbBits ; locus++)
+        {
+            // divide
+            obsFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
+
+            // assert
+            if (SSP->patchSize[patch_index] != 0)
+            {
+                assert(obsFreqs[patch_index][locus] >= 0.0 && obsFreqs[patch_index][locus] <= 1.0);
+            } else
+            {
+                obsFreqs[patch_index][locus] = -1.0;
+            }
+                
+        }
+
+    }
+
+    return obsFreqs;
+}
+
+std::vector<std::vector<double>> Pop::computePatchSpecificT5Frequencies()
+{
+    assert(SSP->T5ntrl_isMeaningFlipped.size() == SSP->T5ntrl_nbBits);
+
+    std::vector<std::vector<double>> selFreqs  = this->computePatchSpecificT5ntrlFrequencies();
+    std::vector<std::vector<double>> ntrlFreqs = this->computePatchSpecificT5selFrequencies();
+
+    assert(SSP->FromT5selLocusToLocus.size() == SSP->T5sel_nbBits);
+    assert(SSP->FromT5ntrlLocusToLocus.size() == SSP->T5ntrl_nbBits);
+
+    std::vector<std::vector<double>> r(GP->PatchNumber);
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        size_t selFreqsIndex = 0;
+        size_t ntrlFreqsIndex = 0;
+
+        for (size_t T5locus = 0 ; T5locus < SSP->T5_nbBits ; T5locus++)
+        {
+            if (SSP->FromT5LocusToT5genderLocus[T5locus].first)
+            {
+                r[patch_index][T5locus] = ntrlFreqs[patch_index][ntrlFreqsIndex];
+                ntrlFreqsIndex++;
+            } else
+            {
+                r[patch_index][T5locus] = selFreqs[patch_index][selFreqsIndex];
+                selFreqsIndex++;
+            }
+        }
+        
+        assert(selFreqsIndex == SSP->T5sel_nbBits);
+        assert(ntrlFreqsIndex == SSP->T5ntrl_nbBits);
+    }
+
+    assert(r.size() == GP->PatchNumber);
+    assert(r[0].size() == SSP->T5_nbBits);
+
+    return r;
+
+}
+
+
+
+
+std::vector<double> Pop::computeT5ntrlFrequencies()
+{
+    // Build obsFreqs
+    auto patchFreqs = this->computePatchSpecificT5ntrlFrequencies(); // meaning is flipped if necessary in here
+    
+    size_t totalPatchSize = 0;
+    std::vector<double> obsFreqs(SSP->T5ntrl_nbBits,0.0);
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        totalPatchSize += SSP->patchSize[patch_index];
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        {
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+            {
+                Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+
+                for (auto it = haplo.T5ntrl_AllelesCBegin() ; it != haplo.T5ntrl_AllelesCEnd(); it++)
+                {
+                    //assert(*it >= 0 && *it < SSP->T5ntrl_nbBits);
+                    obsFreqs[*it]++;
+                }
+            }
+        }
+    }
+
+    for (size_t locus = 0 ; locus < SSP->T5ntrl_nbBits ; locus++)
+    {
+        // divide
+        obsFreqs[locus] /= 2 * totalPatchSize;
+
+        // assert
+        if (totalPatchSize != 0)
+        {
+            assert(obsFreqs[locus] >= 0.0 && obsFreqs[locus] <= 1.0);    
+        } else
+        {
+            obsFreqs[locus] = -1.0;
+        }
+    }
+
+    return obsFreqs;
+}
+
+
+std::vector<double> Pop::computeT5selFrequencies()
+{
+    // Build obsFreqs
+    std::vector<double> obsFreqs(SSP->T5sel_nbBits,0.0); // obsFreqs[patch_index][locus]
+
+    // count
+    size_t totalPatchSize = 0;
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        totalPatchSize += SSP->patchSize[patch_index];
+    
+        for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+        {
+            for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+            {
+                Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+
+                for (auto it = haplo.T5sel_AllelesCBegin() ; it != haplo.T5sel_AllelesCEnd(); it++)
+                {
+                    assert(*it >= 0 && *it < SSP->T5sel_nbBits);
+                    obsFreqs[*it]++;
+                }
+            }
+        }
+    }
+
+    for (size_t locus = 0 ; locus < SSP->T5sel_nbBits ; locus++)
+    {
+        // divide
+        obsFreqs[locus] /= 2 * totalPatchSize;
+
+        // assert
+        if (totalPatchSize != 0)
+        {
+            assert(obsFreqs[locus] >= 0.0 && obsFreqs[locus] <= 1.0);    
+        } else
+        {
+            obsFreqs[locus] = -1.0;
+        }
+            
+    }
+
+    return obsFreqs;
+}
+
+
+std::vector<double> Pop::computeT5Frequencies()
+{
+    auto selFreqs = this->computeT5selFrequencies();
+    auto ntrlFreqs = this->computeT5ntrlFrequencies();
+
+    assert(SSP->FromT5selLocusToLocus.size() == SSP->T5sel_nbBits);
+    assert(SSP->FromT5ntrlLocusToLocus.size() == SSP->T5ntrl_nbBits);
+
+    assert(SSP->T5_nbBits = SSP->T5sel_nbBits + SSP->T5ntrl_nbBits);
+    std::vector<double> r(SSP->T5_nbBits);
+    
+    size_t selFreqsIndex = 0;
+    size_t ntrlFreqsIndex = 0;
+
+    for (size_t T5locus = 0 ; T5locus < SSP->T5_nbBits ; T5locus++)
+    {
+        if (SSP->FromT5LocusToT5genderLocus[T5locus].first)
+        {
+            r[T5locus] = ntrlFreqs[ntrlFreqsIndex];
+            ntrlFreqsIndex++;
+        } else
+        {
+            r[T5locus] = selFreqs[selFreqsIndex];
+            selFreqsIndex++;
+        }
+        //std::cout << "freq of locus " << T5locus << " = " <<  r[T5locus] << "\n";
+    }
+
+    assert(selFreqsIndex == SSP->T5sel_nbBits);
+    assert(ntrlFreqsIndex == SSP->T5ntrl_nbBits);
+
+
+    assert(r.size() == SSP->T5_nbBits);
+
+    return r;
+}

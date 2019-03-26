@@ -272,9 +272,9 @@ int InputReader::GetNextHabitatMarker(const int habitat)
     char markerLetter = 'H';
 
     // Security
-    if (habitat > SSP->MaxHabitat)
+    if (habitat > SSP->MaxEverHabitat)
     {
-        std::cout << "Internal Error. Message from 'InputReader method GetNextHabitatMarker': " << ErrorMessage << " received a habitat  (" << habitat << ") that is bigger than SSP->MaxHabitat ("<<SSP->MaxHabitat<<").\n";
+        std::cout << "Internal Error. Message from 'InputReader method GetNextHabitatMarker': " << ErrorMessage << " received a habitat  (" << habitat << ") that is bigger than SSP->MaxEverHabitat ("<<SSP->MaxEverHabitat<<").\n";
         abort();
     }
     assert(VIndex <= V.size());
@@ -333,7 +333,7 @@ int InputReader::GetNextHabitatMarker(const int habitat)
 
         // Make sure the generation is realistic
         bool ItIsAllGood = false;
-        for (int habitat_index_tmp = habitat ; habitat_index_tmp <= SSP->MaxHabitat; habitat_index_tmp++)
+        for (int habitat_index_tmp = habitat ; habitat_index_tmp <= SSP->MaxEverHabitat; habitat_index_tmp++)
         {
     
             if (habitat_index_tmp == r)

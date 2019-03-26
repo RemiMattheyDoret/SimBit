@@ -46,6 +46,9 @@ public:
     void CalculateFitnesses();
     int SelectionOriginPatch(int& patch_to);
     int patchSizeNextGeneration(int patch_index);
+    void toggleT5FixedNtrlMutationsIfNeeded();
+    void toggleT5FixedNtrlMutations();
+    void toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle);
     Pop(bool ShouldReadPopFromBinary);
     Pop();
 
@@ -55,5 +58,13 @@ public:
     int correctT2Loci();
 
     static void updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes);
+
+    std::vector<double> computeT5ntrlFrequencies();
+    std::vector<double> computeT5selFrequencies();
+    std::vector<double> computeT5Frequencies();
+    std::vector<std::vector<double>> computePatchSpecificT5ntrlFrequencies();
+    std::vector<std::vector<double>> computePatchSpecificT5selFrequencies();
+    std::vector<std::vector<double>> computePatchSpecificT5Frequencies();
+
 };
 

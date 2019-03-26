@@ -79,4 +79,6 @@ public:
     bool isFreeFromMutations(int T1_locusFrom, int T1_locusTo);
     //Individual(Individual&&) = default;
     //Individual& operator=(Individual&& ) = default;
+
+    void toggleT5ntrlLociFromHaplotypes(std::vector<int> lociToToggle);
 };
