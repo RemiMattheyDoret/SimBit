@@ -1,31 +1,3 @@
-/*
-
- Author: Remi Matthey-Doret
-
-    MIT License
-
-    Copyright (c) 2017 Remi Matthey-Doret
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-
- */
-
 
 /*
 
@@ -236,6 +208,7 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
             assert(patch_index < GP->PatchNumber);
             Patch& patch = pop.getPatch(patch_index);
             assert(event.individuals.size() > patch_index);
+            assert(SSP->Habitats.size() > patch_index);
             for (int& ind_index : event.individuals[patch_index])
             {
                 assert(ind_index < SSP->patchCapacity[patch_index]);
@@ -248,23 +221,45 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
                         // T1
                         for (int& T1locus : event.T1loci)
                         {
-                            assert(SSP->Habitats.size() > patch_index);
                             if (event.mutationType == 2)
                             {
-                                haplo.toggleT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
                             } else if (event.mutationType == 0)
                             {
                                 if (haplo.getT1_Allele(T1locus))
                                 {
-                                    haplo.toggleT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                    haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
                                 }
                             } else if (event.mutationType == 1)
                             {
                                 if (!haplo.getT1_Allele(T1locus))
                                 {
-                                    haplo.toggleT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                    haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
                                 }
                             }
+
+                            /*if (SSP->T1mutsDirectional)
+                            {
+                                haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                            } else
+                            {
+                                if (event.mutationType == 2)
+                                {
+                                    haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                } else if (event.mutationType == 0)
+                                {
+                                    if (haplo.getT1_Allele(T1locus))
+                                    {
+                                        haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                    }
+                                } else if (event.mutationType == 1)
+                                {
+                                    if (!haplo.getT1_Allele(T1locus))
+                                    {
+                                        haplo.mutateT1_Allele(T1locus, SSP->Habitats[patch_index]);
+                                    }
+                                }
+                            }*/
                         }
 
                         // T2
@@ -282,54 +277,128 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
                         // T5
                         for (int& T5locus : event.T5loci)
                         {
-                            assert(SSP->Habitats.size() > patch_index);
-
-                            auto& T5genderlocus = SSP->FromT5LocusToT5genderLocus[T5locus];
+                            auto& T5genderlocus = SSP->FromT56LocusToT56genderLocus[T5locus];
                             int T5locusInGender = (int) T5genderlocus.second;
+
+                            // Security
+                            if (T5genderlocus.first)
+                            {
+                                assert(T5locusInGender < SSP->T5ntrl_nbBits);
+                            } else
+                            {
+                                assert(T5locusInGender < SSP->T5sel_nbBits);
+                            }
+
+
+                            if (SSP->T56_isMultiplicitySelection)
+                            {
+                                haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                            }
+
 
                             if (event.mutationType == 2)
                             {
                                 if (T5genderlocus.first)
                                 {
-                                    // sel
-                                    haplo.toggleT5sel_Allele(T5locusInGender, SSP->Habitats[patch_index]);
+                                    haplo.toggleT5ntrl_Allele(T5locusInGender);
                                 } else
                                 {
-                                    // ntrl
-                                    haplo.toggleT5ntrl_Allele(T5locusInGender);
+                                    haplo.toggleT5sel_Allele(T5locusInGender);
                                 }
                                     
                             } else if (event.mutationType == 0)
                             {
                                 if (T5genderlocus.first)
                                 {
-                                    // sel
-                                    haplo.setT5sel_AlleleToZero(T5locusInGender);
-                                    if (SSP->T5_isMultiplicitySelection)
-                                    {
-                                        haplo.setW_T5(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT5selLocusToLocus[T5locus]]);
-                                    }
-                                } else
-                                {   
                                     // ntrl
                                     haplo.setT5ntrl_AlleleToZero(T5locusInGender); // setT5ntrl_AlleleToZero should be able to deal with flip meaning system thingy
+                                } else
+                                {   
+                                    // sel
+                                    haplo.setT5sel_AlleleToZero(T5locusInGender);
+                                    if (SSP->T56_isMultiplicitySelection)
+                                    {
+                                        haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                                    }
                                 }
                             } else if (event.mutationType == 1)
                             {
                                 if (T5genderlocus.first)
                                 {
-                                    // sel
-                                    haplo.setT5sel_AlleleToOne(T5locusInGender);
-                                    if (SSP->T5_isMultiplicitySelection)
-                                    {
-                                        haplo.setW_T5(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT5selLocusToLocus[T5locus]]);
-                                    }
-                                } else
-                                {   
                                     // ntrl
                                     haplo.setT5ntrl_AlleleToOne(T5locusInGender); // setT5ntrl_AlleleToOne should be able to deal with flip meaning system thingy
+                                } else
+                                {   
+                                    // sel
+                                    haplo.setT5sel_AlleleToOne(T5locusInGender);
+                                    if (SSP->T56_isMultiplicitySelection)
+                                    {
+                                        haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                                    }
                                 }
                             }
+                            
+
+                            /*if (SSP->T5mutsDirectional) // Directional
+                            {
+                                if (T5genderlocus.first)
+                                {
+                                    haplo.mutateT5ntrl_Allele(T5locusInGender);
+                                } else
+                                {
+                                    haplo.mutateT5sel_Allele(T5locusInGender, SSP->Habitats[patch_index]);
+                                }
+                                    
+                            } else // not directional
+                            {
+                                if (SSP->T56_isMultiplicitySelection)
+                                {
+                                    haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                                }
+
+
+                                if (event.mutationType == 2)
+                                {
+                                    if (T5genderlocus.first)
+                                    {
+                                        haplo.toggleT5ntrl_Allele(T5locusInGender);
+                                    } else
+                                    {
+                                        haplo.toggleT5sel_Allele(T5locusInGender);
+                                    }
+                                        
+                                } else if (event.mutationType == 0)
+                                {
+                                    if (T5genderlocus.first)
+                                    {
+                                        // ntrl
+                                        haplo.setT5ntrl_AlleleToZero(T5locusInGender); // setT5ntrl_AlleleToZero should be able to deal with flip meaning system thingy
+                                    } else
+                                    {   
+                                        // sel
+                                        haplo.setT5sel_AlleleToZero(T5locusInGender);
+                                        if (SSP->T56_isMultiplicitySelection)
+                                        {
+                                            haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                                        }
+                                    }
+                                } else if (event.mutationType == 1)
+                                {
+                                    if (T5genderlocus.first)
+                                    {
+                                        // ntrl
+                                        haplo.setT5ntrl_AlleleToOne(T5locusInGender); // setT5ntrl_AlleleToOne should be able to deal with flip meaning system thingy
+                                    } else
+                                    {   
+                                        // sel
+                                        haplo.setT5sel_AlleleToOne(T5locusInGender);
+                                        if (SSP->T56_isMultiplicitySelection)
+                                        {
+                                            haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                                        }
+                                    }
+                                }
+                            }*/
                         }
                     }
                 }

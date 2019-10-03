@@ -41,32 +41,26 @@ public:
     std::vector<double> CalculateFitnessComponents(const int& Habitat);
     
     double CalculateFitness(const int& patch_index);
-    double CalculateT1FitnessMultiplicity(const int& Habitat, int fitnessMapIndex, int T1_locusFrom, int T1_locusTo);
     double CalculateT1FitnessNoMultiplicity(const int& Habitat);
     double CalculateT1EpistaticFitness(const int& Habitat);
     double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
     void CalculateT3Phenotype(const int& Habitat);
     static double CalculateT3Fitness(const int& Habitat);
-    double CalculateT5FitnessMultiplicity(
-        const int& Habitat,
-        int fitnessMapIndex,
-        std::vector<unsigned int>::const_iterator& haplo0From,
-        std::vector<unsigned int>::const_iterator& haplo0To,
-        std::vector<unsigned int>::const_iterator& haplo1From,
-        std::vector<unsigned int>::const_iterator& haplo1To
-    );
-    double CalculateT5FitnessNoMultiplicity(const int& Habitat);
+    
+
+    template<typename Iterator>
+    double CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
+
+    template<typename Iterator>
+    double CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
 
 
     static bool isLocusIsInSet(const int locus, const std::vector<int>& LociSet);
     std::vector<double> CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex);
-    double CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     double CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     double CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-    double CalculateT5FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-    double CalculateT5FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
     Individual(Haplotype& matChrom, Haplotype& patChrom);
@@ -74,11 +68,17 @@ public:
     Individual(bool ShouldReadPopFromBinary);
     Individual(Haplotype& knownHaplotype, char Abiogenesis);
     Individual(const Haplotype& knownHaplotype);   // copy constructor
+
+    Individual(const Individual& I);
+    Individual(const Individual&& I);
+    Individual operator=(const Individual& I);
+    Individual operator=(const Individual&& I);
+
     void PrintBinaryFile(OutputFile& file);
     bool isFreeFromMutations();
     bool isFreeFromMutations(int T1_locusFrom, int T1_locusTo);
     //Individual(Individual&&) = default;
     //Individual& operator=(Individual&& ) = default;
 
-    void toggleT5ntrlLociFromHaplotypes(std::vector<int> lociToToggle);
+    void toggleT56LociFromHaplotypes(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle, int Habitat);
 };

@@ -32,6 +32,8 @@ Note for Remi of things to do:
 
  */
 
+AllParameters::AllParameters(){}
+
 GeneralParameters* AllParameters::getGPaddress()
 {
     return &this->GlobalP;
@@ -781,6 +783,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input("default", "In Default value for --seed,");
         GP->readSeed(input);
+    } else if (flag == "printProgress")
+    {
+        GP->printProgress = true;
     }
     else if (flag == "S")
     {
@@ -968,6 +973,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         // Nothing to do
     } 
+    else if (flag == "T4_coalescenceFst_file")
+    {
+        // Nothing to do
+    } 
     else if (flag == "outputSFSbinSize")
     {
         InputReader input("default","In Default value for --outputSFSbinSize,");
@@ -1037,6 +1046,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
             InputReader input(std::string("@S0 @G0 OnePatch"), "In Default value for --m (--DispMat),");
             wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispMat);
         }
+    } else if (flag == "swapInLifeCycle")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --swapInLifeCycle,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSwapInLifeCycle);
     }
     else if (flag == "gameteDispersal")
     {
@@ -1060,14 +1073,8 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "r")
     {
-        for (auto& SSPi : this->SSPs)
-        {
-            if (SSPi.TotalNbLoci != 1)
-            {
-                std::cout << "--r (--RecombinationRate) is missing" << std::endl;
-                abort();
-            }
-        }
+        InputReader input("@S0 M unif 0","In default value for --RecombinationRate,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readRecombinationRate);
     }
     else if (flag == "recRateOnMismatch")
     {
@@ -1085,7 +1092,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
             SSPi.FitnessMapMinimNbLoci = 120;
             SSPi.FitnessMapProbOfEvent = 0.008; // This is a default value but the optimal value will vary a lot depending upon what exactly is being simulated! I can definitely improve the decision of the FitnessMap Boundaries
     
-            SSPi.FitnessMapT5WeightProbOfEvent = 0.08;
+            SSPi.FitnessMapT5WeightProbOfEvent = 0.06;
             SSPi.FitnessMapCoefficient = -9.0; 
         }
     }
@@ -1116,13 +1123,33 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "T5_mu")
     {
         InputReader input("default", "In default value fot --T5_mu,");
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_MutationRate);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_MutationRate);
     }
-    else if (flag == "T5_fixedNtrlMuts")
+    else if (flag == "T5_toggleMutsEveryNGeneration")
     {
-        InputReader input(std::string("@S0 5e3"), "In Default value for --T5_fixedNtrlMuts,");
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_fixedNtrlMuts);   
+        InputReader input(std::string("@S0 1e3"), "In Default value for --T5_toggleMutsEveryNGeneration,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_toggleMutsEveryNGeneration);
     }
+    else if (flag == "T5_freqThreshold")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --T5_freqThreshold,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_freqThreshold);
+    }
+    /*else if (flag == "reverseFixedT5selMuts")
+    {
+        InputReader input(std::string("@S0 f"), "In Default value for --reverseFixedT5selMuts,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readreverseFixedT5selMuts);
+    }*/
+    /*else if (flag == "T1mutsDirectional")
+    {
+        InputReader input(std::string("@S0 t"), "In Default value for --T1mutsDirectional,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1mutsDirectional);
+    }
+    else if (flag == "T5mutsDirectional")
+    {
+        InputReader input(std::string("@S0 t"), "In Default value for --T5mutsDirectional,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5mutsDirectional);
+    }*/
     else if (flag == "additiveEffectAmongLoci")
     {
         InputReader input(std::string("@S0 no"), "In Default value for --additiveEffectAmongLoci,");
@@ -1141,7 +1168,17 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "T5_fit")
     {
         InputReader input(std::string("@S0 @H0 MultiplicityUnif 1.0"), "In Default value for --T5_FitnessEffects,");
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_FitnessEffects);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_FitnessEffects);
+    }
+    else if (flag == "T5_compressData")
+    {
+        InputReader input(std::string("@S0 default default"), "In Default value for --T5_compressData,"); // true do compress T5ntrl into T6ntrl. false, do not compress T5sel into T6sel
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_compress);
+    }
+    else if (flag == "T5_approximationForNtrl")
+    {
+        InputReader input(std::string("@S0 1.0"), "In Default value for --T5_approximationForNtrl,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_approximationForNtrl);
     }
     else if (flag == "T1_ini")
     {
@@ -1151,7 +1188,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "T5_ini")
     {
         InputReader input(std::string("@S0 AllZeros"), "In Default value for --T5_ini,");
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_Initial_AlleleFreqs);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_Initial_AlleleFreqs);
     }
     else if (flag == "T1_epistasis")
     {
@@ -1274,7 +1311,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "Overwrite")
     {
-        this->GlobalP.OverwriteMode = 1;
+        this->GlobalP.OverwriteMode = 2;
     }
     else if (flag == "readPopFromBinary")
     {
@@ -1313,7 +1350,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "T5_vcf_file" || flag == "T5_VCF_file")
     {
-        OutputFile file(input.GetNextElementString(), T5_vcfFile);
+        OutputFile file(input.GetNextElementString(), T56_vcfFile);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1325,7 +1362,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "T5_LargeOutput_file")
     {
-        OutputFile file(input.GetNextElementString(), T5_LargeOutputFile);
+        OutputFile file(input.GetNextElementString(), T56_LargeOutputFile);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1336,7 +1373,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "T5_AlleleFreq_file")
     {
-        OutputFile file(input.GetNextElementString(), T5_AlleleFreqFile);
+        OutputFile file(input.GetNextElementString(), T56_AlleleFreqFile);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
     } else if (flag == "Log" || flag == "Logfile" || flag == "Logfile_file")
@@ -1528,7 +1565,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     }
     else if (flag == "T5_SFS_file")
     {
-        OutputFile file(input.GetNextElementString(), T5_SFS_file);
+        OutputFile file(input.GetNextElementString(), T56_SFS_file);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
@@ -1537,6 +1574,13 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_printTree);
     } 
+    else if (flag == "T4_coalescenceFst_file")
+    {
+        OutputFile file(input.GetNextElementString(), T4CoalescenceFst);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+
+    }
     else if (flag == "outputSFSbinSize")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readOutputSFSbinSize);
@@ -1592,14 +1636,16 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "PN" || flag == "PatchNumber")
     {
         GP->readPatchNumber(input);
-    }  else if (flag == "seed" || flag == "random_seed")
+    } else if (flag == "seed" || flag == "random_seed")
     {
 
         GP->readSeed(input);
-    }  else if (flag == "nbThreads")
+    } else if (flag == "printProgress")
     {
-        
-        
+        GP->printProgress = input.GetNextElementBool();
+    } else if (flag == "nbThreads")
+    {
+      
         GP->nbThreads = input.GetNextElementInt();
         //omp_set_num_threads(GP->nbThreads);
     }  else if (flag == "N" || flag == "patchCapacity")
@@ -1632,7 +1678,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     { 
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispMat);
         
-    }  else if (flag == "DispWeightByFitness")
+    } else if (flag == "swapInLifeCycle")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSwapInLifeCycle);
+    } else if (flag == "DispWeightByFitness")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispWeightByFitness);
         
@@ -1671,13 +1720,29 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "T5_MutationRate" || flag == "T5_mu")
     {
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_MutationRate);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_MutationRate);
 
     } 
-    else if (flag == "T5_fixedNtrlMuts")
+    else if (flag == "T5_toggleMutsEveryNGeneration")
     {
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_fixedNtrlMuts);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_toggleMutsEveryNGeneration);
     }
+    else if (flag == "T5_freqThreshold")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_freqThreshold);
+    }
+    /*else if (flag == "reverseFixedT5selMuts")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readreverseFixedT5selMuts);
+    }*/
+    /*else if (flag == "T1mutsDirectional")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1mutsDirectional);
+    }
+    else if (flag == "T5mutsDirectional")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5mutsDirectional);
+    }*/
     else if (flag == "additiveEffectAmongLoci")
     {
         std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Sorry! Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
@@ -1690,9 +1755,18 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
         
+    } else if (flag == "T5_compressData")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_compress);
+        
+    }
+    else if (flag == "T5_approximationForNtrl")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_approximationForNtrl);
+        
     } else if (flag == "T5_FitnessEffects" || flag == "T5_fit")
     {
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_FitnessEffects);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_FitnessEffects);
         
     } else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
     {   
@@ -1700,7 +1774,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         
     } else if (flag == "T5_Initial_AlleleFreqs" || flag == "T5_ini")
     {   
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT5_Initial_AlleleFreqs);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_Initial_AlleleFreqs);
         
     } else if (flag == "T1_EpistaticFitnessEffects" || flag == "T1_epistasis")
     {   
@@ -1967,7 +2041,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else
     {
-        std::cout << "Received flag/option " << flag << ". This option is not recognized. Sorry. The error was caught after the renaming which highlights the first security gate has a bug and failed to find this mistake.\n";
+        std::cout << "Received flag/option " << flag << ". This option is not recognized. Sorry. The error was caught after the renaming which suggests that the first security gate has a bug and failed to find this mistake (or that I forgot to write the code on how to read this option).\n";
         abort();
     }
 

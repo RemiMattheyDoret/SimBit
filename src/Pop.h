@@ -34,6 +34,14 @@ private:
     std::vector<Patch> patches;
     static std::vector<int>  T2LociToCorrect;
     std::vector<int>         indexFirstMale;
+    double maleCurrentSum;
+    double femaleCurrentSum;
+
+
+    std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<unsigned int>& flipped, const int& nbLoci,  const double freqThreshold);
+    void toggleT56FixedMutations();
+    void checkIfCumSumFitsIsNotTooSmall(int patch_index);
+
     
 public:
     std::vector<std::vector<std::vector<double>>> CumSumFits; // each patch, each gender, each individual fitness
@@ -42,15 +50,21 @@ public:
     int getNbPatches();
     void AddPatch(Patch& newPatch);
     void RemoveLastPatch();
-    int SelectionParent(int& patch_from, int sex);
+    int SelectionParent(int patch_from, int sex);
     void CalculateFitnesses();
-    int SelectionOriginPatch(int& patch_to);
+    double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
+    void prepareNextGenerationAndIndexFirstMale();
+    int SelectionOriginPatch(size_t patch_to);
     int patchSizeNextGeneration(int patch_index);
-    void toggleT5FixedNtrlMutationsIfNeeded();
-    void toggleT5FixedNtrlMutations();
-    void toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle);
+    void toggleT56MutationsIfNeeded();
+    void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle);
+    
     Pop(bool ShouldReadPopFromBinary);
     Pop();
+    Pop(Pop&& p);
+    Pop(const Pop& p);
+    Pop operator=(Pop&& p);
+    Pop operator=(const Pop& p);
 
     void PrintBinaryFile();
 
@@ -59,12 +73,12 @@ public:
 
     static void updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes);
 
-    std::vector<double> computeT5ntrlFrequencies();
-    std::vector<double> computeT5selFrequencies();
-    std::vector<double> computeT5Frequencies();
-    std::vector<std::vector<double>> computePatchSpecificT5ntrlFrequencies();
-    std::vector<std::vector<double>> computePatchSpecificT5selFrequencies();
-    std::vector<std::vector<double>> computePatchSpecificT5Frequencies();
+    std::vector<unsigned> computeT56ntrlFrequencies();
+    std::vector<unsigned> computeT56selFrequencies();
+    std::vector<unsigned> computeT56Frequencies();
+    std::vector<std::vector<unsigned>> computePatchSpecificT56ntrlFrequencies();
+    std::vector<std::vector<unsigned>> computePatchSpecificT56selFrequencies();
+    std::vector<std::vector<unsigned>> computePatchSpecificT56Frequencies();
 
 };
 

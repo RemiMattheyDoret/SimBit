@@ -33,6 +33,14 @@ bool is_unique(std::vector<T> x)
     return std::adjacent_find( x.begin(), x.end() ) == x.end();
 }
 
+template<typename T>
+void printVector(std::vector<T> v)
+{
+  for (T& e : v)
+    std::cout << e << " ";
+  std::cout << std::endl;
+}
+
 
 template <typename T>
 std::vector<size_t> reverse_sort_indexes(const std::vector<T> &v) {
@@ -249,5 +257,35 @@ void removeIndicesFromVector(std::vector<T>& v, std::vector<INT>& rm )
     }),
     std::end(v)
   );
+}
+
+
+std::vector<unsigned int> whichUnsignedInt(std::vector<bool> b)
+{
+  std::vector<unsigned int> r;
+  for (size_t i = 0 ; i < b.size() ; ++i)
+  {
+    if (b[i])
+    {
+      r.push_back(i);
+    }
+  }
+  return r;
+}
+
+template<typename INT, typename INTT>
+std::vector<bool> inverseWhich(std::vector<INT> idx, INTT size )
+{
+  assert(idx.size() <= size);
+  std::vector<bool> r(size, false);
+
+  for (auto& i : idx)
+  {
+    assert(i >= 0 && i < size);
+    assert(!r[i]);
+    r[i] = true;
+  }
+
+  return r;
 }
 

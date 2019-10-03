@@ -26,7 +26,6 @@
 OutputFileTypes
  */
 
-
 class OutputWriter
 {
 private:
@@ -100,8 +99,8 @@ public:
     void WriteOutputs_fitnessStats(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_AlleleFreq_header(OutputFile& file);
     void WriteOutputs_T1_AlleleFreq(Pop& pop, OutputFile& file);
-    void WriteOutputs_T5_AlleleFreq_header(OutputFile& file);
-    void WriteOutputs_T5_AlleleFreq(Pop& pop, OutputFile& file);
+    void WriteOutputs_T56_AlleleFreq_header(OutputFile& file);
+    void WriteOutputs_T56_AlleleFreq(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_MeanLD_header(OutputFile& file);
     void WriteOutputs_T1_MeanLD(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_LongestRun_header(OutputFile& file);
@@ -112,15 +111,22 @@ public:
     void WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T4_LargeOutput(OutputFile& file);
-    void WriteOutputs_T5_LargeOutput_header(OutputFile& file);
-    void WriteOutputs_T5_LargeOutput(Pop& pop, OutputFile& file);
+    void WriteOutputs_T56_LargeOutput_header(OutputFile& file);
+    void WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file);
+    template<typename ntrlIterator, typename selIterator>
+    void WriteOutputs_T56_LargeOutput_writeData(ntrlIterator& ntrlIt, selIterator& selIt, ntrlIterator& ntrlItEnd, selIterator& selItEnd, OutputFile& file, bool printNA);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
     void WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_vcf(OutputFile& file);
-    void WriteOutputs_T5_vcf(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4CoalescenceFst_header(OutputFile& file);
+    void WriteOutputs_T4CoalescenceFst(OutputFile& file);
+    void WriteOutputs_T56_vcf(Pop& pop, OutputFile& file);
+    void WriteOutputs_T56_vcf_writeData(Pop& pop, std::vector<unsigned>& obsFreqs, OutputFile& file);
+    template<typename ntrlIteratorType, typename selIteratorType>
+    void write_T56vcf_forGroupOfLoci(std::vector<size_t>& groupOfLoci, std::vector<double>& relFreqsForGroupOfLoci, Pop& pop, ntrlIteratorType& ntrlIteratorTypeInfo, selIteratorType& selIteratorTypeInfo, OutputFile& file);
     void WriteOutputs_T3_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);
@@ -132,10 +138,10 @@ public:
     void WriteOutputs_T1SFS_header(OutputFile& file);
     void WriteOutputs_T4SFS(OutputFile& file);
     void WriteOutputs_T4SFS_header(OutputFile& file);
-    void WriteOutputs_T5SFS(Pop& pop, OutputFile& file);
-    void WriteOutputs_T5SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4or5SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>> obsFreqs, OutputFile& file);
+    void WriteOutputs_T56SFS(Pop& pop, OutputFile& file);
+    void WriteOutputs_T56SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4or56SFS_header(OutputFile& file);
+    void WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& obsFreqs, OutputFile& file);
     void WriteOutputs_extinction(OutputFile& file);
     void WriteOutputs(Pop& realPop);
     void WriteOutputs_forDefinedPop(Pop& pop);

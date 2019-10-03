@@ -49,6 +49,7 @@ public:
     int                                             nbThreads;
     int                                             OverwriteMode;
     bool                                            DryRun;
+    bool                                            printProgress;
 
 
     // BinaryFileToRead The path will be species specific though and are stored in SSP
@@ -92,4 +93,5 @@ public:
     void UpdateParametersPatchNumber(int generation_index);
     
     void initializeAllSpeciesPatchSizes();
+    GeneralParameters();
 };

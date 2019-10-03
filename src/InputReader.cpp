@@ -364,6 +364,27 @@ int InputReader::GetNextHabitatMarker(const int habitat)
 
 }
 
+int InputReader::GetNextElementBool()
+{
+    std::string r = this->PeakNextElementString();
+    if (r.at(0)=='@')
+    {
+        std::cout << "Message from 'InputReader method GetNextElementBool': " << ErrorMessage << " Expected a string that contains some boolean information (such as 'f', 't', 'false', '0', '1', ...) that is not a species, habitat or generation specific marker but received '" << r << "'" << std::endl;
+        abort();
+    }
+    VIndex++;
+    if (r == "f" || r == "false" || r == "False" || r == "FALSE" || r == "0" || r == "F")
+    {
+        return false;
+    } else if  (r == "t" || r == "true" || r == "True" || r == "TRUE" || r == "1" || r == "T")
+    {
+        return true;
+    } else
+    {
+        std::cout << "Message from 'InputReader method GetNextElementBool': " << ErrorMessage << " Expected a string that contains some boolean information (such as 'f', 't', 'false', '0', '1', ...) but received '" << r << "'" << std::endl;
+        abort();   
+    }
+}
 
 int InputReader::GetNextElementInt()
 {
@@ -522,6 +543,7 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         {
             std::cout << "Message from 'InputReader method.readInt': " << ErrorMessage << " Expected a 'Int' value but received a species, generation or habitat specific marker (@S, @H or @G) (received '" << s << "'" << std::endl;
         }
+        std::cout << "It is also possible that this error message comes from an input starting with a marker starting with '@' but does not start with the right one. For example, if you input '--N @G20 100 @100 200' and you forget to specify anything before '@20'. Insread you should do '--N @G0 50 @G20 100 @100 200'\n";
         abort();
     }
     if (
@@ -549,6 +571,7 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         if (fraction > 0.00001 || fraction < -0.00001)
         {
             std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
+            abort();
         }
         r = (int) std::stod(s);
     }
@@ -685,6 +708,7 @@ void InputReader::consideredFullyRead()
 
 void InputReader::interpretKeywords()
 {
+    //this->print();
     //std::cout << "V.size() = " << V.size() << "\n";
     //std::cout << "VIndex = " << VIndex << "\n";
     for (int vi = V.size()-1; vi >= VIndex; vi--) // vi is int because it must be allowed to go to -1
@@ -722,6 +746,8 @@ void InputReader::interpretKeywords()
         {
             auto whatToRepeat_original = V[vi+1];
             auto nbRepeats    = (int) std::stod(V[vi+2]);
+            //std::cout << "whatToRepeat_original = " << whatToRepeat_original << "\n";
+            //std::cout << "nbRepeats = " << nbRepeats << "\n";
             std::vector<std::string> whatToRepeat;
             assert(whatToRepeat_original.size() >= 1);
 

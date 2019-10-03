@@ -34,7 +34,7 @@ Note for Remi of things to do:
 
  */
 
-//#define CALLENTRANCEFUNCTIONS   
+//#define CALLENTRANCEFUNCTIONS  
 
 // Libraries
 #include <iostream>
@@ -48,34 +48,14 @@ Note for Remi of things to do:
 #include <assert.h>
 #include <sstream>
 #include <iomanip>
-#include <limits.h>
 #include <algorithm>
 #include <map>
 #include <queue>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
+#include <signal.h>
 
-/*#include <iostream>
-#include <list>
-#include <fstream>
-#include <getopt.h>
-#include <random>
-#include <vector>
-#include <string>
-#include <cstring>
-#include <limits>
-#include <assert.h>
-#include <sstream>
-#include <cmath>
-#include <iomanip>
-#include <math.h>
-#include <limits.h>
-#include <algorithm>
-#include <map>
-#include <unistd.h>
-#include <ctime>
-*/
 
 // forward class declaration and global variables
 #include "ForwardClassDeclarations.h"
@@ -85,6 +65,7 @@ Note for Remi of things to do:
 #include "SmallOrderingSortingFunctions.cpp"
 
 // other .h
+#include "CompressedSortedDeque.h" // also contains the .h for CompressedSortedDeque::CompressedSortedDequeBlock and CompressedSortedDeque::iterator 
 #include "Genealogy.h"
 #include "Option.h"
 #include "OptionContainer.h"
@@ -98,16 +79,19 @@ Note for Remi of things to do:
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
 #include "FromLocusToTXLocusElement.h"
-#include "Pop.h"    
+#include "Pop.h"
+#include "ZipIterator.h"
 #include "Haplotype.h"
 #include "Individual.h"
 #include "InputReader.h"
 #include "LifeCycle.h"
+#include "LifeCycle_InnerDataClasses.h"
 #include "OutputWriter.h"
 #include "Patch.h"
 #include "T1_locusDescription.h"
 
 // .cpp    
+#include "CompressedSortedDeque.cpp"      // also contains the .cpp for CompressedSortedDeque::iterator and CompressedSortedDeque::CompressedSortedDequeBlock
 #include "Genealogy.cpp"
 #include "Option.cpp"
 #include "OptionContainer.cpp"
@@ -117,9 +101,11 @@ Note for Remi of things to do:
 #include "FromLocusToTXLocusElement.cpp"
 #include "GeneralParameters.cpp"
 #include "Pop.cpp"
+#include "ZipIterator.cpp"
 #include "Haplotype.cpp"
 #include "Individual.cpp"
 #include "InputReader.cpp"
+#include "LifeCycle_InnerDataClasses.cpp"
 #include "LifeCycle.cpp"
 #include "OutputFile.cpp"
 #include "OutputWriter.cpp"
@@ -147,7 +133,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.2.23");
+    std::string VERSION("version 4.7.8");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -235,7 +221,7 @@ int main(int argc, char *argv[])
 
     if (outputWriter.LogfileType != 0)
     {
-        std::cout << "\t\tLogfile path:\n\t\t\t" << outputWriter.get_OutputFiles(Logfile)[0].getPath() << "\n\n";
+        std::cout << "\t\tLogfile path: " << outputWriter.get_OutputFiles(Logfile)[0].getPath() << "\n\n";
     }
         
 
@@ -274,11 +260,16 @@ int main(int argc, char *argv[])
 
             // set SSP*
             SSP = allParameters.getSSPaddress(speciesIndex);
-
+            
             // Create populations
             Pop pop_odd(SSP->readPopFromBinary);
+            
 
             SSP->resetGenetics.resetPopIfNeeded(pop_odd);
+            if (SSP->T56_nbBits)
+            {
+                pop_odd.toggleT56MutationsIfNeeded();
+            }
 
             #ifdef DEBUG
                 std::cout << "-------- pop has been created --------" << std::endl;
@@ -296,7 +287,16 @@ int main(int argc, char *argv[])
                 std::cout << "-------- Fitness of pop computed --------" << std::endl;
             #endif
 
-            Pop pop_even = pop_odd;
+            Pop pop_even;
+            if (GP->startAtGeneration + 1 <= GP->nbGenerations) // If something is simulated (a user might want nothing to be simualated just to extract a binary file)
+            {
+                pop_even = pop_odd;
+                assert(pop_odd.CumSumFits.size() == GP->PatchNumber);
+                assert(pop_odd.CumSumFits[0].size() > 0);
+                assert(pop_even.CumSumFits.size() == GP->PatchNumber);
+                assert(pop_even.CumSumFits[0].size() > 0);
+            }
+                
 
             #ifdef DEBUG
                 std::cout << "-------- pop has been copied --------" << std::endl;
@@ -315,7 +315,10 @@ int main(int argc, char *argv[])
 
 
             //SSP->ClearT1_Initial_AlleleFreqs(); // We don't need the vector 'T1_Initial_AlleleFreqs' Anymore
-
+            assert(pop_odd.CumSumFits.size() == GP->PatchNumber);
+            assert(pop_odd.CumSumFits[0].size() > 0);
+            assert(pop_even.CumSumFits.size() == GP->PatchNumber);
+            assert(pop_even.CumSumFits[0].size() > 0);
             allSpecies.push_back(std::pair<Pop,Pop>(std::move(pop_odd), std::move(pop_even)));
 
             #ifdef DEBUG
@@ -340,8 +343,10 @@ int main(int argc, char *argv[])
     outputWriter.SetBeforeSimulationTime();
     outputWriter.PrintInitializationTimeToLogFile();
 
-
-    allParameters.UpdatePopsAndParameters();
+    if (GP->startAtGeneration + 1 <= GP->nbGenerations) // If something is simulated (a user might want nothing to be simualated just to extract a binary file)
+    {
+        allParameters.UpdatePopsAndParameters();
+    }
 
 
 
@@ -383,8 +388,13 @@ int main(int argc, char *argv[])
                     Pop& pop_Offspring  = isGenerationOdd ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
                     Pop& pop_Parent     = isGenerationOdd ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
 
+                    assert(pop_Offspring.CumSumFits.size() == GP->PatchNumber);
+                    assert(pop_Offspring.CumSumFits[0].size() > 0);
+                    assert(pop_Parent.CumSumFits.size() == GP->PatchNumber);
+                    assert(pop_Parent.CumSumFits[0].size() > 0);
+
                     // Do selection dispersal, selection and breeding
-                    LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring,pop_Parent);
+                    LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring, pop_Parent);
 
                     // In case, the T2 blocks capacity have been overpassed, correct them or abort.
                     nbT2LociCorrections += pop_Offspring.correctT2Loci();

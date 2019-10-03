@@ -26,6 +26,6 @@
 
  */
 
-FromLocusToTXLocusElement::FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int inT5ntrl, int inT5sel, char TT)
-    : T1(inT1), T2(inT2), T3(inT3), T4(inT4), T5ntrl(inT5ntrl), T5sel(inT5sel), TType(TT) // TType of T5 are 50 and 51 for T5ntrl and T5sel repsectively
+FromLocusToTXLocusElement::FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int inT56ntrl, int inT56sel, char TT)
+    : T1(inT1), T2(inT2), T3(inT3), T4(inT4), T56ntrl(inT56ntrl), T56sel(inT56sel), TType(TT) // TType of T5 are 50 and 51 for T56ntrl and T56sel, respecitvely
     {}

@@ -70,7 +70,8 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "T5_vcfFile",
     "T5_SFS_file",
     "T5_AlleleFreqFile",
-    "T5_LargeOutputFile"
+    "T5_LargeOutputFile",
+    "T4CoalescenceFst"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -103,6 +104,7 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not T5_SFS_file
     // not T5_AlleleFreqFile
     // not T5_LargeOutputFile
+    // not T4CoalescenceFst
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -370,7 +372,7 @@ bool OutputFile::containsRightNumberOfLines(std::ifstream& pFile)
     
     if (nbExpectedLines < number_of_lines)
     {
-        if (this->OutputFileType != T1_vcfFile && this->OutputFileType != T4_vcfFile && this->OutputFileType != T5_vcfFile)
+        if (this->OutputFileType != T1_vcfFile && this->OutputFileType != T4_vcfFile && this->OutputFileType != T56_vcfFile && this->OutputFileType != SaveBinaryFile)
         {
             std::cout << "\tThe file of type " << getFileTypeName(OutputFileType) << " (index "<< OutputFileType <<")" << " seems to contain more lines than the simulation is expected to produce. Simulation should produce " << nbExpectedLines << " lines (incl. header) and the current file contains " << number_of_lines << " lines." << "\n";
         }
@@ -668,14 +670,14 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
-    } else if (t == T5_vcfFile)
+    } else if (t == T56_vcfFile)
     {
         this->extension = std::string(".T5vcf");
         isGenerationSpecific = true;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T5_SFS_file)
+    } else if (t == T56_SFS_file)
     {
         this->extension = std::string(".T5SFS");
         isGenerationSpecific = false;
@@ -683,21 +685,28 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
 
-    } else if (t == T5_AlleleFreqFile)
+    } else if (t == T56_AlleleFreqFile)
     {
         this->extension = std::string(".T5AllFreq");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
-    } else if (t == T5_LargeOutputFile)
+    } else if (t == T56_LargeOutputFile)
     {
         this->extension = std::string(".T5LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
-    } else
+    } else if (t == T4CoalescenceFst)
+    {
+        this->extension = std::string(".T4CoalescenceFst");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+    } else 
     {
         std::cout << "Internal Error: In class 'OutputFile' in 'set_path', unknown fileType\n";
         abort();

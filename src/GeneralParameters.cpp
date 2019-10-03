@@ -33,6 +33,8 @@ Note for Remi of things to do:
  */
 
 
+GeneralParameters::GeneralParameters(){}
+
 void GeneralParameters::saveSSPPatchSize_toGP()
 {
     //std::cout << "Enters in GeneralParameters::saveSSPPatchSize_toGP. this->PatchNumber = " << this->PatchNumber << "\n";

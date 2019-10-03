@@ -5,6 +5,7 @@ public:
 	std::vector<Option> options =
     {
         {{"seed", "random_seed"},                       {}, false},
+        {{"printProgress"},                             {}, false},
 
     	// Basics simulations
         {{"nbGens","nbGenerations"},                    {}, false},
@@ -14,13 +15,16 @@ public:
         {{"nbSubGens","nbSubGenerations"},              {"nbGens", "S"}, false},
         //{{"T", "TemporalChanges"}, 		  				{"nbGens"}, false},   // all species must have temporal change at the same time THIS IS NOT AN OPTION ANYMORE
         {{"PN","PatchNumber"},                          {}, false},
+        {{"N", "patchCapacity"},                        {"PN","S",}, false},
         {{"H", "Habitats"},                           	{"S","PN",}, false}, // not all species need to have same habitat distinction
     
         // T5_fit
-        {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed"}, false}, // First quickScreenOfL, then read T5_fit and finally read --L. In --L the T5_FitnessEffects objects is reduced to remove what is not under selection.
+        {{"T5_approximationForNtrl"},                   {"H","S", "seed"}, false},
+        {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed", "T5_approximationForNtrl"}, false}, // First quickScreenOfL, then read T5_fit and finally read --L. In --L the T56_FitnessEffects objects is reduced to remove what is not under selection.
+        {{"T5_compressData", "T5_compress"},            {"H","S", "seed", "T5_fit"}, false},
         
         // Genetics and Selection Both T1, T2 and T3 (first part)
-        {{"L","Loci"},                           		{"S", "nbSubGens", "T5_fit"}, false},
+        {{"L","Loci"},                           		{"S", "nbSubGens", "T5_fit", "T5_approximationForNtrl", "T5_compress", "PN", "N"}, false},
         {{"ploidy"},                      				{"S"}, false},
         {{"fec","fecundityForFitnessOfOne"},            {"S"}, false},
 
@@ -30,7 +34,6 @@ public:
         {{"gameteDispersal"},                           {"S"}, false},
 
         // Basics Demography
-        {{"N", "patchCapacity"},                        {"PN","S",}, false},
         {{"InitialpatchSize"},                          {"PN","S","N","fec"}, false},
         {{"cloningRate"},                               {"S"}, false},
         {{"selfingRate"},                               {"S"}, false},
@@ -47,9 +50,10 @@ public:
         // Genetics and Selection T1
         {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}, false},
         {{"T1_fit", "T1_FitnessEffects"},               {"H","S", "seed", "L"}, false},
-        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L"}, false},
+        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L","PN"}, false},
         {{"T1_epistasis","T1_EpistaticFitnessEffects"}, {"H","S", "L"}, false},
-        
+        //{{"T1mutsDirectional"},                         {"S", "L"}, false},
+
         // Genetics and Selection T2
         {{"T2_mu","T2_MutationRate"},                   {"S", "L"}, false},
         {{"T2_fit", "T2_FitnessEffects"},               {"S","H", "L"}, false},
@@ -67,8 +71,11 @@ public:
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
         // T5_fit appears before --L
-        {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L"}, false},
-        {{"T5_fixedNtrlMuts"},                          {"S", "L"}, false},
+        {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L","PN"}, false},
+        {{"T5_toggleMutsEveryNGeneration"},                   {"S", "L"}, false},
+        {{"T5_freqThreshold", "T5_frequencyThresholdForFlippingMeaning"},              {"S", "L","PN","N"}, false},
+        // {{"reverseFixedT5selMuts"},              {"S", "L"}, false},
+        //{{"T5mutsDirectional"},                         {"S", "L", "H","T5_fit"}, false},
 
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
@@ -102,9 +109,10 @@ public:
         {{"coalesce","shouldGenealogyBeCoalesced"}, {"GP", "S", "startAtGeneration", "L"}, false},
         {{"T4_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T4_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T1_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T1_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
 
         {{"T5_vcf_file","T5_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T5_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},
@@ -115,14 +123,16 @@ public:
 
         // Species interaction
         {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},
-        {{"growthK", "growthCarryingCapacity"},         {"eco", "S", "PN", "N"}, false},
+        {{"growthK", "growthCarryingCapacity"},                     {"eco", "S", "PN", "N"}, false},
+        {{"swapInLifeCycle"},                                       {"S","r","L"}, false},
+        
 
         // other technical parameters
         {{"Overwrite"},                   		            {}, false},
         {{"readPopFromBinary"},           		            {"S"}, false},
         {{"DryRun"},                         		        {}, false},
         {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
-        {{"resetGenetics"},                                 {"L","nbGenerations","S","PN","N"}, false}
+        {{"resetGenetics"},                                 {"L","nbGenerations","S","PN","N", "T5_MutationRate"}, false}
     };
 
     //void received(std::string& optionNameReceived);

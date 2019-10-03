@@ -56,6 +56,7 @@ public:
     void removeAlreadyRead();
 
     int GetNextElementInt();
+    int GetNextElementBool();
     std::string GetErrorMessage();
     double GetNextElementDouble();
     std::string GetNextElementString();

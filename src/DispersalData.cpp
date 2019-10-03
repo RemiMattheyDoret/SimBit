@@ -617,7 +617,7 @@ void DispersalData::readDispMat(InputReader& input)
                     CurrentPatchNumber
                 );
             
-        } else if (Mode.compare("OnePatch") == 0 || Mode.compare("NA") == 0) // A single population, no dispersal
+        } else if (Mode == "OnePatch" || Mode == "onePatch" || Mode == "onepatch" || Mode == "Onepatch" || Mode == "ONEPATCH" || Mode == "NA") // A single population, no dispersal
         {
             if (CurrentPatchNumber != 1)
             {

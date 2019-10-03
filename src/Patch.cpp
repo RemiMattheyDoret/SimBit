@@ -65,7 +65,29 @@ Individual& Patch::getInd(const int& ind_index, const int& patch_index)
     return this->getInd(ind_index);
 }
 
-Patch::Patch(){} // nothing to do
+Patch::Patch(){}
+
+Patch::Patch(const Patch& p)
+{
+    inds = p.inds;
+}
+
+Patch Patch::operator=(const Patch& p)
+{
+    inds = p.inds;
+    return *this;
+}
+
+Patch::Patch(const Patch&& p)
+{
+    inds = p.inds;
+}
+
+Patch Patch::operator=(const Patch&& p)
+{
+    inds = p.inds;
+    return *this;
+}
 
 Patch::Patch(int patch_index, bool ShouldReadPopFromBinary)
 {
@@ -85,15 +107,14 @@ std::cout << "Enters in 'Patch::Patch(int patch_index, bool ShouldReadPopFromBin
         }
     }
 
-    std::cout << "SSP->patchSize[patch_index] = " << SSP->patchSize[patch_index] << "\n";
+    //std::cout << "SSP->patchSize["<<patch_index<<"] = " << SSP->patchSize[patch_index] << "\n";
 
-    for (int ind_index=0;ind_index<SSP->patchSize[patch_index];++ind_index)
+    for (int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
     {
-        Individual ind(ShouldReadPopFromBinary);
-        inds.push_back(std::move(ind));
+        inds.push_back(Individual(ShouldReadPopFromBinary));
     }
 
-    std::cout << "inds.size() = " << inds.size() << "\n";
+    //std::cout << "inds.size() = " << inds.size() << "\n";
 }
 
 Patch::Patch(const int patch_index, char Abiogenesis)
@@ -106,20 +127,20 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
     if (
         (SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->T1_Initial_AlleleFreqs_AllOnes)
         &&
-        (SSP->T5_Initial_AlleleFreqs_AllZeros || SSP->T5_Initial_AlleleFreqs_AllOnes)
+        (SSP->T56_Initial_AlleleFreqs_AllZeros || SSP->T56_Initial_AlleleFreqs_AllOnes)
         )
     {   
         Haplotype ConstantHaplotype(patch_index, Abiogenesis, -1.0);
         Individual ConstantInd(ConstantHaplotype, Abiogenesis);
 
         assert(patch_index < SSP->patchCapacity.size());
-        for (int ind_index = 0 ; ind_index < SSP->patchCapacity[patch_index] ; ++ind_index)
+        for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {
             inds.push_back(ConstantInd);
         }
     } else
     {
-        for (int ind_index = 0 ; ind_index < SSP->patchCapacity[patch_index] ; ++ind_index)
+        for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {
             Individual ind(patch_index, Abiogenesis, ind_index);
             inds.push_back(std::move(ind));
@@ -128,9 +149,9 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
 }
 
 
-void Patch::toggleT5ntrlLociFromEveryone(std::vector<int> lociToToggle)
+void Patch::toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle, int Habitat)
 {
     for (auto& ind : inds)
-        ind.toggleT5ntrlLociFromHaplotypes(lociToToggle);
+        ind.toggleT56LociFromHaplotypes(T5ntrlLociToToggle, T5selLociToToggle, Habitat);
 }
 

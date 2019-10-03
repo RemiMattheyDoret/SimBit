@@ -55,6 +55,16 @@ private:
 	std::vector<TreeNode*> placeMutationsOnTree(std::queue<TreeNode*> FIFO, TreeNode* lastOfGenerationNode);
 	std::string getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, size_t& serialNumber);
 
+	double computeMeanCoalescenceTime(std::vector<TreeNode*> offsprings);
+	double computeTt();
+	double computeTt_fast();
+	double computeTs();
+	double computeTs_fast();
+	size_t computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y);
+	double computeTb();
+	double computeTb_fast();
+
+
 public:
 
 	void initialize();
@@ -72,5 +82,7 @@ public:
 	std::vector<std::vector<double>> getCurrentStates_frequencies();
 	void indicateOutputFile(OutputFile* f);
 	void printToFile(std::queue<TreeNode*> FIFO);
+
+	std::vector<double> computeCoalescenceFstStatistics();
 };
 

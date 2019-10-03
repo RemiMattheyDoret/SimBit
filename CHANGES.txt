@@ -339,10 +339,19 @@ SimBit_4.2.21
 	Start T6 loci... work in progress
 
 
+SimBit_4.4.6
+	Compression of T5 into T6 on demand
 
+SimBit_4.5.1
+	No need to set W_T1 (and equivalent for T2 and T56) to 1 if selection is not multiplicity
 
+SimBit_4.6.24
+	Fix small bug with multiplicity selection that was introduced recently
 
+SimBit_4.7.7
+	Fix small bug with multiplicity selection and migration to new habitats
+	Compute fitness for next generation. I used to do it I don't remember why I removed it. I put it back in.
 
-
-
+SimBit_4.7.8
+	In case of local selection with multiplicity assumption and with multiple T type of loci, only the right type of loci has its fitness (in the fitness map) set back to -1
 

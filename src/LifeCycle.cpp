@@ -36,6 +36,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
     */   
+    //size_t nbSwaps = 0;
 
     if (SSP->T4_nbBits > 0)
     {
@@ -45,8 +46,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
     // Calculate fitness
     SSP->simTracker.prepareT1SitesForFitness(Parent_pop);
-    Parent_pop.CalculateFitnesses(); // also set Index First Male;
-
+    Parent_pop.CalculateFitnesses(); // also set Index First Male; Will compute fitness only if it is needed
 
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     std::vector<int> patchSizeNextGeneration;
@@ -61,7 +61,11 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     } else
     {
         patchSizeNextGeneration = SSP->patchCapacity;
+        SSP->TotalpatchSize = SSP->TotalpatchCapacity;
     }
+
+    // Prepare Next Generation CumSumFits and Index First Male. For Index First Male, it needs to know the patch size in the next generation, the line must therefore come after dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes
+    Offspring_pop.prepareNextGenerationAndIndexFirstMale();
 
     // 4.5 Genealogy
     if (SSP->simTracker.genealogy.isTime())
@@ -69,140 +73,136 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
     // Loop through each patch and through each individual offspring to be created
     //#pragma omp parallel for
+    ParentsData PD;
+    if (SSP->SwapInLifeCycle)
+    {
+        PD = findAllParents(Parent_pop, patchSizeNextGeneration);
+    } else
+    {
+        PD.resizeCloneInfo(patchSizeNextGeneration);
+    }
+
+
+    // Create offsprings
+    SSP->TotalpatchSize = 0;
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
-        //std::cout << " patchSizeNextGeneration["<<patch_index<<"] = " <<  patchSizeNextGeneration[patch_index] << "\n";
-         // Loop over all offspring
+        SSP->TotalpatchSize += patchSizeNextGeneration[patch_index];
+
+
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
         {
             //std::cout << "LifeCycle line 74 offspring_index = "<<offspring_index<<"\n";
             //std::cout << " patchSizeNextGeneration["<<patch_index<<"] = " <<  patchSizeNextGeneration[patch_index] << "   GP->PatchNumber = "<<GP->PatchNumber<<"\n";
 
             // Get offspring haplotypes
-            Haplotype& Offspring_mHaplo = Offspring_pop.getPatch(patch_index).getInd(offspring_index).getHaplo(0); // maternally inherited haplotype
-            Haplotype& Offspring_fHaplo = Offspring_pop.getPatch(patch_index).getInd(offspring_index).getHaplo(1); // paternally inherited haplotype
+            Individual& Offspring = Offspring_pop.getPatch(patch_index).getInd(offspring_index);
+            Haplotype& Offspring_mHaplo = Offspring.getHaplo(0); // maternally inherited haplotype
+            Haplotype& Offspring_fHaplo = Offspring.getHaplo(1); // paternally inherited haplotype
+
+            //std::cout << "\n\n\n\n\n\nBegin Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+            //std::cout << "Begin Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
 
 
-            redoOffspring: // will be used in goto statement in viability selection
+            redoOffspring:
 
-
-            // 3: select where the mother came from
-            int mother_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
-            #ifdef DEBUG
-            if (mother_patch_from != patch_index) NBMIGRANTS++;
-            #endif
-
-            // 4: Select parents.
-            // Select the mother
-            int mother_index = Parent_pop.SelectionParent(mother_patch_from,0); // selection on fertility in there
-
-            bool shouldIClone = false;
-            if (SSP->cloningRate != 0.0)
-            {
-                if (GP->random_0and1(GP->mt) < SSP->cloningRate)
-                {
-                    shouldIClone = true;
-                }
-            }
-            Individual& mother = Parent_pop.getPatch(mother_patch_from).getInd(mother_index);
+            // Get parents
+            auto&& CD = SSP->SwapInLifeCycle ? PD.couples[patch_index][offspring_index] : findCouple(Parent_pop,patch_index, offspring_index, PD);
             
-            // 4: Select parents.
-            // Select the father
-            int father_patch_from;
-            int father_index;
+            auto& mother = Parent_pop.getPatch(CD.mother.patch).getInd(CD.mother.ind);
+            auto& father = Parent_pop.getPatch(CD.father.patch).getInd(CD.father.ind);
+
+            
+
+            //std::cout << "Begin mother.getHaplo(CD.mother.segregationIndex).nbT56muts() = "<< mother.getHaplo(CD.mother.segregationIndex).nbT56muts() << "\n";
+            //std::cout << "Begin father.getHaplo(CD.father.segregationIndex).nbT56muts() = "<< father.getHaplo(CD.father.segregationIndex).nbT56muts() << "\n";
+
+            //std::cout << "M: " << CD.mother.patch << " " << CD.mother.ind  << " " << CD.mother.segregationIndex << " | " << CD.father.patch << " " << CD.father.ind << " " << CD.father.segregationIndex << "\n";
 
 
-            if (SSP->T5sel_nbBits || SSP->T5ntrl_nbBits)
+            // Clear T56 vectors
+            if (SSP->T56sel_nbBits || SSP->T56ntrl_nbBits)
             {
-                Offspring_mHaplo.clearT5Alleles();
-                Offspring_fHaplo.clearT5Alleles();
+                Offspring_mHaplo.clearT56Alleles();
+                Offspring_fHaplo.clearT56Alleles();
             }
+            
 
-            if (shouldIClone)
+            if (PD.shouldIClone(patch_index, offspring_index))
             {
+                assert(CD.mother.patch == CD.father.patch);
+                assert(CD.mother.ind == CD.father.ind);
+                assert(CD.mother.segregationIndex != CD.father.segregationIndex);
+                assert(CD.mother.nbRecs == 0);
+                assert(CD.father.nbRecs == 0);
+
                 std::vector<int> breakpoints = {INT_MAX};
-                recombination_copyOver(mother, Offspring_mHaplo, breakpoints, -1); // name is a bit unfortunate. It won't recombine
-                recombination_copyOver(mother, Offspring_fHaplo, breakpoints, -1); // name is a bit unfortunate. It won't recombine
-                father_index = mother_index;
-                father_patch_from = mother_patch_from;
-                if (SSP->T4_nbBits > 0)
+                
+                if (SSP->SwapInLifeCycle && CD.mother.nbRecs == 0 && PD.isLastOffspring(CD.mother, patch_index, offspring_index,0))
                 {
-                    //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
-                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
-                    SSP->T4Tree.addChildHaplotype_addNode(0,0,SSP->T4_nbBits);
-                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
-                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
-                    SSP->T4Tree.addChildHaplotype_addNode(1,0,SSP->T4_nbBits);
-                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
+                    //nbSwaps+=2;
+                    //std::cout << "swaps while cloning\n";
+                    assert(PD.isLastOffspring(CD.father, patch_index, offspring_index,1));
+                    reproduceThroughSwap(mother, Offspring_mHaplo, CD.mother, patch_index);
+                    reproduceThroughSwap(father, Offspring_fHaplo, CD.father, patch_index);
+                } else
+                {
+                    reproduceThroughCopy(
+                       mother,
+                       Offspring_mHaplo,
+                       CD.mother,
+                       patch_index
+                    );
+
+                    reproduceThroughCopy(
+                       father,
+                       Offspring_fHaplo,
+                       CD.father,
+                       patch_index
+                    );
                 }
             } else
             {
-                if (SSP->selfingRate > 0.0 && GP->random_0and1(GP->mt) < SSP->selfingRate)
+                // Mother
+                if (SSP->SwapInLifeCycle && CD.mother.nbRecs == 0 && PD.isLastOffspring(CD.mother, patch_index, offspring_index, 0))
                 {
-                    father_index = mother_index;
-                    father_patch_from = mother_patch_from;
+                    //nbSwaps++;
+                    //std::cout << "swaps mother\n";
+                    reproduceThroughSwap(mother, Offspring_mHaplo, CD.mother, patch_index);
+
                 } else
                 {
-                    if (SSP->selfingRate == 0.0)
-                    {
-                        father_index = -1;
-                        father_patch_from = -1;
-                        while(father_index == mother_index && father_patch_from == mother_patch_from)
-                        {
-                            if (SSP->gameteDispersal)
-                            {
-                                father_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
-                            } else
-                            {
-                                father_patch_from = mother_patch_from;
-                            }
-                            father_index = Parent_pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
-                        }
-                    } else
-                    {
-                        if (SSP->gameteDispersal)
-                        {
-                            father_patch_from = Parent_pop.SelectionOriginPatch(patch_index);
-                        } else
-                        {
-                            father_patch_from = mother_patch_from;
-                        }
-                        father_index = Parent_pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
-                    }                        
+                    //std::cout << "copies mother\n";
+                    reproduceThroughCopy(
+                       mother,
+                       Offspring_mHaplo,
+                       CD.mother,
+                       patch_index
+                    );
                 }
 
-                Individual& father = Parent_pop.getPatch(father_patch_from).getInd(father_index);
-
-                // 6. The function 'recombination' direclty write the offsprings (one chromosome per call of 'recombination' in 'Offsrping_pop'   
-                if (SSP->T4_nbBits > 0)
+                
+                // Father
+                if (SSP->SwapInLifeCycle && CD.father.nbRecs == 0 && PD.isLastOffspring(CD.father, patch_index, offspring_index,1))
                 {
-                    SSP->T4Tree.addChildHaplotype_setParentInfo(mother_patch_from, mother_index);
-                }
+                    //nbSwaps++;
+                    //std::cout << "swaps father\n";
+                    reproduceThroughSwap(father, Offspring_fHaplo, CD.father, patch_index);
 
-                recombination(
-                   mother,
-                   Offspring_mHaplo
-                );
-
-
-                if (SSP->T4_nbBits > 0)
+                } else
                 {
-                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
-                    SSP->T4Tree.addChildHaplotype_setParentInfo(father_patch_from, father_index);
+                    //std::cout << "copies father\n";
+                    reproduceThroughCopy(
+                       father,
+                       Offspring_fHaplo,
+                       CD.father,
+                       patch_index
+                    );
                 }
-                recombination( 
-                   father,
-                   Offspring_fHaplo
-                );
-                if (SSP->T4_nbBits > 0)
-                {
-                    SSP->T4Tree.addChildHaplotype_finished(patch_index);
-                }
+            } // end of if else should I clone
 
-            } // end of if ShouldIClone   
-
-
-            // Mutate
+            //std::cout << "just before mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+            //std::cout << "just before mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
             Mutate(
                 Offspring_mHaplo,
                 SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
@@ -213,45 +213,74 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
             );
 
-            // 1. Fitness for next generation. Set fitness to zero if the habitat has changed
-            if (SSP->Habitats[patch_index] != SSP->Habitats[mother_patch_from])
+          //std::cout << "just after mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+          //std::cout << "just after mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
+
+
+            // Fitness for next generation. Set fitness to zero if the habitat has changed. Could do better here as not all of them will necessarily have habitat specific selection
+            if (SSP->Habitats[patch_index] != SSP->Habitats[CD.mother.patch])
             {
-                if (SSP->T1_isSelection)
+                if (SSP->T1_isLocalSelection && SSP->T1_isMultiplicitySelection)
                 {
                     Offspring_mHaplo.setAllW_T1(-1.0);
                 }
-                if (SSP->T2_isSelection)
+                if (SSP->T2_isLocalSelection && SSP->T2_isSelection)
                 {
                     Offspring_mHaplo.setAllW_T2(-1.0);
                 }
+                if (SSP->T56_isLocalSelection && SSP->T56_isMultiplicitySelection)
+                {
+                    Offspring_mHaplo.setAllW_T56(-1.0);
+                }
             }
-            if (SSP->Habitats[patch_index] != SSP->Habitats[father_patch_from])
+
+            if (SSP->Habitats[patch_index] != SSP->Habitats[CD.father.patch])
             {
-                if (SSP->T1_isSelection)
+                if (SSP->T1_isLocalSelection && SSP->T1_isMultiplicitySelection)
                 {
                     Offspring_fHaplo.setAllW_T1(-1.0);
                 }
-                if (SSP->T2_isSelection)
+                if (SSP->T2_isLocalSelection && SSP->T2_isSelection)
                 {
                     Offspring_fHaplo.setAllW_T2(-1.0);
+                }
+                if (SSP->T56_isLocalSelection && SSP->T56_isMultiplicitySelection)
+                {
+                    Offspring_fHaplo.setAllW_T56(-1.0);
                 }
             }
 
 
+            // Set fitness for next generation
+            double fitness = Offspring_pop.CalculateFitnessForNextGeneration(Offspring, patch_index, offspring_index); // The output 'fitness' is only used if 'SSP->selectionOn != 0' is true. But the commmand sets the fitness for the next generation
+
             // Selection on viability
-            if (SSP->selectionOn != 0)
+            if (SSP->selectionOn != 0) // essentially compute fitness twice but heh... that's not too awful if Multiplicity. Otherwise, it is a bit bad. Could be improved but be careful when used with sex.
             {
-                double fitness = Offspring_pop.getPatch(patch_index).getInd(offspring_index).CalculateFitness(patch_index);
                 std::uniform_real_distribution<double> dist(0.0,1.0);
                 if (dist(GP->mt) > fitness)
                 {
+                    CD = findCouple(Parent_pop, patch_index, offspring_index, PD); // Will modify cloneInfo too. 
+                    if (SSP->SwapInLifeCycle)
+                    {
+                        PD.couples[patch_index][offspring_index] = CD;
+                    }
+                        
+                    
                     goto redoOffspring;
                 }
             }
 
 
             // 4.5 Genealogy. Will do something only if the last isTime was true
-            SSP->simTracker.genealogy.addOffspringIfIsTime(patch_index, offspring_index, mother_patch_from, mother_index, father_patch_from, father_index);         
+            SSP->simTracker.genealogy.addOffspringIfIsTime(patch_index, offspring_index, CD.mother.patch, CD.mother.ind, CD.father.patch, CD.father.ind);
+
+
+            //std::cout << "End Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+            //std::cout << "End Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
+
+            //std::cout << "Begin mother.getHaplo(CD.mother.segregationIndex).nbT56muts() = "<< mother.getHaplo(CD.mother.segregationIndex).nbT56muts() << "\n";
+            //std::cout << "Begin father.getHaplo(CD.father.segregationIndex).nbT56muts() = "<< father.getHaplo(CD.father.segregationIndex).nbT56muts() << "\n\n\n\n\n";
         }
     }
     // set patch size
@@ -288,8 +317,27 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         SSP->T4Tree.pruneDeadLineages();
     }
 
-    if (SSP->T5ntrl_nbBits)
-        Offspring_pop.toggleT5FixedNtrlMutationsIfNeeded();
+    if (SSP->T56_nbBits)
+    {
+        Offspring_pop.toggleT56MutationsIfNeeded();
+    }
+
+    //std::cout << "nbSwaps = " << nbSwaps << "\n";
+}
+
+
+void LifeCycle::reproduceThroughSwap(Individual& parent, Haplotype& offspringHaplotype, HaplotypeData& parentHaploData, int& patch_index)
+{
+    
+    parent.getHaplo(parentHaploData.segregationIndex).swap(offspringHaplotype);
+
+    if (SSP->T4_nbBits > 0)
+    {
+        //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
+        SSP->T4Tree.addChildHaplotype_setParentInfo(parentHaploData.patch, parentHaploData.ind);
+        SSP->T4Tree.addChildHaplotype_addNode(parentHaploData.segregationIndex,0,SSP->T4_nbBits);
+        SSP->T4Tree.addChildHaplotype_finished(patch_index);
+    }
 }
 
 
@@ -310,12 +358,16 @@ std::cout << "Enters in 'recombination_nbRecs'\n";
     return nbRecs;
 }
 
-void LifeCycle::recombination_RecPositions(int& nbRecs, std::vector<int>& breakpoints, Individual& parent)
+std::vector<int> LifeCycle::recombination_RecPositions(int& nbRecs, Individual& parent)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'recombination_RecPositions'\n";
 #endif  
     // Find positions (here a position is a separation between bit or between a bit and a byte or anything of interest) where recombination occurs
+    std::vector<int> breakpoints;
+    breakpoints.reserve(nbRecs+1);
+
+
     if (nbRecs)
     {
         //std::cout << "nbRecs = "<< nbRecs << std::endl;
@@ -380,6 +432,7 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
                 }
             }
         }
+
         // sort positions
         sort( RecPositions.begin(), RecPositions.end() );
         
@@ -410,32 +463,34 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
     }
     
     // Add segregation   
-    if (SSP->ChromosomeBoundaries.size() != 0) assert(SSP->ChromosomeBoundaries.back() != INT_MAX);
-    if (breakpoints.size()!=0) assert(breakpoints.back() != INT_MAX);
+    //if (SSP->ChromosomeBoundaries.size() != 0) assert(SSP->ChromosomeBoundaries.back() != INT_MAX);
+    //if (breakpoints.size()!=0) assert(breakpoints.back() != INT_MAX);
     for (int b : SSP->ChromosomeBoundaries)
     {
         if (GP->random_0or1(GP->mt)) breakpoints.push_back(b);
     }
 
     // Sort and add upper bound
-    sort(breakpoints.begin(), breakpoints.end());
+    
+    sort(breakpoints.begin(), breakpoints.end()); 
     breakpoints.push_back(INT_MAX);
+
+    return breakpoints;
 }
 
-void LifeCycle::recombination_copyOver(Individual& parent, Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationInfo)
-{    
+void LifeCycle::copyOver(Individual& parent, Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationIndex)
+{
+    assert(segregationIndex == 0 || segregationIndex == 1 );
 #ifdef CALLENTRANCEFUNCTIONS
-std::cout << "Enters in 'recombination_copyOver'\n";
+std::cout << "Enters in 'copyOver'\n";
 #endif
-    int SegregationIndex;
     if (breakpoints.size()==1)
     {
-        int SegregationIndex = GP->random_0or1(GP->mt);
-        TransmittedChrom = parent.getHaplo(SegregationIndex);
+        TransmittedChrom = parent.getHaplo(segregationIndex);
         if (SSP->T4_nbBits > 0)
         {
             //std::cout <<"\tLIFECYCLE!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
-            SSP->T4Tree.addChildHaplotype_addNode(SegregationIndex, 0, SSP->T4_nbBits);
+            SSP->T4Tree.addChildHaplotype_addNode(segregationIndex, 0, SSP->T4_nbBits);
         }
         
     } else if (breakpoints.size()>1)
@@ -453,34 +508,27 @@ std::cout << "Enters in 'recombination_copyOver'\n";
         int Safety_T4_Absolutefrom = INT_MAX;
         int Safety_T4_Absoluteto   = -1;
         
-        int Safety_T5ntrl_Absolutefrom = INT_MAX;
-        int Safety_T5ntrl_Absoluteto   = -1;
+        int Safety_T56ntrl_Absolutefrom = INT_MAX;
+        int Safety_T56ntrl_Absoluteto   = -1;
 
-        int Safety_T5sel_Absolutefrom = INT_MAX;
-        int Safety_T5sel_Absoluteto   = -1;
+        int Safety_T56sel_Absolutefrom = INT_MAX;
+        int Safety_T56sel_Absoluteto   = -1;
         
         int T1_from = 0;
         int T2_from = 0;
         int T3_from = 0;
         int T4_from = 0;
-        int T5ntrl_from = 0;
-        int T5sel_from = 0;
+        int T56ntrl_from = 0;
+        int T56sel_from = 0;
         int T1_to = 0;
         int T2_to = 0;
         int T3_to = 0;
         int T4_to = 0;
-        int T5ntrl_to = 0;
-        int T5sel_to = 0;
+        int T56ntrl_to = 0;
+        int T56sel_to = 0;
         int fitnessMapIndexFrom = 0;
 
-        if (segregationInfo == 0 || segregationInfo == 1)
-        {
-            SegregationIndex = segregationInfo;
-        } else
-        {
-            SegregationIndex = GP->random_0or1(GP->mt); // Here is first chromosome segregation happening.
-        }
-        int haplo_index = SegregationIndex;
+        int haplo_index = segregationIndex; // There is really no reason for copying segregationIndex. I could just use segregationIndex all the way through...but he.... whatever!
 
         
         /*std::cout << "\t";
@@ -500,8 +548,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->T2_nbChars;
                 T3_to = SSP->T3_nbChars;
                 T4_to = SSP->T4_nbBits;
-                T5ntrl_to = SSP->T5ntrl_nbBits;
-                T5sel_to = SSP->T5sel_nbBits;
+                T56ntrl_to = SSP->T56ntrl_nbBits;
+                T56sel_to = SSP->T56sel_nbBits;
                 b = SSP->TotalNbLoci - 1;
             } else
             {
@@ -511,8 +559,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 T2_to = SSP->FromLocusToTXLocus[b].T2;
                 T3_to = SSP->FromLocusToTXLocus[b].T3;
                 T4_to = SSP->FromLocusToTXLocus[b].T4;
-                T5ntrl_to = SSP->FromLocusToTXLocus[b].T5ntrl;
-                T5sel_to = SSP->FromLocusToTXLocus[b].T5sel;
+                T56ntrl_to = SSP->FromLocusToTXLocus[b].T56ntrl;
+                T56sel_to = SSP->FromLocusToTXLocus[b].T56sel;
             }
 
             #ifdef DEBUG
@@ -521,21 +569,23 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(T2_to <= SSP->T2_nbChars);
             assert(T3_to <= SSP->T3_nbChars);
             assert(T4_to <= SSP->T4_nbBits);
-            assert(T5ntrl_to <= SSP->T5ntrl_nbBits);
-            assert(T5sel_to <= SSP->T5sel_nbBits);
+            assert(T56ntrl_to <= SSP->T56ntrl_nbBits);
+            assert(T56sel_to <= SSP->T56sel_nbBits);
             
             #endif
 
-            // Set Fitnesses
-            if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T5_isSelection)
+            //////////////////
+            // Set Fitnesses//
+            //////////////////
+
+            if (SSP->T1_isMultiplicitySelection || SSP->T2_isSelection || SSP->T56_isMultiplicitySelection)
             {  
-                //std::cout << "b = " << b << "  SSP->FromLocusToFitnessMapIndex.size() = " << SSP->FromLocusToFitnessMapIndex.size() << " INT_MAX = " << INT_MAX << "\n";
 
-                //std::cout << "b = "<< b << "\n";
-                //assert(SSP->TotalNbLoci == SSP->FromLocusToFitnessMapIndex.size());
+                //// Find from to and what to recompute if anything
 
-                // There is a fitnessMapIndex juste before and just after the point where the recombination occurred. Check the fitnessMap just before and just after the interlocus where the crossOver happened
-
+                int fitnessMapIndexToRecompute;
+                int fitnessMapIndexTo;
+            
                 // Before
                 int fitnessMapIndexBefore = SSP->FromLocusToFitnessMapIndex[b];
 
@@ -551,8 +601,7 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 }
 
                 // Figure out if there is a need to recompute a fitnessMap value (if the crossover happened in between two fitnessMapIndex, then there is no need to recompute anything)
-                int fitnessMapIndexToRecompute;
-                if (fitnessMapIndexBefore == fitnessMapIndexAfter) 
+                if (fitnessMapIndexBefore == fitnessMapIndexAfter && fitnessMapIndexBefore >= fitnessMapIndexFrom) // ' && fitnessMapIndexBefore >= fitnessMapIndexFrom' is actually not needed normally
                 {
                     fitnessMapIndexToRecompute = fitnessMapIndexBefore; // Must force recalculation of fitness
                     assert(b < SSP->TotalNbLoci-1);
@@ -562,113 +611,103 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 }
 
                 // Figure out end of things to copy over (fitnessMapIndexTo, excluded)
-                int fitnessMapIndexTo = fitnessMapIndexAfter; // excluded
+                fitnessMapIndexTo = fitnessMapIndexBefore + 1; //  excluded. (fitnessMapIndexBefore + 1 will rarely equal fitnessMapIndexAfter but it can.) 
 
 
                 // Figure out beginning of things to copy over (fitnessMapIndexFrom, included)
-                if (fitnessMapIndexFrom > fitnessMapIndexTo)
+                assert(fitnessMapIndexFrom <= fitnessMapIndexTo);
+                assert(fitnessMapIndexToRecompute == -1 || (fitnessMapIndexToRecompute >= fitnessMapIndexFrom && fitnessMapIndexToRecompute < fitnessMapIndexTo));
+                /*if (fitnessMapIndexFrom > fitnessMapIndexTo)
                 {
                     assert(fitnessMapIndexFrom == fitnessMapIndexTo + 1);
                     fitnessMapIndexFrom = fitnessMapIndexAfter;
-                }
+                }*/
+
 
                             
                 
-
-            
-                if (SSP->T1_isMultiplicitySelection)
+                //// Set fitnesses for each type of trait
+                if (fitnessMapIndexFrom < fitnessMapIndexTo)
                 {
-                    
-                    /*
-                    std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
-                    std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
-                    std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
-                    */
-
-                    // Copy fitnesses that can be copied
-                    for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
+                    if (SSP->T1_isMultiplicitySelection)
                     {
-                        if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                        
+                        /*
+                        std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
+                        std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
+                        std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
+                        */
+
+                        // Copy fitnesses that can be copied
+                        for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
                         {
-                            //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
-                            TransmittedChrom.setW_T1(
-                                parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex),
-                                fitnessMapIndex
-                            );
+                            if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                            {
+                                //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
+                                TransmittedChrom.setW_T1(
+                                    parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex),
+                                    fitnessMapIndex
+                                );
+                            } else
+                            {
+                                TransmittedChrom.setW_T1(-1.0,fitnessMapIndexToRecompute);
+                            }
                         }
                     }
 
-                    if (fitnessMapIndexToRecompute != -1)
+                    if (SSP->T2_isSelection)
                     {
-                        // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                        TransmittedChrom.setW_T1(-1.0, fitnessMapIndexToRecompute);
-                    }
-                }
-
-                if (SSP->T2_isSelection)
-                {
-                    // Copy fitnesses that can be copied
-                    for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
-                    {
-                        if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                        // Copy fitnesses that can be copied
+                        for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
                         {
-                            //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
-                            TransmittedChrom.setW_T2(
-                                parent.getHaplo(haplo_index).getW_T2(fitnessMapIndex),
-                                fitnessMapIndex
-                            );
+                            if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                            {
+                                //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
+                                TransmittedChrom.setW_T2(
+                                    parent.getHaplo(haplo_index).getW_T2(fitnessMapIndex),
+                                    fitnessMapIndex
+                                );
+                            } else
+                            {
+                                TransmittedChrom.setW_T2(-1.0, fitnessMapIndexToRecompute);
+                            }
                         }
                     }
 
-                    // Set fitness of the affected fitnessMap part to -1.0. Will need to be recalculated
-                    if (fitnessMapIndexToRecompute != -1)
-                    {
-                        // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                        TransmittedChrom.setW_T2(-1.0, fitnessMapIndexToRecompute);
-                    }
-                }
+                    if (SSP->T56_isMultiplicitySelection)
+                    {   
 
-                if (SSP->T5_isMultiplicitySelection)
-                {
-                    
-                    
-                    //std::cout << "fitnessMapIndexToRecompute = " << fitnessMapIndexToRecompute << "\n";
-                    //std::cout << "fitnessMapIndexFrom = " << fitnessMapIndexFrom << "\n";
-                    //std::cout << "fitnessMapIndexTo = " << fitnessMapIndexTo << "\n";
-                    
-
-                    // Copy fitnesses that can be copied
-                    for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
-                    {
-                        if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                        // Copy fitnesses that can be copied
+                        for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
                         {
-                            //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
-                            TransmittedChrom.setW_T5(
-                                parent.getHaplo(haplo_index).getW_T5(fitnessMapIndex),
-                                fitnessMapIndex
-                            );
+                            if (fitnessMapIndex != fitnessMapIndexToRecompute)
+                            {
+                                //std::cout << "Assigning FMI = " << fitnessMapIndex << "\n";
+                                TransmittedChrom.setW_T56(
+                                    parent.getHaplo(haplo_index).getW_T56(fitnessMapIndex),
+                                    fitnessMapIndex
+                                );
+                            } else
+                            {
+                                TransmittedChrom.setW_T56(-1.0, fitnessMapIndexToRecompute);
+                            }
                         }
                     }
-
-                    if (fitnessMapIndexToRecompute != -1)
-                    {
-                        // Set fitnesses of the affected fitnessMap part to -1.0. Will need to be recalculated
-                        TransmittedChrom.setW_T5(-1.0, fitnessMapIndexToRecompute);
-                    }
                 }
+                    
 
+                //// Set fitnessMapIndexFrom for next breakpoint
+                fitnessMapIndexFrom = fitnessMapIndexTo;
                 
-                if (fitnessMapIndexToRecompute == -1)
-                {
-                    fitnessMapIndexFrom = fitnessMapIndexTo;
-                } else
-                {
-                    fitnessMapIndexFrom = fitnessMapIndexTo + 1;
-                }
             }
 
-            //std::cout << "In recombination_CopyOver: T1_from = "<< T1_from <<" T1_to = "<< T1_to << std::endl;
-            //std::cout << "In recombination_CopyOver: T2_from = "<< T2_from <<" T2_to = "<< T2_to << std::endl;
+
+            //////////
+            // Copy //
+            //////////
+
+            //std::cout << "In copyOver: T1_from = "<< T1_from <<" T1_to = "<< T1_to << std::endl;
+            //std::cout << "In copyOver: T2_from = "<< T2_from <<" T2_to = "<< T2_to << std::endl;
 
             // Copy for T1. from included, to excluded
             if (T1_from < T1_to)
@@ -707,24 +746,25 @@ std::cout << "Enters in 'recombination_copyOver'\n";
                 Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
             }
 
-            // Copy for T5ntrl. from included, to excluded
-            if (T5ntrl_from < T5ntrl_to)
+            // Copy for T56ntrl. from included, to excluded
+            if (T56ntrl_from < T56ntrl_to)
             {
-                assert(T5ntrl_to > 0 && T5ntrl_to <= SSP->T5ntrl_nbBits + 1);
+                assert(T56ntrl_to > 0 && T56ntrl_to <= SSP->T56ntrl_nbBits + 1);
+
                 
-                TransmittedChrom.copyIntoT5ntrl(T5ntrl_from, T5ntrl_to, parent.getHaplo(haplo_index));
-                Safety_T5ntrl_Absolutefrom = std::min(Safety_T5ntrl_Absolutefrom, T5ntrl_from);
-                Safety_T5ntrl_Absoluteto = std::max(Safety_T5ntrl_Absoluteto, T5ntrl_to);
+                TransmittedChrom.copyIntoT56ntrl(T56ntrl_from, T56ntrl_to, parent.getHaplo(haplo_index));
+                Safety_T56ntrl_Absolutefrom = std::min(Safety_T56ntrl_Absolutefrom, T56ntrl_from);
+                Safety_T56ntrl_Absoluteto = std::max(Safety_T56ntrl_Absoluteto, T56ntrl_to);
             }
 
-            // Copy for T5sel. from included, to excluded
-            if (T5sel_from < T5sel_to)
+            // Copy for T56sel. from included, to excluded
+            if (T56sel_from < T56sel_to)
             {
-                assert(T5sel_to > 0 && T5sel_to <= SSP->T5sel_nbBits + 1);
+                assert(T56sel_to > 0 && T56sel_to <= SSP->T56sel_nbBits + 1);
                 
-                TransmittedChrom.copyIntoT5sel(T5sel_from, T5sel_to, parent.getHaplo(haplo_index));
-                Safety_T5sel_Absolutefrom = std::min(Safety_T5sel_Absolutefrom, T5sel_from);
-                Safety_T5sel_Absoluteto = std::max(Safety_T5sel_Absoluteto, T5sel_to);
+                TransmittedChrom.copyIntoT56sel(T56sel_from, T56sel_to, parent.getHaplo(haplo_index));
+                Safety_T56sel_Absolutefrom = std::min(Safety_T56sel_Absolutefrom, T56sel_from);
+                Safety_T56sel_Absoluteto = std::max(Safety_T56sel_Absoluteto, T56sel_to);
             }
             
             // Set new 'from'
@@ -732,8 +772,8 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             T2_from = T2_to;
             T3_from = T3_to;
             T4_from = T4_to;
-            T5ntrl_from = T5ntrl_to;
-            T5sel_from = T5sel_to;
+            T56ntrl_from = T56ntrl_to;
+            T56sel_from = T56sel_to;
             
             // Switch parent chromosome
             haplo_index = !haplo_index;
@@ -768,18 +808,18 @@ std::cout << "Enters in 'recombination_copyOver'\n";
             assert(Safety_T4_Absolutefrom == 0);
         }
 
-        if (SSP->T5ntrl_nbBits)
+        if (SSP->T56ntrl_nbBits)
         {
-            assert(T5ntrl_to == SSP->T5ntrl_nbBits);
-            assert(Safety_T5ntrl_Absoluteto == SSP->T5ntrl_nbBits);
-            assert(Safety_T5ntrl_Absolutefrom == 0);
+            assert(T56ntrl_to == SSP->T56ntrl_nbBits);
+            assert(Safety_T56ntrl_Absoluteto == SSP->T56ntrl_nbBits);
+            assert(Safety_T56ntrl_Absolutefrom == 0);
         }
 
-        if (SSP->T5sel_nbBits)
+        if (SSP->T56sel_nbBits)
         {
-            assert(T5sel_to == SSP->T5sel_nbBits);
-            assert(Safety_T5sel_Absoluteto == SSP->T5sel_nbBits);
-            assert(Safety_T5sel_Absolutefrom == 0);
+            assert(T56sel_to == SSP->T56sel_nbBits);
+            assert(Safety_T56sel_Absoluteto == SSP->T56sel_nbBits);
+            assert(Safety_T56sel_Absolutefrom == 0);
         }
 
         
@@ -794,19 +834,26 @@ std::cout << "Enters in 'recombination_copyOver'\n";
 #endif
 }
 
-void LifeCycle::recombination(Individual& parent,Haplotype& TransmittedChrom)
+void LifeCycle::reproduceThroughCopy(Individual& parent, Haplotype& TransmittedChrom, HaplotypeData& parentData, int& patch_index)
 {
 #ifdef CALLENTRANCEFUNCTIONS
-std::cout << "Enters in 'recombination'\n";
+std::cout << "Enters in 'reproduceThroughCopy'\n";
 #endif     
 
-    int nbRecs = recombination_nbRecs();
+    if (SSP->T4_nbBits > 0)
+    {
+        SSP->T4Tree.addChildHaplotype_setParentInfo(parentData.patch, parentData.ind);
+    }
 
-    std::vector<int> breakpoints;
-    recombination_RecPositions(nbRecs, breakpoints, parent); // parent is used if recRateOnMismatch_bool
+    std::vector<int> breakpoints = recombination_RecPositions(parentData.nbRecs, parent); // parent is used if recRateOnMismatch_bool
 
     // copy from parents chromosomes to TransmittedChrom. The function also set the new values for W_T1 and W_T2
-    recombination_copyOver(parent, TransmittedChrom, breakpoints, -1); // This will copy data from parents to offspring so it must always run
+    copyOver(parent, TransmittedChrom, breakpoints, parentData.segregationIndex); // This will copy data from parents to offspring so it must always run
+
+     if (SSP->T4_nbBits > 0)
+    {
+        SSP->T4Tree.addChildHaplotype_finished(patch_index);
+    }
 }
 
 
@@ -816,7 +863,7 @@ void LifeCycle::Mutate(Haplotype& TransmittedChrom, int Habitat)
     if (SSP->T1_Total_Mutation_rate>0) Mutate_T1(TransmittedChrom, Habitat);
     if (SSP->T2_Total_Mutation_rate>0) Mutate_T2(TransmittedChrom, Habitat);
     if (SSP->T3_Total_Mutation_rate>0) Mutate_T3(TransmittedChrom);
-    if (SSP->T5_Total_Mutation_rate>0) Mutate_T5(TransmittedChrom, Habitat);
+    if (SSP->T56_Total_Mutation_rate>0) Mutate_T56(TransmittedChrom, Habitat);
 }
 
 
@@ -848,7 +895,7 @@ std::cout << "Enters in 'Mutate_T1'\n";
         }
         
         // Make the mutation
-        TransmittedChrom.toggleT1_Allele(MutPosition, Habitat);         // toggle bit
+        TransmittedChrom.mutateT1_Allele(MutPosition, Habitat);         // toggle bit
         // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one
     }
 }
@@ -918,12 +965,82 @@ std::cout << "Enters in 'Mutate_T3'\n";
     }  
 }
 
-void LifeCycle::Mutate_T5(Haplotype& TransmittedChrom, int Habitat)
+/*void LifeCycle::Mutate_T56(Haplotype& TransmittedChrom, int Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
-std::cout << "Enters in 'Mutate_T5'\n";
+std::cout << "Enters in 'Mutate_T56'\n";
 #endif     
-    int nbMuts = SSP->T5_rpois_nbMut(GP->mt);
+    int nbMuts = SSP->T56_rpois_nbMut(GP->mt);
+    //std::cout << "nbMuts = " << nbMuts << "\n";
+    std::vector<int> T5ntrlMutations;
+    if (SSP->T5ntrl_nbBits)
+        T5ntrlMutations.reserve(nbMuts);
+    
+    for (int i = 0 ; i < nbMuts ; i++)
+    {
+        //std::cout << "nbMuts = " << nbMuts << "\n";
+        int MutPosition;
+        double rnd;
+        // Find Position
+        //std::cout << "SSP->T56_MutationRate.size() = " << SSP->T56_MutationRate.size() << "\n";
+        if (SSP->T56_MutationRate.size() == 1)
+        {
+            MutPosition = SSP->T56_runiform_int_ForMutPos(GP->mt);
+        } else
+        {
+            rnd = SSP->T56_runiform_double_ForMutPos(GP->mt);
+            
+            // binary search
+            MutPosition = distance(SSP->T56_MutationRate.begin(),
+                                   std::upper_bound(SSP->T56_MutationRate.begin(), SSP->T56_MutationRate.end(), rnd)
+                                   );
+        }
+        
+        // Make the mutation - toggle bit
+        //std::cout << "MutPosition = " << MutPosition << "\n";
+
+        auto& locusGender = SSP->FromT56LocusToT56genderLocus[MutPosition];
+        //std::cout << "locusGender.second = " << locusGender.second << "\n";
+        if (locusGender.first)
+        {
+            if (SSP->T56ntrl_compress)
+            {
+                TransmittedChrom.mutateT56ntrl_Allele(locusGender.second);
+            } else
+            {
+                auto it = std::lower_bound(T5ntrlMutations.begin(), T5ntrlMutations.end(), locusGender.second);
+                if (it == T5ntrlMutations.end())
+                {
+                    T5ntrlMutations.push_back(locusGender.second);
+                } else
+                {
+                    if (*it == locusGender.second)
+                    {
+                        T5ntrlMutations.erase(it);
+                    } else
+                    {
+                        T5ntrlMutations.insert(it, locusGender.second);
+                    }
+                }
+            }
+        } else
+        {
+            TransmittedChrom.mutateT56sel_Allele(locusGender.second, Habitat);
+        }
+    }
+
+    // T5ntrlMutations and selMutations are already sorted an without duplicates
+
+    if (T5ntrlMutations.size())
+        TransmittedChrom.mutateT5ntrl_Allele(T5ntrlMutations);
+}*/
+
+void LifeCycle::Mutate_T56(Haplotype& TransmittedChrom, int Habitat)
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'Mutate_T56'\n";
+#endif     
+    int nbMuts = SSP->T56_rpois_nbMut(GP->mt);
     //std::cout << "nbMuts = " << nbMuts << "\n";
     
     for (int i = 0 ; i < nbMuts ; i++)
@@ -932,31 +1049,185 @@ std::cout << "Enters in 'Mutate_T5'\n";
         int MutPosition;
         double rnd;
         // Find Position
-        //std::cout << "SSP->T5_MutationRate.size() = " << SSP->T5_MutationRate.size() << "\n";
-        if (SSP->T5_MutationRate.size() == 1)
+        //std::cout << "SSP->T56_MutationRate.size() = " << SSP->T56_MutationRate.size() << "\n";
+        if (SSP->T56_MutationRate.size() == 1)
         {
-            MutPosition = SSP->T5_runiform_int_ForMutPos(GP->mt);
+            MutPosition = SSP->T56_runiform_int_ForMutPos(GP->mt);
         } else
         {
-            rnd = SSP->T5_runiform_double_ForMutPos(GP->mt);
+            rnd = SSP->T56_runiform_double_ForMutPos(GP->mt);
             
             // binary search
-            MutPosition = distance(SSP->T5_MutationRate.begin(),
-                                   std::upper_bound(SSP->T5_MutationRate.begin(), SSP->T5_MutationRate.end(), rnd)
+            MutPosition = distance(SSP->T56_MutationRate.begin(),
+                                   std::upper_bound(SSP->T56_MutationRate.begin(), SSP->T56_MutationRate.end(), rnd)
                                    );
         }
         
         // Make the mutation - toggle bit
         //std::cout << "MutPosition = " << MutPosition << "\n";
 
-        auto& locusGender = SSP->FromT5LocusToT5genderLocus[MutPosition];
+        auto& locusGender = SSP->FromT56LocusToT56genderLocus[MutPosition];
         //std::cout << "locusGender.second = " << locusGender.second << "\n";
         if (locusGender.first)
         {
-            TransmittedChrom.toggleT5ntrl_Allele(locusGender.second);
+            TransmittedChrom.mutateT56ntrl_Allele(locusGender.second);
         } else
         {
-            TransmittedChrom.toggleT5sel_Allele(locusGender.second, Habitat);
+            TransmittedChrom.mutateT56sel_Allele(locusGender.second, Habitat);
         }
+    }
+}
+
+
+LifeCycle::ParentsData LifeCycle::findAllParents(Pop& pop, std::vector<int> patchSizeNextGeneration)
+{
+    ParentsData PD(patchSizeNextGeneration);
+
+    assert(patchSizeNextGeneration.size() == GP->PatchNumber);
+    for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
+        {
+            CoupleData CD = findCouple(pop, patch_index, offspring_index, PD); // Give PD for cloneInfo
+
+            
+            PD.lastOffspring[CD.mother.segregationIndex][CD.mother.patch][CD.mother.ind] = HaplotypeData(patch_index, offspring_index, 0, CD.mother.nbRecs);
+            if (CD.mother.nbRecs > 0)
+            {
+                PD.lastOffspring[!CD.mother.segregationIndex][CD.mother.patch][CD.mother.ind] = HaplotypeData(patch_index, offspring_index, 0, CD.mother.nbRecs);
+            }
+            
+            PD.lastOffspring[CD.father.segregationIndex][CD.father.patch][CD.father.ind] = HaplotypeData(patch_index, offspring_index, 1, CD.father.nbRecs);
+            if (CD.father.nbRecs > 0)
+            {
+                PD.lastOffspring[!CD.father.segregationIndex][CD.father.patch][CD.father.ind] = HaplotypeData(patch_index, offspring_index, 1, CD.father.nbRecs);
+            }
+            
+                
+            PD.couples[patch_index][offspring_index] = CD;
+        }
+    }
+
+    
+    /*{
+        assert(GP->PatchNumber == 1);
+
+        std::vector<size_t> count(2*SSP->TotalpatchSize,0);
+        for (size_t ind_index = 0 ; ind_index < patchSizeNextGeneration[0] ; ++ind_index)
+        {
+            auto& CD = PD.couples[0][ind_index];
+            ++(count[2 * CD.mother.ind + CD.mother.segregationIndex]);
+            ++(count[2 * CD.father.ind + CD.father.segregationIndex]);
+        }
+
+        std::vector<size_t> dist(2*SSP->TotalpatchSize,0);
+        for (size_t i = 0 ; i < count.size(); ++i)
+        {
+            ++(dist[count[i]]);
+        }
+
+        std::cout << "\n";
+        size_t nbChildren = 0;
+        for (size_t i = 0 ; i < dist.size(); ++i)
+        {
+            nbChildren += i * dist[i];
+            if (dist[i]) std::cout << i << ": " << dist[i] << "\n";
+            //for (size_t j = 0 ; j < dist[i] ; ++j)
+            //{
+             //   std::cout << "*";
+            //}
+            //std::cout << std::endl;
+        }
+        assert(nbChildren == 2*patchSizeNextGeneration[0]);
+    }*/
+    
+
+
+    return PD;
+}
+
+
+
+LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD)
+{
+    int mother_patch_from = pop.SelectionOriginPatch(patch_index);
+    #ifdef DEBUG
+    if (mother_patch_from != patch_index) NBMIGRANTS++;
+    #endif
+    // Select the mother
+    int mother_index = pop.SelectionParent(mother_patch_from,0); // selection on fertility in there
+
+    if (SSP->cloningRate != 0.0 && (SSP->cloningRate == 1.0 || (GP->random_0and1(GP->mt) < SSP->cloningRate)))
+    {
+        // Cloning
+        PD.cloneInfo[patch_index][offspring_index] = true;
+        int segregationIndex = GP->random_0or1(GP->mt);
+        return CoupleData(
+            HaplotypeData(mother_patch_from, mother_index, segregationIndex, 0), // mother
+            HaplotypeData(mother_patch_from, mother_index, !segregationIndex, 0)  // father
+        );
+        
+    } else
+    {
+        // Not cloning
+        if (SSP->cloningRate != 0.0)
+        {  
+            PD.cloneInfo[patch_index][offspring_index] = false;
+        }
+        
+
+        int father_patch_from;
+        int father_index;
+        if (SSP->selfingRate > 0.0 && GP->random_0and1(GP->mt) < SSP->selfingRate)
+        {
+            // selfing
+            father_patch_from = mother_patch_from;
+            father_index = mother_index;
+        } else
+        {
+            // not selfing
+            if (SSP->selfingRate == 0.0)
+            {
+                // No selfing at all -> Not even following Wright-Fisher model
+                father_index = -1;
+                father_patch_from = -1;
+                while (father_index == mother_index && father_patch_from == mother_patch_from)
+                {
+                    if (SSP->gameteDispersal)
+                    {
+                        father_patch_from = pop.SelectionOriginPatch(patch_index);
+                    } else
+                    {
+                        father_patch_from = mother_patch_from;
+                    }
+                    father_index = pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
+                }
+                assert(father_index >= 0);
+                assert(father_patch_from >= 0);
+            } else
+            {
+                // Wright-Fisher model. slefing with prob 1/2N (assuming neutrality) -> Default
+                if (SSP->gameteDispersal)
+                {
+                    father_patch_from = pop.SelectionOriginPatch(patch_index);
+                } else
+                {
+                    father_patch_from = mother_patch_from;
+                }
+                father_index = pop.SelectionParent(father_patch_from, SSP->malesAndFemales); // selection on fertility in there
+            }
+        }
+
+        //std::cout << "FC: " << mother_patch_from << " " << mother_index << " | " << father_patch_from << " " << father_index << "\n";
+
+        auto segregationIndexA = GP->random_0or1(GP->mt);
+        auto segregationIndexB = GP->random_0or1(GP->mt);
+        auto nbRecsA = recombination_nbRecs();
+        auto nbRecsB = recombination_nbRecs();
+        // I set these values before because the order of evaluation is compiler dependent otherwise which would make simulations not reproducible
+        return CoupleData(
+            HaplotypeData(mother_patch_from, mother_index, segregationIndexA, nbRecsA), // mother
+            HaplotypeData(father_patch_from, father_index, segregationIndexB, nbRecsB)  // father
+        );
     }
 }

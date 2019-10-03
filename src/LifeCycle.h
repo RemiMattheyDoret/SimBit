@@ -28,19 +28,40 @@
 
 class LifeCycle
 {
+public:
+
+///////////////////
+// Inner classes //
+///////////////////
+
+    class HaplotypeData;
+    class CoupleData;
+    class ParentsData;
+
+
 private:
-    static void clone(Individual& parent, Individual& offspring, int Habitat, bool HasChangedHabitat);
-    static void recombination(Individual& parent,Haplotype& TransmittedChrom);
+/////////////////////
+// private methods //
+/////////////////////
+
+    static void reproduceThroughSwap(Individual& parent, Haplotype& offspringHaplotype, HaplotypeData& parentHaploData, int& patch_index);
+    static void reproduceThroughCopy(Individual& parent, Haplotype& TransmittedChrom, HaplotypeData& parentData, int& patch_index);
     static int  recombination_nbRecs();
-    static void recombination_RecPositions(int& nbRecs, std::vector<int>& breakpoints, Individual& parent);
-    static void recombination_copyOver(Individual& parent,Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationInfo);
+    static std::vector<int> recombination_RecPositions(int& nbRecs, Individual& parent);
+    static void copyOver(Individual& parent,Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationIndex);
     static void Mutate_T1(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T2(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T3(Haplotype& TransmittedChrom);
-    static void Mutate_T5(Haplotype& TransmittedChrom, int Habitat);
+    static void Mutate_T56(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate(Haplotype& TransmittedChrom, int Habitat);
+    static ParentsData findAllParents(Pop& pop, std::vector<int> patchSizeNextGeneration);
+    static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD);
+
 
 public:
+//////////////////////////////
+// methods called from main //
+//////////////////////////////
     static void BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop); // because called from main
     
 };

@@ -34,12 +34,12 @@ public:
     int T2;
     int T3;
     int T4;
-    int T5ntrl;
-    int T5sel;
+    int T56ntrl;
+    int T56sel;
     char TType;
 
     // It always contain the index of the following locus.
 
-    FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int inT5ntrl, int inT5sel, char TT);
+    FromLocusToTXLocusElement(int inT1, int inT2, int inT3, int inT4, int inT56ntrl, int inT56sel, char TT);
 };
 

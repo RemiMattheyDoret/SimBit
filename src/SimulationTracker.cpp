@@ -41,7 +41,7 @@ void SimulationTracker::addMutation(int byte_index, int bit_index, int MutPositi
         if (SSP->T1_isMultiplicitySelection)
         {
             //std::cout << MutPosition << " is in fitness block " << SSP->FromLocusToFitnessMapIndex[MutPosition] << "\n";
-            T1SitesForFitnessMultiplicityCalculationMutationsForNextGeneration[ SSP->FromLocusToFitnessMapIndex[MutPosition] ].push_back(TrackedMutation);
+            T1SitesForFitnessMultiplicityCalculationMutationsForNextGeneration[ SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]]].push_back(TrackedMutation);
         } else
         {
             T1SitesForFitnessNoMultiplicityCalculationMutationsForNextGeneration.push_back(TrackedMutation);
@@ -616,7 +616,7 @@ void SimulationTracker::recomputeT1SitesForFitnessMultiplicityCalculation(Pop& p
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap; fitnessMapIndex++)
     {
         T1SitesForFitnessMultiplicityCalculation[fitnessMapIndex].resize(0);
-        int T1_locusTo = SSP->FromLocusToFitnessMapBoundaries[fitnessMapIndex].T1; // to excluded
+        int T1_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T1; // to excluded
         assert(T1_locusTo >= T1_locusFrom);
 
         int byte_index = T1_locusFrom / 8;

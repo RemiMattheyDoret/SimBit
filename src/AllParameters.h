@@ -56,5 +56,6 @@ public:
     void setOptionToDefault(std::string& flag);
     void setOptionToUserInput(std::string& flag, InputReader input);
     bool isSpeciesIndexReadFromBinary(int speciesIndex);
+    AllParameters();
 };
 

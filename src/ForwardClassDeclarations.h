@@ -42,6 +42,7 @@ class T1_locusDescription;
 class FromLocusToTXLocusElement;
 class OutputFile;
 class Haplotype;
+class CompressedSortedDeque;
 class Individual;
 class Patch;
 class Pop;

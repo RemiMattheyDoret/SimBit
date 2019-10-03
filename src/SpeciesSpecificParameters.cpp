@@ -1,4 +1,4 @@
-/*
+ /*
 
  Author: Remi Matthey-Doret
 
@@ -25,6 +25,7 @@
     SOFTWARE.
 
  */
+
 
 
 int SpeciesSpecificParameters::selectNonEmptyPatch(int firstPatchToLookAt, std::vector<int>& PSs, bool increasingOrder)
@@ -72,10 +73,10 @@ void SpeciesSpecificParameters::setRandomDistributions()
     this->T2_rpois_nbMut                          = tmp3;
     std::poisson_distribution<int>             tmp3h(T3_Total_Mutation_rate);
     this->T3_rpois_nbMut                          = tmp3h;
-    std::poisson_distribution<int>             tmp3i(T5_Total_Mutation_rate);
-    this->T5_rpois_nbMut                          = tmp3i;
+    std::poisson_distribution<int>             tmp3i(T56_Total_Mutation_rate);
+    this->T56_rpois_nbMut                          = tmp3i;
     //std::cout << "T1_Total_Mutation_rate = " << T1_Total_Mutation_rate << "\n";
-    //std::cout << "T5_Total_Mutation_rate = " << T5_Total_Mutation_rate << "\n";
+    //std::cout << "T56_Total_Mutation_rate = " << T56_Total_Mutation_rate << "\n";
     
     std::uniform_int_distribution<int>         tmp4(0, TotalNbLoci-2);
     this->runiform_int_ForRecPos                  = tmp4;
@@ -88,9 +89,9 @@ void SpeciesSpecificParameters::setRandomDistributions()
     this->T2_runiform_int_ForMutPos               = tmp7;
     std::uniform_int_distribution<int>         tmp7h(0, T3_nbChars-1);
     this->T3_runiform_int_ForMutPos               = tmp7h;
-    std::uniform_int_distribution<int>         tmp7i(0, T5_nbBits-1);
-    this->T5_runiform_int_ForMutPos               = tmp7i;
-    //std::cout << "T5_runiform_int_ForMutPos initialized with boundaries ["<<0<<";"<<T5_nbBits-1<<std::endl;
+    std::uniform_int_distribution<int>         tmp7i(0, T56_nbBits-1);
+    this->T56_runiform_int_ForMutPos               = tmp7i;
+    //std::cout << "T56_runiform_int_ForMutPos initialized with boundaries ["<<0<<";"<<T5_nbBits-1<<std::endl;
     
     std::uniform_real_distribution<double>     tmp8(0, T1_Total_Mutation_rate);
     this->T1_runiform_double_ForMutPos            = tmp8;
@@ -98,8 +99,8 @@ void SpeciesSpecificParameters::setRandomDistributions()
     this->T2_runiform_double_ForMutPos            = tmp9;
     std::uniform_real_distribution<double>     tmp10(0, T3_Total_Mutation_rate);
     this->T3_runiform_double_ForMutPos            = tmp10;
-    std::uniform_real_distribution<double>     tmp11(0, T5_Total_Mutation_rate);
-    this->T5_runiform_double_ForMutPos            = tmp11;
+    std::uniform_real_distribution<double>     tmp11(0, T56_Total_Mutation_rate);
+    this->T56_runiform_double_ForMutPos            = tmp11;
     
     std::uniform_real_distribution<double> tmp12(0,1);
     GP->random_0and1                       = tmp12;
@@ -111,6 +112,23 @@ void SpeciesSpecificParameters::setRandomDistributions()
 #endif
 }
 
+void SpeciesSpecificParameters::readSwapInLifeCycle(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        if (TotalRecombinationRate < 10.0 && TotalNbLoci > 100)
+        {
+            SwapInLifeCycle = true;
+        } else
+        {
+            SwapInLifeCycle = false;
+        }
+    } else
+    {
+        SwapInLifeCycle = input.GetNextElementBool();
+    }
+}
 
 void SpeciesSpecificParameters::readDispMat(InputReader& input)
 {
@@ -159,7 +177,13 @@ void SpeciesSpecificParameters::readOutputSFSbinSize(InputReader& input)
 SpeciesSpecificParameters::SpeciesSpecificParameters(std::string sN, int sI)
 : speciesName(sN), speciesIndex(sI)
 {
+    T4Tree = Tree();
     //std::cout << "Constructor of SpeciesSpecificParameters\n";
+}
+
+SpeciesSpecificParameters::SpeciesSpecificParameters()
+{
+    std::cout << "Default cnstructor of SpeciesSpecificParameters called\n";
 }
 
 SpeciesSpecificParameters::~SpeciesSpecificParameters()
@@ -199,8 +223,8 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
         abort();
     }
 
-    //std::cout << "T5_isMultiplicitySelection = " << T5_isMultiplicitySelection << "\n";
-    bool ShouldThereBeSeveralFitnessBlocks = (this->T1_isSelection && this->T1_isMultiplicitySelection) || (this->T5_isSelection && this->T5_isMultiplicitySelection) || this->T2_isSelection;
+    //std::cout << "T56_isMultiplicitySelection = " << T56_isMultiplicitySelection << "\n";
+    bool ShouldThereBeSeveralFitnessBlocks = (this->T1_isSelection && this->T1_isMultiplicitySelection) || (this->T56_isSelection && this->T56_isMultiplicitySelection) || this->T2_isSelection;
 
     double sumOfProb = 0.0;
     int FitnessMapIndex = 0;
@@ -214,8 +238,8 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
         int T2_locus = this->FromLocusToTXLocus[interlocus].T2;
         int T3_locus = this->FromLocusToTXLocus[interlocus].T3;
         int T4_locus = this->FromLocusToTXLocus[interlocus].T4;
-        int T5ntrl_locus = this->FromLocusToTXLocus[interlocus].T5ntrl;
-        int T5sel_locus = this->FromLocusToTXLocus[interlocus].T5sel;
+        int T56ntrl_locus = this->FromLocusToTXLocus[interlocus].T56ntrl;
+        int T56sel_locus = this->FromLocusToTXLocus[interlocus].T56sel;
         int locusType;
 
 
@@ -224,7 +248,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             // Long security
             if (interlocus == 0)
             {
-                assert(T1_locus + T2_locus + T3_locus + T4_locus + T5ntrl_locus + T5sel_locus == 1);
+                assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus == 1);
                 if (T1_locus == 1)
                 {
                     locusType = 1;
@@ -237,10 +261,10 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 } else if (T4_locus == 1)
                 {
                     locusType = 4;
-                } else if (T5ntrl_locus == 1)
+                } else if (T56ntrl_locus == 1)
                 {
                     locusType = 50;
-                } else if (T5sel_locus == 1)
+                } else if (T56sel_locus == 1)
                 {
                     locusType = 51;
                 } else
@@ -250,7 +274,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 }
             } else
             {
-                assert(T1_locus + T2_locus + T3_locus + T4_locus + T5ntrl_locus + T5sel_locus - this->FromLocusToTXLocus[interlocus - 1].T1 - this->FromLocusToTXLocus[interlocus - 1].T2 - this->FromLocusToTXLocus[interlocus - 1].T3 - this->FromLocusToTXLocus[interlocus - 1].T4 - this->FromLocusToTXLocus[interlocus - 1].T5ntrl - this->FromLocusToTXLocus[interlocus - 1].T5sel == 1);
+                assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus - this->FromLocusToTXLocus[interlocus - 1].T1 - this->FromLocusToTXLocus[interlocus - 1].T2 - this->FromLocusToTXLocus[interlocus - 1].T3 - this->FromLocusToTXLocus[interlocus - 1].T4 - this->FromLocusToTXLocus[interlocus - 1].T56ntrl - this->FromLocusToTXLocus[interlocus - 1].T56sel == 1);
                 if (T1_locus - this->FromLocusToTXLocus[interlocus - 1].T1 == 1)
                 {
                     locusType = 1;
@@ -263,10 +287,10 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 } else if (T4_locus - this->FromLocusToTXLocus[interlocus - 1].T4 == 1)
                 {
                     locusType = 4;
-                } else if (T5ntrl_locus - this->FromLocusToTXLocus[interlocus - 1].T5ntrl == 1)
+                } else if (T56ntrl_locus - this->FromLocusToTXLocus[interlocus - 1].T56ntrl == 1)
                 {
                     locusType = 50;
-                } else if (T5sel_locus - this->FromLocusToTXLocus[interlocus - 1].T5sel == 1)
+                } else if (T56sel_locus - this->FromLocusToTXLocus[interlocus - 1].T56sel == 1)
                 {
                     locusType = 51;
                 } else
@@ -358,8 +382,8 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             {
                 FitnessMapIndex++;
                 sumOfProb = 0.0;
-                FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T5ntrl_locus, T5sel_locus, locusType);
-                FromLocusToFitnessMapBoundaries.push_back(E);
+                FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
+                FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
                 nbLociInPiece = 0;
             }
         } 
@@ -370,17 +394,17 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     NbElementsInFitnessMap = FitnessMapIndex + 1;
 
     // Add last element to boundaries
-    FromLocusToTXLocusElement E(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
-    FromLocusToFitnessMapBoundaries.push_back(E);
-    assert(FromLocusToFitnessMapBoundaries.size() == NbElementsInFitnessMap);
+    FromLocusToTXLocusElement E(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
+    FromFitnessMapIndexToTXLocus.push_back(E);
+    assert(FromFitnessMapIndexToTXLocus.size() == NbElementsInFitnessMap);
 
-    // Create FromLocusToFitnessMapIndex from FromLocusToFitnessMapBoundaries
+    // Create FromLocusToFitnessMapIndex from FromFitnessMapIndexToTXLocus
     int previous_b_interlocus = 0;
-    for (int i = 0 ; i < FromLocusToFitnessMapBoundaries.size() ; i++)
+    for (int i = 0 ; i < FromFitnessMapIndexToTXLocus.size() ; i++)
     {
-        auto& b = FromLocusToFitnessMapBoundaries[i];
-        assert(b.T1 + b.T2 + b.T3 + b.T4 + b.T5ntrl + b.T5sel <= this->TotalNbLoci);
-        int b_interlocus = b.T1 + b.T2 + b.T3 + b.T4 + b.T5ntrl + b.T5sel;
+        auto& b = FromFitnessMapIndexToTXLocus[i];
+        assert(b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel <= this->TotalNbLoci);
+        int b_interlocus = b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel;
 
         for (int j = previous_b_interlocus  ; j < b_interlocus ; j++)
         {
@@ -408,9 +432,9 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     }
 
     /*
-    std::cout << "FromLocusToFitnessMapBoundaries";
-    std::cout << "("<<FromLocusToFitnessMapBoundaries.size()<<"):\n";
-    for (auto& e : FromLocusToFitnessMapBoundaries)
+    std::cout << "FromFitnessMapIndexToTXLocus";
+    std::cout << "("<<FromFitnessMapIndexToTXLocus.size()<<"):\n";
+    for (auto& e : FromFitnessMapIndexToTXLocus)
         std::cout << e.T1 + e.T2 + e.T3 << " ";
     std::cout << "\n";
 
@@ -451,6 +475,12 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     this->T5_nbBits   = 0;
     this->T5sel_nbBits = 0;
     this->T5ntrl_nbBits = 0;
+    this->T6_nbBits   = 0;
+    this->T6sel_nbBits = 0;
+    this->T6ntrl_nbBits = 0;
+    this->T56_nbBits   = 0;
+    this->T56sel_nbBits = 0;
+    this->T56ntrl_nbBits = 0;
     this->T1_nbBits   = 0;
     this->TotalNbLoci = 0;
 
@@ -469,7 +499,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT1LocusToLocus.push_back(this->TotalNbLoci);
                     this->T1_nbBits++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 1);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 1);
                     this->FromLocusToTXLocus.push_back(CME);
                 }
             }
@@ -483,7 +513,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT2LocusToLocus.push_back(this->TotalNbLoci);
                     this->T2_nbChars++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 2);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 2);
                     this->FromLocusToTXLocus.push_back(CME);                
                 }
             }
@@ -498,7 +528,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT3LocusToLocus.push_back(this->TotalNbLoci);
                     this->T3_nbChars++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 3);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 3);
                     this->FromLocusToTXLocus.push_back(CME);            
                 }
             }
@@ -514,64 +544,62 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT4LocusToLocus.push_back(this->TotalNbLoci);
                     this->T4_nbBits++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 4);
+                    FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 4);
                     this->FromLocusToTXLocus.push_back(CME);
                 }
             }
         } else if (Type == "5" || Type == "T5" || Type == "t5")
         {
             int nbBits = input.GetNextElementInt();
-            
             if (nbBits >= 1)
             {
+                assert(T56_approximationForNtrl <= 1.0 && T56_approximationForNtrl >= 0.0);
                 for (int i = 0 ; i < nbBits ; i++)
                 {
                     // Figure out whether is under selection
-                    assert(isT5neutral.size() == this->T5_nbBits);
-                    isT5neutral.push_back(true);
-                    assert(this->MaxEverHabitat >= 0);
-                    assert(this->T5_FitnessEffects.size() == this->MaxEverHabitat + 1);
-                    for (size_t habitat = 0 ; habitat <= this->MaxEverHabitat ; habitat++)
+                    assert(isT56neutral.size() == this->T56_nbBits);
+
+                    isT56neutral.push_back(!isT56LocusUnderSelection(this->T56_nbBits));
+                    
+                    // add it depending as to whether it is T5ntrl, T5sel, T6ntrl or T6sel
+                    if (isT56neutral.back())
                     {
-                        if (this->T5_isMultiplicitySelection)
+                        this->FromT56ntrlLocusToLocus.push_back(this->TotalNbLoci);
+                        FromT56LocusToT56genderLocus.push_back(std::pair<bool, size_t>(true,T56ntrl_nbBits));
+
+                        if (T56ntrl_compress)
                         {
-                            assert(this->T5_FitnessEffects[habitat].size() > this->T5_nbBits);
-                            if (this->T5_FitnessEffects[habitat][this->T5_nbBits] != 1.0)
-                            {
-                                isT5neutral.back() = false;
-                                break;
-                            }
+                            this->T6ntrl_nbBits++;
+                            this->T6_nbBits++;
                         } else
                         {
-                            assert(this->T5_FitnessEffects[habitat].size() > 2*(this->T5_nbBits) + 1);
-                            if (this->T5_FitnessEffects[habitat][2*(this->T5_nbBits) + 1] != 1.0 || this->T5_FitnessEffects[habitat][2*(this->T5_nbBits)] != 1.0)
-                            {
-                                isT5neutral.back() = false;
-                                break;
-                            }
+                            this->T5ntrl_nbBits++;
+                            this->T5_nbBits++;
                         }
-                    }
-                    
-                    // add it depending as to whether it is T5ntrl or T5sel   
-                    if (isT5neutral.back())
-                    {
-                        this->FromT5ntrlLocusToLocus.push_back(this->TotalNbLoci);
-                        FromT5LocusToT5genderLocus.push_back(std::pair<bool, size_t>(true,T5ntrl_nbBits));
-                        this->T5ntrl_nbBits++;
-                        FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 50);
+                        this->T56ntrl_nbBits++;
+                        FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 50);
                         this->FromLocusToTXLocus.push_back(CME);
                     } else
                     {
-                        this->FromT5selLocusToLocus.push_back(this->TotalNbLoci);
-                        FromT5LocusToT5genderLocus.push_back(std::pair<bool, size_t>(false,T5sel_nbBits));
-                        this->T5sel_nbBits++;
-                        FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T5ntrl_nbBits, this->T5sel_nbBits, 51);
+                        this->FromT56selLocusToLocus.push_back(this->TotalNbLoci);
+                        FromT56LocusToT56genderLocus.push_back(std::pair<bool, size_t>(false,T56sel_nbBits));
+                        if (T56sel_compress)
+                        {
+                            this->T6sel_nbBits++;
+                            this->T6_nbBits++;
+                        } else
+                        {
+                            this->T5sel_nbBits++;
+                            this->T5_nbBits++;
+                        }
+
+                        this->T56sel_nbBits++;
+                        FromLocusToTXLocusElement CME(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, 51);
                         this->FromLocusToTXLocus.push_back(CME);
                     }
 
-                    this->T5_nbBits++;
+                    this->T56_nbBits++;
                     this->TotalNbLoci++;
-                        
                 }
             }
         } else
@@ -581,16 +609,20 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
         }
     }
 
-
     assert(this->T1_nbBits == this->FromT1LocusToLocus.size());
     assert(this->T2_nbChars == this->FromT2LocusToLocus.size());
     assert(this->T3_nbChars == this->FromT3LocusToLocus.size());
     assert(this->T4_nbBits == this->FromT4LocusToLocus.size());
-    assert(this->T5sel_nbBits == this->FromT5selLocusToLocus.size());
-    assert(this->T5ntrl_nbBits == this->FromT5ntrlLocusToLocus.size());
+    assert(this->T56sel_nbBits == this->FromT56selLocusToLocus.size());
+    assert(this->T56ntrl_nbBits == this->FromT56ntrlLocusToLocus.size());
+    assert(this->T56sel_nbBits == this->FromT56selLocusToLocus.size());
     assert(this->TotalNbLoci == this->FromLocusToTXLocus.size());
     assert(this->T5_nbBits == this->T5ntrl_nbBits + this->T5sel_nbBits);
-    assert(this->TotalNbLoci == T1_nbBits + T2_nbChars + T3_nbChars + T4_nbBits + T5_nbBits );
+    assert(this->T6_nbBits == this->T6ntrl_nbBits + this->T6sel_nbBits);
+    assert(this->T56_nbBits == this->T5_nbBits + this->T6_nbBits);
+    assert(this->T56ntrl_nbBits == this->T5ntrl_nbBits + this->T6ntrl_nbBits);
+    assert(this->T56sel_nbBits == this->T5sel_nbBits + this->T6sel_nbBits);
+    assert(this->TotalNbLoci == T1_nbBits + T2_nbChars + T3_nbChars + T4_nbBits + T56_nbBits );
 
     this->T1_nbChars  = ceil(this->T1_nbBits/ (double) EIGHT);
 
@@ -615,6 +647,25 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
             std::cout << "You have asked for loci of type T4 via option --Loci (--L). You have also asked for having a number of subGeneration per generation different than 1 via option --nbSubGenerations (--nbSubGens). Sorry, the coalescent tree used to track T4 loci assumes on subgeneration per generation. It would be easy for Remi to get rid of this assumption. Please let me know!\n";
             abort();
         }
+
+        int nbDemes = patchCapacity.size();
+        for (auto& pc : __patchCapacity)
+        {
+            if (pc.size() != nbDemes)
+            {
+                std::cout << "You have asked for loci of type T4 via option --Loci (--L). You have also asked for having change in the number of demes over time (via --PN). Sorry, the coalescent tree used to track T4 loci assumes no change in the carrying capacity or in the number of demes over time. This assumption is simply caused by Remi being too lazy to make it more flexible!\n";
+                abort();
+            }
+
+            for (size_t patch_index = 0 ; patch_index < nbDemes ; ++patch_index)
+            {
+                if (pc[patch_index] != patchCapacity[patch_index])
+                {
+                    std::cout << "You have asked for loci of type T4 via option --Loci (--L). You have also asked for having change in the carrying patchCapacity over time.(via --N). Sorry, the coalescent tree used to track T4 loci assumes no change in the carrying capacity or in the number of demes over time. This assumption is simply caused by Remi being too lazy to make it more flexible!\n";
+                    abort();
+                }
+            }
+        }
     }
     
     // Assert FromLocusToTXLocus is good
@@ -624,7 +675,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     int current;
     for (int i = 0 ; i < this->FromLocusToTXLocus.size() ; i++)
     {
-        current = this->FromLocusToTXLocus[i].T1 + this->FromLocusToTXLocus[i].T2 + this->FromLocusToTXLocus[i].T3 + this->FromLocusToTXLocus[i].T4 + this->FromLocusToTXLocus[i].T5ntrl + this->FromLocusToTXLocus[i].T5sel;
+        current = this->FromLocusToTXLocus[i].T1 + this->FromLocusToTXLocus[i].T2 + this->FromLocusToTXLocus[i].T3 + this->FromLocusToTXLocus[i].T4 + this->FromLocusToTXLocus[i].T56ntrl + this->FromLocusToTXLocus[i].T56sel;
         //std::cout << "i = " << i << " current = " << current << " previous = " << previous << std::endl;
         if (previous + 1 != current)
         {
@@ -649,25 +700,29 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     }
     std::cout << std::endl;*/
 
-    ///// T5 stuff
-    // initialize T5ntrl_isMeaningFlipped
-    T5ntrl_isMeaningFlipped = std::vector<bool>(this->T5_nbBits, false);
-    assert(T5ntrl_isMeaningFlipped.size() == this->T5_nbBits);
-    assert(T5_FitnessEffects.size() == MaxEverHabitat+1);
-    assert(isT5neutral.size() == T5_nbBits);
-    assert(FromT5LocusToT5genderLocus.size() == T5_nbBits);
+    ////////////////////////////
+    ///// T5 and T6 stuff /////
+    ////////////////////////////
+    // T6 will use T56_FitnessEffects. It is a bit misleading but it is useless to rename it
+
+    assert(T56_FitnessEffects.size() == MaxEverHabitat+1);
+    assert(isT56neutral.size() == T56_nbBits);
+    assert(FromT56LocusToT56genderLocus.size() == T56_nbBits);
+    assert(T5sel_nbBits == 0 || T6sel_nbBits == 0);
+    assert(T5ntrl_nbBits == 0 || T6ntrl_nbBits == 0);
     
 
     // Remove from T5_fit everything that is not under selection
     for (size_t habitat = 0 ; habitat <= this->MaxEverHabitat ; habitat++)
     {
-        auto& fits = T5_FitnessEffects[habitat];
+        auto& fits = T56_FitnessEffects[habitat]; 
 
-        if (T5_isMultiplicitySelection)
+        if (T56_isMultiplicitySelection)
         {
             //std::cout << "fits.size() = " << fits.size() << "\n";
             //std::cout << "T5_nbBits = " << T5_nbBits << "\n";
-            assert(fits.size() == T5_nbBits);
+            //std::cout << "T6_nbBits = " << T6_nbBits << "\n";
+            assert(fits.size() == T56_nbBits);
 
             //would be faster with erase-remove idiom
             fits.erase(
@@ -677,7 +732,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     [&fits, this](double& elem)
                     {
                         size_t locus = &elem - fits.data();
-                        return this->isT5neutral[locus];
+                        return this->isT56neutral[locus];
                     }   
                 ),
                 fits.end()
@@ -685,12 +740,12 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
 
             //std::cout << "fits.size() = " << fits.size() << "\n";
             //std::cout << "T5sel_nbBits = " << T5sel_nbBits << "\n";
-            assert(fits.size() == T5sel_nbBits);
+            assert(fits.size() == T56sel_nbBits);
         } else
         {
             //std::cout << "fits.size() = " << fits.size() << "\n";
             //std::cout << "T5_nbBits = " << T5_nbBits << "\n";
-            assert(fits.size() == T5_nbBits*2);
+            assert(fits.size() == T56_nbBits*2);
 
             //would be faster with erase-remove idiom
             fits.erase(
@@ -700,7 +755,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     [&fits, this](double& elem)
                     {
                         size_t locus = (&elem - fits.data())/2;
-                        return this->isT5neutral[locus];
+                        return this->isT56neutral[locus];
                     }   
                 ),
                 fits.end()
@@ -708,14 +763,179 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
 
             //std::cout << "fits.size() = " << fits.size() << "\n";
             //std::cout << "T5sel_nbBits = " << T5sel_nbBits << "\n";
-            assert(fits.size() == T5sel_nbBits*2);
+            assert(fits.size() == T56sel_nbBits * 2);
         }
-
-        
-        
+        std::vector<bool>().swap(isT56neutral);
     }
-    //std::cout << "T5_nbBits = " << T5_nbBits << "\n";
+/*
+    std::cout << "T56_nbBits = " << T56_nbBits << "\n";
+    std::cout << "T56ntrl_nbBits = " << T56ntrl_nbBits << "\n";
+    std::cout << "T56sel_nbBits = " << T56sel_nbBits << "\n";
+
+    std::cout << "T5_nbBits = " << T5_nbBits << "\n";
+    std::cout << "T5ntrl_nbBits = " << T5ntrl_nbBits << "\n";
+    std::cout << "T5sel_nbBits = " << T5sel_nbBits << "\n";
+
+    std::cout << "T6_nbBits = " << T6_nbBits << "\n";
+    std::cout << "T6ntrl_nbBits = " << T6ntrl_nbBits << "\n";
+    std::cout << "T6sel_nbBits = " << T6sel_nbBits << "\n";
+*/
 }
+
+void SpeciesSpecificParameters::readT56_compress(InputReader& input)
+{
+    // Ntrl
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        // Nothing to do set it has been set in readT56_fitnessEffects. That's a bit weird but readLoci needs T56_compress, so I can't read --Loci before this and I want to set the compression depending on the number of loci!
+    } else
+    {
+        T56ntrl_compress = input.GetNextElementBool();
+    }   
+
+    // Sel
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        // Nothing to set as it has been set in readT56_fitnessEffects. That's a bit weird but readLoci needs T56_compress, so I can't read --Loci before this and I want to set the compression depending on the number of loci!
+    } else
+    {
+        T56sel_compress = input.GetNextElementBool();
+    }
+}
+
+
+void SpeciesSpecificParameters::readT56_approximationForNtrl(InputReader& input)
+{
+    T56_approximationForNtrl = input.GetNextElementDouble();
+    if (T56_approximationForNtrl > 1.0 || T56_approximationForNtrl < 0.0)
+    {
+        std::cout << "In --T56_approximationForNtrl, the value received is " << T56_approximationForNtrl << ". Sorry only values between 1.0 and 0.0 (included) make sense.\n";
+        abort();
+    }
+}
+
+void SpeciesSpecificParameters::resetT56_freqThresholToDefault()
+{
+    T56ntrl_frequencyThresholdForFlippingMeaning = 1.0;
+    T56sel_frequencyThresholdForFlippingMeaning = 1.0;
+
+    if (TotalpatchCapacity > 50)
+    {
+        T56ntrl_frequencyThresholdForFlippingMeaning = 0.95;
+        T56sel_frequencyThresholdForFlippingMeaning = 0.95;   
+    }
+    
+    if (TotalpatchCapacity > 500)
+    {
+        T56ntrl_frequencyThresholdForFlippingMeaning = 0.9;
+        T56sel_frequencyThresholdForFlippingMeaning = 0.9;
+    }
+    
+    if (TotalpatchCapacity > 1000)
+    {
+        T56ntrl_frequencyThresholdForFlippingMeaning = 0.8;
+        T56sel_frequencyThresholdForFlippingMeaning = 0.8;   
+    }
+    
+    if (TotalpatchCapacity > 3000)
+    {
+        T56ntrl_frequencyThresholdForFlippingMeaning = 0.7;
+        T56sel_frequencyThresholdForFlippingMeaning = 0.7;
+    }
+
+    if (TotalpatchCapacity > 10000)
+    {
+        T56ntrl_frequencyThresholdForFlippingMeaning = 0.6;
+        T56sel_frequencyThresholdForFlippingMeaning = 0.6;
+    }
+    //std::cout << "T56ntrl_frequencyThresholdForFlippingMeaning = " << T56ntrl_frequencyThresholdForFlippingMeaning << "\n";
+    //std::cout << "T56sel_frequencyThresholdForFlippingMeaning = " << T56sel_frequencyThresholdForFlippingMeaning << "\n";
+}
+
+void SpeciesSpecificParameters::readT56_freqThreshold(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        T5_freqThresholdWasSetToDefault = true;
+        this->resetT56_freqThresholToDefault();
+    } else
+    {
+        T5_freqThresholdWasSetToDefault = false;
+        T56ntrl_frequencyThresholdForFlippingMeaning = input.GetNextElementDouble();
+        T56sel_frequencyThresholdForFlippingMeaning = input.GetNextElementDouble();
+    }
+        
+
+    // Securities
+    if (T56ntrl_frequencyThresholdForFlippingMeaning <= 0.5 )
+    {
+        std::cout << "In --T5_freqThreshold, received the value " << T56ntrl_frequencyThresholdForFlippingMeaning << " for T5ntrl. Sorry a value lower or equal to 0.5 makes no sense.\n";
+        abort();
+    }
+    if (T56sel_frequencyThresholdForFlippingMeaning <= 0.5 )
+    {
+        std::cout << "In --T5_freqThreshold, received the value " << T56sel_frequencyThresholdForFlippingMeaning << " for T5sel. Sorry a value lower or equal to 0.5 makes no sense.\n";
+        abort();
+    }
+}
+
+/*void SpeciesSpecificParameters::readreverseFixedT5selMuts(InputReader& input)
+{
+    std::string x = input.GetNextElementString();
+    if (x == "false" || x == "0" || x == "f")
+    {
+        reverseFixedT5selMuts = false;
+    } else if (x == "true" || x == "1" || x == "t")
+    {
+        reverseFixedT5selMuts = true;
+    } else
+    {
+        std::cout << "In option --reverseFixedT5selMuts, was expecting either 'true' (or '1' or 't') or 'false' (or '0' or 'f') but instead received " << x << "\n";
+        abort();
+    }
+}*/
+
+
+/*void SpeciesSpecificParameters::readT1mutsDirectional(InputReader& input)
+{
+    std::string x = input.GetNextElementString();
+    if (x == "false" || x == "0" || x == "f")
+    {
+        T1mutsDirectional = false;
+    } else if (x == "true" || x == "1" || x == "t")
+    {
+        T1mutsDirectional = true;
+    } else
+    {
+        std::cout << "In option --T1mutsDirectional, was expecting either 'true' (or '1' or 't') or 'false' (or '0' or 'f') but instead received " << x << "\n";
+        abort();
+    }
+}*/
+
+
+/*void SpeciesSpecificParameters::readT5mutsDirectional(InputReader& input)
+{
+    std::string x = input.GetNextElementString();
+    if (x == "false" || x == "0" || x == "f")
+    {
+        T5mutsDirectional = false;
+    } else if (x == "true" || x == "1" || x == "t")
+    {
+        T5mutsDirectional = true;
+        T5sel_knownMutFixed.resize(T5sel_nbBits, false);
+
+    } else
+    {
+        std::cout << "In option --T5mutsDirectional, was expecting either 'true' (or '1' or 't') or 'false' (or '0' or 'f') but instead received " << x << "\n";
+        abort();
+    }
+    assert(MaxEverHabitat >= 0);
+    T5sel_fitnessEffectOfknownMutFixed.resize(MaxEverHabitat+1,1.0);
+}*/
+
 
 void SpeciesSpecificParameters::readCloningRate(InputReader& input)
 {
@@ -729,8 +949,9 @@ void SpeciesSpecificParameters::readCloningRate(InputReader& input)
 
 void SpeciesSpecificParameters::readSelfingRate(InputReader& input)
 {
-    this->selfingRate = input.GetNextElementDouble();
-    if ((this->selfingRate > 1.0 || this->selfingRate < 0.0) || this->selfingRate != -1.0)
+   this->selfingRate = input.GetNextElementDouble();
+ 
+    if ((this->selfingRate > 1.0 || this->selfingRate < 0.0) && this->selfingRate != -1.0)
     {
         std::cout << "In --selfingRate, received a selfing rate that is either lower than zero or greater than one. selfing rate receveid is " << this->selfingRate << ". Note that a selfingRate of -1 (default) refers to a simple Wright-Fisher model where the selfing rate is at 1/2N (a little bit lower with migration)\n";
         abort();
@@ -876,12 +1097,22 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
             if (string_mutationType == "setTo0")
             {
                 mutationType = 0;
+                /*if (SSP->T5mutsDirectional)
+                {
+                    std::cout << "For option --resetGenetics, you indicated a mutation type 'setTo0'. It is impossible to ask to set a T5 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
+                    abort();
+                }*/
             } else if (string_mutationType == "setTo1")
             {
                 mutationType = 1;
             } else if (string_mutationType == "toggle")
             {
                 mutationType = 2;
+                /*if (SSP->T5mutsDirectional)
+                {
+                    std::cout << "For option --resetGenetics, you indicated a mutation type 'toggle'. This means that it could happen that resetGenetics would attempt to convert a 1 into a 0. It is impossible to ask to set a T5 or T1 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
+                    abort();
+                }*/
             } else
             {
                 std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<") for loci of type "<<locusType<<", the mutation type received is '" << string_mutationType <<"'. Sorry only mutation types 'setTo0', 'setTo1' and 'toggle' are accepted.\n";
@@ -958,9 +1189,9 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
                         std::cout << "For option --resetGenetics received T5locus index of "<<T5locus<<" for an event happening at generation "<<generation<<".\n";
                         abort();
                     }
-                    if (T5locus >= SSP->T5_nbBits)
+                    if (T5locus >= SSP->T56_nbBits)
                     {
-                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T5locus index of "<<T5locus<<" while there are only "<<SSP->T5_nbBits<<" T5 loci in total. As a reminder, the first locus has index 0.\n";
+                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T5locus index of "<<T5locus<<" while there are only "<<SSP->T56_nbBits<<" T5 loci in total. As a reminder, the first locus has index 0.\n";
                         abort();
                     }
                     T5loci.push_back(T5locus);
@@ -988,7 +1219,7 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
                 }
             } else if (locusType == "T5")
             {
-                for (int T5locus = 0 ; T5locus < SSP->T5_nbBits; T5locus++)
+                for (int T5locus = 0 ; T5locus < SSP->T56_nbBits; T5locus++)
                 {
                     T5loci.push_back(T5locus);
                 }
@@ -1194,7 +1425,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
     this->FitnessMapMinimNbLoci = 0; // This is set to a different value only if used default
     std::string mode;
-    if (!this->T1_isMultiplicitySelection && !this->T5_isMultiplicitySelection &&  this->T2_nbChars == 0)
+    if (!this->T1_isMultiplicitySelection && !this->T56_isMultiplicitySelection &&  this->T2_nbChars == 0)
     {
         mode = "prob";
         this->FitnessMapProbOfEvent = DBL_MAX;
@@ -1279,7 +1510,7 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
             }
             if (this->fecundityForFitnessOfOne == -1 && ps != this->__patchCapacity[0][patch_index])
             {
-                std::cout << "For patch " << patch_index << " (zero-based counting), the capacity is " << this->__patchCapacity[0][patch_index] << " and the initial patch size is " << ps << ". When the fecundityForFitnessOfOne differs from -1 (which is the default and means infinite), the initial patch size must be at carrying capacity. This error message should only appear if you set both --InitialpatchSize and --fec yourself and made a mismatch between the initial patch size and the carrying capacity at the zeroth generation (indicated by option --N)\n";
+                std::cout << "For patch " << patch_index << " (zero-based counting), the capacity is " << this->__patchCapacity[0][patch_index] << " and the initial patch size is " << ps << ". When the fecundityForFitnessOfOne does not differ from -1 (-1 is the default and means infinite fecundity so that patch sizes are always at carrying capacity), the initial patch size must be at carrying capacity. This error message should only appear if you set both --InitialpatchSize and --fec yourself and made a mismatch between the initial patch size and the carrying capacity at the zeroth generation (indicated by option --N)\n";
                 abort();
             }
             this->patchSize.push_back(ps);
@@ -1306,7 +1537,7 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
             }
             if (this->fecundityForFitnessOfOne == -1 && ps != this->__patchCapacity[0][patch_index])
             {
-                std::cout << "For patch " << patch_index << " (zero-based counting), the capacity is " << this->__patchCapacity[0][patch_index] << " and the initial patch size is " << ps << ". When the fecundityForFitnessOfOne differs from -1 (which is the default and means infinite), the initial patch size must be at carrying capacity. This error message should only appear if you set both --InitialpatchSize and --fec yourself and made a mismatch between the initial patch size and the carrying capacity at the zeroth generation (indicated by option --N)\n";
+                std::cout << "For patch " << patch_index << " (zero-based counting), the capacity is " << this->__patchCapacity[0][patch_index] << " and the initial patch size is " << ps << ". When the fecundityForFitnessOfOne does not differs from -1 (-1 is the default and means infinite fecundity so that the patch size is always at carrying capacity), the initial patch size must be at carrying capacity. This error message should only appear if you set both --InitialpatchSize and --fec yourself and made a mismatch between the initial patch size and the carrying capacity at the zeroth generation (indicated by option --N)\n";
                 abort();
             }
             this->patchSize.push_back(ps);
@@ -1327,6 +1558,15 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
         abort();
     }
     assert(TotalNbIndsAtStart > 0);
+
+    // Just an extra security
+    TotalpatchSize = 0;
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    {
+        TotalpatchSize += patchSize[patch_index];
+    }
+    assert(TotalpatchSize <= TotalpatchCapacity);
+        
 }
 
 
@@ -1385,6 +1625,7 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
                         std::cout << "In '--T1_Initial_AlleleFreqs', received an impossible allele frequency. Received '" << freq << "'\n";
                         abort();
                     }
+
                     //std::cout << "T1Locus = " << T1Locus << " x = " << x << " nbRepeatsLeft = "<<nbRepeatsLeft<<"\n";
                     OneLine.push_back(freq);
                 }
@@ -1444,31 +1685,49 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
             assert(this->T1_Initial_AlleleFreqs[patch_index].size() == this->T1_nbBits);
         }
     }
+
+
+
+
+    if (!T1_Initial_AlleleFreqs_AllZeros && !T1_Initial_AlleleFreqs_AllOnes)
+    {
+        funkyMathForQuasiRandomT1AllFreqInitialization.resize(GP->PatchNumber);
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            funkyMathForQuasiRandomT1AllFreqInitialization[patch_index].reserve(T1_nbBits);
+            for (int locus = 0 ; locus < T1_nbBits ; ++locus)
+            {
+                funkyMathForQuasiRandomT1AllFreqInitialization[patch_index].push_back(
+                    (int)(((long)locus*103) % (long)(2 * SSP->TotalpatchCapacity))
+                );    
+            }    
+        }
+    }
 }
 
-void SpeciesSpecificParameters::readT5_fixedNtrlMuts(InputReader& input)
+void SpeciesSpecificParameters::readT56_toggleMutsEveryNGeneration(InputReader& input)
 {
-    T5_fixedNtrlMuts = input.GetNextElementInt();
-    if (T5_fixedNtrlMuts <= 0)
+    T56_toggleMutsEveryNGeneration = input.GetNextElementInt();
+    if (T56_toggleMutsEveryNGeneration <= 0)
     {
-        T5_fixedNtrlMuts_nextGeneration = -1;
+        T56_toggleMutsEveryNGeneration_nextGeneration = -1;
     } else
     {
-        T5_fixedNtrlMuts_nextGeneration = T5_fixedNtrlMuts;
+        T56_toggleMutsEveryNGeneration_nextGeneration = T56_toggleMutsEveryNGeneration;
     }
 }
 
 
-void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
+void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option --T5_Initial_AlleleFreqs, the std::string that is read is: " << input.print() << std::endl;
 #endif
     if (input.PeakNextElementString() == "NA")
     {
-        if (this->T5_nbBits != 0)
+        if (this->T56_nbBits != 0)
         {
-            std::cout << "For option --T5_Initial_AlleleFreqs, received 'NA' however there are T5 loci as indiciated by --L (--Loci) (this->T5_nbBits = "<<this->T5_nbBits<<")" << "\n";
+            std::cout << "For option --T5_Initial_AlleleFreqs, received 'NA' however there are T5 loci as indiciated by --L (--Loci) (this->T5_nbBits = "<<this->T56_nbBits<<")" << "\n";
             abort();
         }
         input.skipElement();
@@ -1478,8 +1737,8 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
 
         Mode = input.GetNextElementString();
 
-        this->T5_Initial_AlleleFreqs_AllZeros = false; // Set to true laster if received "AllZeros"
-        this->T5_Initial_AlleleFreqs_AllOnes = false;  // Set to true laster if received "AllOnes"
+        this->T56_Initial_AlleleFreqs_AllZeros = false; // Set to true later if received "AllZeros"
+        this->T56_Initial_AlleleFreqs_AllOnes = false;  // Set to true later if received "AllOnes"
         
         if (Mode.compare("A") == 0)
         {
@@ -1488,7 +1747,7 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
                 int nbRepeatsLeft = 0;
                 double freq;
                 std::vector<double> OneLine;
-                for (int T5Locus = 0 ; T5Locus < this->T5_nbBits ; T5Locus++)
+                for (int T5Locus = 0 ; T5Locus < this->T56_nbBits ; T5Locus++)
                 {
                     if (nbRepeatsLeft == 0 && input.PeakNextElementString() == "R")
                     {
@@ -1497,7 +1756,7 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
                         nbRepeatsLeft = input.GetNextElementInt();
                         if (nbRepeatsLeft < 0)
                         {
-                            std::cout << "In '--T5_Initial_AlleleFreqs', received a number of repeats lower than zero. Number of repeats received is " << nbRepeatsLeft << "\n";
+                            std::cout << "In '--T56_Initial_AlleleFreqs', received a number of repeats lower than zero. Number of repeats received is " << nbRepeatsLeft << "\n";
                             abort();
                         }
                     }
@@ -1511,9 +1770,10 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
                     
                     if (freq < 0.0 || freq > 1.0)
                     {
-                        std::cout << "In '--T5_Initial_AlleleFreqs', received an impossible allele frequency. Received '" << freq << "'\n";
+                        std::cout << "In '--T56_Initial_AlleleFreqs', received an impossible allele frequency. Received '" << freq << "'\n";
                         abort();
                     }
+
                     //std::cout << "T1Locus = " << T1Locus << " x = " << x << " nbRepeatsLeft = "<<nbRepeatsLeft<<"\n";
                     OneLine.push_back(freq);
                 }
@@ -1523,22 +1783,22 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
                     std::cout << "In '--T1_Initial_AlleleFreqs', too many values received!'\n";
                     abort();
                 }
-                assert(OneLine.size() == this->T5_nbBits);
-                this->T5_Initial_AlleleFreqs.push_back(OneLine);
+                assert(OneLine.size() == this->T56_nbBits);
+                this->T56_Initial_AlleleFreqs.push_back(OneLine);
             }
         } else if (Mode.compare("Shift")==0)
         {
             int shiftPosition = input.GetNextElementInt();
             if (shiftPosition < 0 || shiftPosition > GP->__PatchNumber[0])
             {
-                std::cout << "In '--T5_Initial_AlleleFreqs', received an impossible shiftPosition. Received '" << shiftPosition << ". For information, the simulation is starting with " << GP->__PatchNumber[0] << " as indicated in option '--PN (--PatchNumber)'\n";
+                std::cout << "In '--T56_Initial_AlleleFreqs', received an impossible shiftPosition. Received '" << shiftPosition << ". For information, the simulation is starting with " << GP->__PatchNumber[0] << " as indicated in option '--PN (--PatchNumber)'\n";
                 abort();
             }
             
             for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
             {
                 std::vector<double> line;
-                for (int T5Locus = 0 ; T5Locus < this->T5_nbBits ; T5Locus++)
+                for (int T5Locus = 0 ; T5Locus < this->T56_nbBits ; T5Locus++)
                 {
                     if (patch_index < shiftPosition)
                     {
@@ -1548,39 +1808,98 @@ void SpeciesSpecificParameters::readT5_Initial_AlleleFreqs(InputReader& input)
                         line.push_back(1.0);
                     }
                 }
-                assert(line.size() == this->T5_nbBits);
-                this->T5_Initial_AlleleFreqs.push_back(line);
+                assert(line.size() == this->T56_nbBits);
+                this->T56_Initial_AlleleFreqs.push_back(line);
             }
         } else if (Mode.compare("AllZeros") == 0)
         {
-            this->T5_Initial_AlleleFreqs_AllZeros = true;
+            this->T56_Initial_AlleleFreqs_AllZeros = true;
         } else if (Mode.compare("AllOnes") == 0)
         {
-            this->T5_Initial_AlleleFreqs_AllOnes = true;
+            std::cout << "Sorry the option AllOnes is currently not available for T56_Initial_AlleleFreqs.\n";
+            abort();
+            this->T56_Initial_AlleleFreqs_AllOnes = true;
         } else
         {
-            std::cout << "Sorry, for '--T5_Initial_AlleleFreqs', the Mode " << Mode << " has not been implemented yet. Only Modes 'A', 'AllZeros', 'AllOnes' and 'Shift' are accepted for the moment.";
+            std::cout << "Sorry, for '--T56_Initial_AlleleFreqs', the Mode " << Mode << " has not been implemented yet. Only Modes 'A', 'AllZeros', 'AllOnes' and 'Shift' are accepted for the moment.";
             abort();
         }
     }
 
     // Security check
-    if (!this->T5_Initial_AlleleFreqs_AllZeros && !this->T5_Initial_AlleleFreqs_AllOnes)
+    if (!this->T56_Initial_AlleleFreqs_AllZeros && !this->T56_Initial_AlleleFreqs_AllOnes)
     {
-        assert(this->T5_Initial_AlleleFreqs.size() == GP->__PatchNumber[0]);
+        assert(this->T56_Initial_AlleleFreqs.size() == GP->__PatchNumber[0]);
         for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
         {
-            assert(this->T5_Initial_AlleleFreqs[patch_index].size() == this->T5_nbBits);
+            assert(this->T56_Initial_AlleleFreqs[patch_index].size() == this->T56_nbBits);
         }
     }
 
-    if (!T5_Initial_AlleleFreqs_AllOnes)
+    // Initialize flipped if T6
+    if (T56ntrl_compress && SSP->T6ntrl_nbBits)
     {
-        T5ntrl_isMeaningFlipped.resize(T5ntrl_nbBits,false);
-    } else
-    {
-        T5ntrl_isMeaningFlipped.resize(T5ntrl_nbBits,true);
+        T6ntrl_flipped = CompressedSortedDeque(SSP->T6ntrl_nbBits);
     }
+
+    /*if (T56sel_compress && SSP->T6sel_nbBits)
+    {
+        T6sel_flipped = CompressedSortedDeque(SSP->T6sel_nbBits);
+    }*/
+
+    // If all fixed
+    if (T56_Initial_AlleleFreqs_AllOnes)
+    {
+        if (T56ntrl_compress)
+        {
+            for (auto locus = 0 ; locus < this->T6ntrl_nbBits ; ++locus)
+                T6ntrl_flipped.push_back(locus);
+        } else
+        {
+            for (auto locus = 0 ; locus < this->T5ntrl_nbBits ; ++locus)
+                T5ntrl_flipped.push_back(locus);
+        }
+
+        /*if (T56sel_compress)
+        {
+            for (auto locus = 0 ; locus < this->T6sel_nbBits ; ++locus)
+                T6sel_flipped.push_back(locus);
+        } else
+        {
+            for (auto locus = 0 ; locus < this->T5sel_nbBits ; ++locus)
+                T5sel_flipped.push_back(locus);
+        }*/  
+    } 
+
+    // The following sound awefully sily but it is just to ensure that begin and end are not nullptr (so as to not give nullptr to ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>). I am not sure whether it will matter
+    if (T5ntrl_flipped.size() == 0)
+    {
+        T5ntrl_flipped.push_back(0);
+        T5ntrl_flipped.resize(0);
+    }
+    /*if (T5sel_flipped.size() == 0)
+    {
+        T5sel_flipped.push_back(0);
+        T5sel_flipped.resize(0);
+    }*/
+
+
+    if (!T56_Initial_AlleleFreqs_AllZeros && !T56_Initial_AlleleFreqs_AllOnes)
+    {
+        funkyMathForQuasiRandomT56AllFreqInitialization.resize(GP->PatchNumber);
+        for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        {
+            funkyMathForQuasiRandomT56AllFreqInitialization[patch_index].reserve(T56_nbBits);
+            for (int locus = 0 ; locus < T56_nbBits ; ++locus)
+            {
+                funkyMathForQuasiRandomT56AllFreqInitialization[patch_index].push_back(
+                    (int)(((long)locus*107) % (long)(2 * SSP->TotalpatchCapacity))
+                );    
+            }    
+        }
+    }
+    
+    
 }
 
 void SpeciesSpecificParameters::readSelectionOn(InputReader& input)
@@ -1675,6 +1994,7 @@ void SpeciesSpecificParameters::readHabitats(InputReader& input)
     std::cout << "For option '--H (--Habitats)', the std::string that is read is: " << input.print() << std::endl;
 #endif
 
+    assert(GP->__GenerationChange.size() > 0);
     for ( int generation_index = 0; generation_index < GP->__GenerationChange.size() ; generation_index++)
     {
         int Generation = input.GetNextGenerationMarker(generation_index);
@@ -1757,12 +2077,16 @@ void SpeciesSpecificParameters::readHabitats(InputReader& input)
 
     // set MaxEverHabitat
     MaxEverHabitat = 0;
+    assert(MaxHabitat >= 0);
+    assert(__MaxHabitat.size() > 0);
+    assert(__MaxHabitat[0] == MaxHabitat);
     for (auto& MaxHabitatInSpecificGenerationRange : __MaxHabitat)
     {
         assert(MaxHabitatInSpecificGenerationRange >= 0);
         if (MaxHabitatInSpecificGenerationRange > MaxEverHabitat)
             MaxEverHabitat = MaxHabitatInSpecificGenerationRange;
     }
+    assert(MaxEverHabitat >= 0);
     
 }
 
@@ -1966,19 +2290,19 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
     
 }
 
-void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
+void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--T5_FitnessEffects', the std::string that is read is: " << input.print() << std::endl;
 #endif
-    // WATCH OUT: This option is read before --L. Only a quick screen of L has been done to set quickScreenAtL_T5_nbBits
+    // WATCH OUT: This option is read before --L. Only a quick screen of L has been done to set quickScreenAtL_T56_nbBits
 
     assert(SSP != nullptr);
     if (input.PeakNextElementString() == "NA")
     {
-        if (this->quickScreenAtL_T5_nbBits != 0)
+        if (this->quickScreenAtL_T56_nbBits != 0)
         {
-            std::cout << "In option '--T5_FitnessEffects', for species " << this->speciesName << ", received 'NA' but there are T5 loci as indiciated in --L (--Loci) (this->T5_nbBits = " << quickScreenAtL_T5_nbBits << ").\n";
+            std::cout << "In option '--T5_FitnessEffects', for species " << this->speciesName << ", received 'NA' but there are T5 loci as indiciated in --L (--Loci) (this->T5_nbBits = " << quickScreenAtL_T56_nbBits << ").\n";
             abort();   
         }
         input.skipElement();
@@ -2019,8 +2343,8 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                    
             if (Mode.compare("A")==0)
             {
-                this->T5_isMultiplicitySelection = false;
-                for (int entry_index = 0 ; entry_index < (2 * this->quickScreenAtL_T5_nbBits) ; entry_index++)    
+                this->T56_isMultiplicitySelection = false;
+                for (int entry_index = 0 ; entry_index < (2 * this->quickScreenAtL_T56_nbBits) ; entry_index++)    
                 {
                     double fit = input.GetNextElementDouble();
                     if (fit < 0 || fit > 1 )
@@ -2030,15 +2354,67 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                     }
                     ForASingleHabitat.push_back(fit);
                 }
-                if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T5_nbBits)
+                if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat "  << habitat << ", Mode 'A' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T5_nbBits) << " were expected\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat "  << habitat << ", Mode 'A' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
+                    abort();
+                }
+            } else if (Mode.compare("cstH")==0)
+            {
+                this->T56_isMultiplicitySelection = false;
+                double h = input.GetNextElementDouble();
+                bool isHomoFollows;
+                {
+                    std::string s = input.GetNextElementString();
+                    if (s == "homo" || s == "Homo" || s == "HOMO")
+                    {
+                        isHomoFollows = true;
+                    } else if (s == "hetero" || s == "Hetero" || s == "HETERO")
+                    {
+                        isHomoFollows = false;
+                    } else
+                    {
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', after the 'h' value, expected either keywor 'homo' or keyword 'hetero' but got '" << s << "' instead.\n";
+                        abort();
+                    }
+                }
+                    
+                for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T56_nbBits ; entry_index++)    
+                {
+                    double fitHomo;
+                    double fitHetero;
+                    if (isHomoFollows)
+                    {
+                        fitHomo = input.GetNextElementDouble();
+                        fitHetero = 1 - h * (1 - fitHomo);
+                    } else 
+                    {
+                        fitHetero = input.GetNextElementDouble();
+                        fitHomo   = 1 - (1-fitHetero)/h;
+                    }
+
+                    if (fitHomo < 0 || fitHomo > 1 )
+                    {
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHomo' value is either greater than 1 or lower than 0 ( is " << fitHomo << " ).\n";
+                        abort();
+                    }
+                    if (fitHetero < 0 || fitHetero > 1 )
+                    {
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHetero' value is either greater than 1 or lower than 0 ( is " << fitHetero << ", fitHomo = "<<fitHomo<<", h = "<<h<<" ).\n";
+                        abort();
+                    }
+                    ForASingleHabitat.push_back(fitHetero);
+                    ForASingleHabitat.push_back(fitHomo);
+                }
+                if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T56_nbBits)
+                {
+                    std::cout << "In option '--T5_FitnessEffects', habitat "  << habitat << ", Mode 'cstH' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
                     abort();
                 }
             } else if (Mode.compare("MultiplicityA")==0)
             {
-                this->T5_isMultiplicitySelection = true;
-                for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T5_nbBits ; )    
+                this->T56_isMultiplicitySelection = true;
+                for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T56_nbBits ; )
                 {
                     double fit01 = input.GetNextElementDouble();
                     if (fit01 < 0 || fit01 > 1 )
@@ -2049,14 +2425,14 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                     ForASingleHabitat.push_back(fit01);
                     entry_index++;
                 }
-                if (ForASingleHabitat.size() != this->quickScreenAtL_T5_nbBits)
+                if (ForASingleHabitat.size() != this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T5_nbBits << "  were expected\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected\n";
                     abort();
                 }
             } else if (Mode.compare("unif")==0)
             {
-                this->T5_isMultiplicitySelection = false;
+                this->T56_isMultiplicitySelection = false;
                 
                 double fitHet = input.GetNextElementDouble();
                 double fitHom = input.GetNextElementDouble();
@@ -2067,19 +2443,19 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                     abort();
                 }
                 
-                for (int locus = 0 ; locus < this->quickScreenAtL_T5_nbBits ; ++locus)
+                for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; ++locus)
                 {
                     ForASingleHabitat.push_back(fitHet);
                     ForASingleHabitat.push_back(fitHom);
                 }
-                if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T5_nbBits)
+                if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'unif' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T5_nbBits) << " were expected\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'unif' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
                     abort();
                 }
             } else if (Mode.compare("MultiplicityUnif")==0)
             {
-                this->T5_isMultiplicitySelection = true;
+                this->T56_isMultiplicitySelection = true;
                 
                 double fit01 = input.GetNextElementDouble();
                 if (fit01<0 || fit01>1)
@@ -2087,13 +2463,13 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects' Mode 'MultiplicityUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
                     abort();
                 }
-                for (int locus = 0 ; locus < this->quickScreenAtL_T5_nbBits ; locus++)
+                for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; locus++)
                 {
                     ForASingleHabitat.push_back(fit01);
                 }
-                if (ForASingleHabitat.size() != this->quickScreenAtL_T5_nbBits)
+                if (ForASingleHabitat.size() != this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T5_nbBits << "  were expected (likely an internal error)\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected (likely an internal error)\n";
                     abort();
                 }
             } else if (Mode.compare("MultiplicityAGamma")==0)
@@ -2106,7 +2482,7 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                     abort();
                 }
                 std::gamma_distribution<double> dist(alpha, beta);
-                for (int locus = 0 ; locus < this->quickScreenAtL_T5_nbBits ; locus++)
+                for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; locus++)
                 {
                     double fit = 1 - dist(GP->mt);
                     if (fit < 0.0) fit = 0.0;
@@ -2115,15 +2491,72 @@ void SpeciesSpecificParameters::readT5_FitnessEffects(InputReader& input)
                 }
             } else
             {
-                std::cout << "Sorry, for option '--T5_fit (--T5_fitnessEffects)', only Modes 'A', 'unif', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityAGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityAGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
-            this->T5_FitnessEffects.push_back(ForASingleHabitat);
+            this->T56_FitnessEffects.push_back(ForASingleHabitat);
         } // end of for habitat
     
-        assert(this->T5_FitnessEffects.size() == this->MaxEverHabitat + 1);
+        assert(this->T56_FitnessEffects.size() == this->MaxEverHabitat + 1);
     }
+
+
+    // Set default values for T56_compress that will be changed later if the user wants
+    size_t localCount_T56ntrl_nbBits = 0;
+    size_t localCount_T56sel_nbBits = 0;
+    for (size_t locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; locus++)
+    {
+        if (this->isT56LocusUnderSelection(locus))
+        {
+            ++localCount_T56sel_nbBits;
+        } else
+        {
+            ++localCount_T56ntrl_nbBits;
+        }
+    }
+
+    if (localCount_T56ntrl_nbBits <= 65534 && localCount_T56ntrl_nbBits != 0) // 65535 is the largest unsigned short (65535 = 2^16-1) and we are actually wasting a bit at every operation in order to gain .
+    {
+        T56ntrl_compress = true;
+    } else
+    {
+        T56ntrl_compress = false;
+    }
+
+    T56sel_compress = false;
+    /*if (localCount_T56sel_nbBits <= 65534) // 65535 is the largest unsigned short (65535 = 2^16-1) and we are actually wasting a bit at every operation in order to gain .
+    {
+        T56sel_compress = true;
+    } else
+    {
+        T56sel_compress = false;
+    }*/
         
+}
+
+bool SpeciesSpecificParameters::isT56LocusUnderSelection(size_t locus)
+{
+    assert(this->MaxEverHabitat >= 0);
+    assert(this->T56_FitnessEffects.size() == this->MaxEverHabitat + 1);
+    for (size_t habitat = 0 ; habitat <= this->MaxEverHabitat ; habitat++)
+    {
+        if (this->T56_isMultiplicitySelection)
+        {
+            assert(this->T56_FitnessEffects[habitat].size() > locus);
+            if (this->T56_FitnessEffects[habitat][locus] < T56_approximationForNtrl)
+            {
+                return true;
+            }
+        } else
+        {
+            assert(this->T56_FitnessEffects[habitat].size() > 2*(locus) + 1);
+            if (this->T56_FitnessEffects[habitat][2*(locus) + 1] < T56_approximationForNtrl || this->T56_FitnessEffects[habitat][2*(locus)] < T56_approximationForNtrl)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
@@ -2543,7 +2976,7 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
     
 }
 
-void SpeciesSpecificParameters::readT5_MutationRate(InputReader& input)
+void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "For option '--T5_MutationRate', the std::string that is read is: " << input.print() << std::endl;
@@ -2552,10 +2985,10 @@ void SpeciesSpecificParameters::readT5_MutationRate(InputReader& input)
 
     if (input.PeakNextElementString() == "NA" || input.PeakNextElementString() == "default")
     {
-        this->T5_Total_Mutation_rate = 0.0;
-        if (this->T5_nbBits != 0)
+        this->T56_Total_Mutation_rate = 0.0;
+        if (this->T56_nbBits != 0)
         {
-            std::cout << "In option '--T5_MutationRate', for species "<<this->speciesName<<", received 'default' (default input) but there are T5 loci as indiciated in --L (--Loci) (this->T5_nbBits = "<<this->T5_nbBits<<").\n";
+            std::cout << "In option '--T5_MutationRate', for species "<<this->speciesName<<", received 'default' (default input) but there are T5 loci as indiciated in --L (--Loci) (this->T5_nbBits = "<<this->T56_nbBits<<").\n";
             abort();   
         }
         input.skipElement();
@@ -2570,26 +3003,26 @@ void SpeciesSpecificParameters::readT5_MutationRate(InputReader& input)
             {
                 double inputValue = input.GetNextElementDouble();
                 currentSum += inputValue;
-                this->T5_MutationRate.push_back(currentSum);
+                this->T56_MutationRate.push_back(currentSum);
                 T5Locus++;
 
                 // security
                 if (inputValue < 0)
                 {
-                    std::cout << "In 'T5_MutationRate' of Mode 'A' the value received (" << inputValue << ") is negative." << std::endl;
+                    std::cout << "In 'T56_MutationRate' of Mode 'A' the value received (" << inputValue << ") is negative." << std::endl;
                     abort();
                 }
                 if (inputValue >= 0.1)
                 {
-                    std::cout << "In 'T5_MutationRate' of Mode 'A' the value received (" << inputValue << ") is greater than 0.1. Is it really what you want to do?" << std::endl;
+                    std::cout << "In 'T56_MutationRate' of Mode 'A' the value received (" << inputValue << ") is greater than 0.1. Is it really what you want to do?" << std::endl;
                     abort();
                 }          
             }
 
             // Did I get the info I expected?
-            if (this->T5_MutationRate.size() != T5_nbBits)
+            if (this->T56_MutationRate.size() != T56_nbBits)
             {
-                std::cout << "In '--T5_MutationRate', expected " << this->T5_nbBits << " elements. But " << this->T5_MutationRate.size() << " elements were received (note, the treatment of T5 loci is a little complex with the internal separation of what is ntrl and what is not. If you can't find your error, then this is maybe a bug).\n";
+                std::cout << "In '--T56_MutationRate', expected " << this->T56_nbBits << " elements. But " << this->T56_MutationRate.size() << " elements were received (note, the treatment of T5 loci is a little complex with the internal separation of what is ntrl and what is not. If you can't find your error, then this is maybe a bug).\n";
                 abort();
             }
 
@@ -2599,29 +3032,29 @@ void SpeciesSpecificParameters::readT5_MutationRate(InputReader& input)
 
             if (perLocusRate < 0)
             {
-                std::cout << "T5_MutationRate of Mode 'unif' is lower than zero" << std::endl;
+                std::cout << "T56_MutationRate of Mode 'unif' is lower than zero" << std::endl;
                 abort();
             }
 
-            if (T5_nbBits > 0)
+            if (T56_nbBits > 0)
             {
-                this->T5_MutationRate.push_back(perLocusRate * this->T5_nbBits);
+                this->T56_MutationRate.push_back(perLocusRate * this->T56_nbBits);
             }
                 
         } else
         {
-            std::cout << "Sorry, for 'T5_MutationRate' only Mode 'unif' and 'A' are recognized so far. Mode received (" << Mode << ") is unknown!" << std::endl;
+            std::cout << "Sorry, for 'T56_MutationRate' only Mode 'unif' and 'A' are recognized so far. Mode received (" << Mode << ") is unknown!" << std::endl;
             abort();
         }
         
-        assert(this->T5_MutationRate.size() == this->T5_nbBits || this->T5_MutationRate.size() == 1);
+        assert(this->T56_MutationRate.size() == this->T56_nbBits || this->T56_MutationRate.size() == 1);
 
-        if (this->T5_nbBits)
+        if (this->T56_nbBits)
         {
-            this->T5_Total_Mutation_rate = this->T5_MutationRate.back();
+            this->T56_Total_Mutation_rate = this->T56_MutationRate.back();
         } else
         {
-            this->T5_Total_Mutation_rate = 0.0;
+            this->T56_Total_Mutation_rate = 0.0;
         }
 
     }    
@@ -3343,6 +3776,13 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
     }
 
     std::string unit = input.GetNextElementString();
+    if (unit != "M" && unit != "cM" && unit != "rate")
+    {
+        std::cout << "Error found while reading option --r (--RecombinationRate): First entry for a given species is the unit. There are only three units possible, 'M', 'cM' and 'rate'. Unit received is " << unit << "\n";
+        abort();
+    }
+
+
     std::string Mode = input.GetNextElementString();
     
     if (Mode.compare("unif")==0)
@@ -3611,11 +4051,10 @@ void SpeciesSpecificParameters::IsThereSelection()
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' start of T1_isSelection\n";
 #endif        
-    bool ShouldIbreak = false;
-    T1_isSelection=0;
     
     if (T1_nbBits)
     {
+        T1_isSelection=false;
         assert(this->T1_FitnessEffects.size() == this->MaxEverHabitat + 1);
         for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
         {
@@ -3628,9 +4067,8 @@ void SpeciesSpecificParameters::IsThereSelection()
                     assert(this->T1_FitnessEffects[Habitat][locus] >= 0.0);
                     if (this->T1_FitnessEffects[Habitat][locus] != 1.0)
                     {
-                        this->T1_isSelection = 1;
-                        ShouldIbreak = true;
-                        break;
+                        this->T1_isSelection = true;
+                        goto T1isSelectionDone;
                     }   
                 } else
                 {
@@ -3638,29 +4076,64 @@ void SpeciesSpecificParameters::IsThereSelection()
                     {
                         assert(this->T1_FitnessEffects[Habitat].size() > (THREE * locus + geno));
                         assert(this->T1_FitnessEffects[Habitat][THREE * locus + geno] >= 0.0);
-                        if (this->T1_FitnessEffects[Habitat][THREE * locus + geno] != this->T1_FitnessEffects[Habitat][0])
+                        if (this->T1_FitnessEffects[Habitat][THREE * locus + geno] != 1.0)
                         {
-                            this->T1_isSelection = 1;
-                            ShouldIbreak = true;
-                            break;
+                            this->T1_isSelection = true;
+                            goto T1isSelectionDone;
                         }
                     }
                 } 
-                if (ShouldIbreak) break;
             }
-            if (ShouldIbreak) break;
         }
+        T1isSelectionDone:
+
+
+        // Local selection
+        if (this->T1_isSelection && this->MaxEverHabitat > 1)
+        {
+            for (int locus = 0 ; locus < this->T1_nbBits ; ++locus)
+            {
+                for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
+                {
+                    if (this->T1_isMultiplicitySelection)
+                    {
+                        if (this->T1_FitnessEffects[Habitat][locus] != this->T1_FitnessEffects[0][locus])
+                        {
+                            this->T1_isLocalSelection = true;
+                            goto T1isLocalSelectionDone;
+                        }
+                    } else
+                    {
+                        for (int geno = 0; geno < this->ploidy+1;geno++)
+                        {
+                            if (this->T1_FitnessEffects[Habitat][THREE * locus + geno] != this->T1_FitnessEffects[0][THREE * locus + geno])
+                            {
+                                this->T1_isLocalSelection = true;
+                                goto T1isLocalSelectionDone;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+    } else
+    {
+        this->T1_isMultiplicitySelection = false;
+        this->T1_isSelection = false;
+        this->T1_isEpistasis = false;
+        this->T1_isLocalSelection = false;
     }
+    T1isLocalSelectionDone:
     
   
 
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' start of T1_isEpistasis\n";
 #endif
-    ShouldIbreak = false;
-    this->T1_isEpistasis = false;
     if (this->T1_nbBits)
     {
+        this->T1_isEpistasis = false;
         //std::cout << "this->T1_nbChars = " << this->T1_nbChars << "\n";
         int howManyWarningGiven = 0;
         //std::cout << "this->T1_Epistasis_LociIndices.size() = " << this->T1_Epistasis_LociIndices.size() << "\n";
@@ -3755,6 +4228,12 @@ void SpeciesSpecificParameters::IsThereSelection()
         {
             assert(this->T1_Epistasis_FitnessEffects.size() == 0);
         }
+    } else
+    {
+        this->T1_isMultiplicitySelection = false;
+        this->T1_isSelection = false;
+        this->T1_isEpistasis = false;
+        this->T1_isLocalSelection = false;
     }
 
 
@@ -3762,10 +4241,9 @@ void SpeciesSpecificParameters::IsThereSelection()
     std::cout << "In 'IsThereSelection' start of T2_isSelection\n";
 #endif     
 
-    ShouldIbreak = false;
-    T2_isSelection=false;
     if (this->T2_nbChars)
     {
+        this->T2_isSelection = false;
         assert(T2_FitnessEffects.size() == this->MaxEverHabitat + 1);
         for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
         {
@@ -3775,24 +4253,45 @@ void SpeciesSpecificParameters::IsThereSelection()
                 if (this->T2_FitnessEffects[Habitat][T2_char_index] != 1.0)
                 {
                     this->T2_isSelection = true;
-                    ShouldIbreak = true;
-                    break;
+                    goto T2isSelectionDone;
                 }
             }
-            if (ShouldIbreak) break;
         }
+        T2isSelectionDone:
+
+
+        // Local selection
+        if (this->T2_isSelection && this->MaxEverHabitat > 1)
+        {
+            for (int locus = 0 ; locus < this->T2_nbChars ; ++locus)
+            {
+                for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
+                {
+                    if (this->T2_FitnessEffects[Habitat][locus] != this->T2_FitnessEffects[0][locus])
+                    {
+                        this->T2_isLocalSelection = true;
+                        goto T2isLocalSelectionDone;
+                    }
+                    
+                }
+            }
+        }
+    } else
+    {
+        this->T2_isSelection = false;
     }
+    T2isLocalSelectionDone:
 
 
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' start of T3_isSelection\n";
 #endif     
 
-    ShouldIbreak = false;
-    this->T3_isSelection=false;
+    
     
     if (this->T3_nbChars)
     {
+        this->T3_isSelection=false;
         if (this->T3_fitnessLandscapeType!='L' && this->T3_fitnessLandscapeType!='G')
         {
             std::cout << "Internal error: function 'IsThereSelection' only knows how to deal with T3_fitnessLandscapeType=='L' and T3_fitnessLandscapeType=='G' but it appears that T3_fitnessLandscapeType=="<<this->T3_fitnessLandscapeType<<"\n";
@@ -3818,11 +4317,9 @@ void SpeciesSpecificParameters::IsThereSelection()
                     if (this->T3_fitnessLandscapeLinearGradient[Habitat][dim] != 0.0)
                     {
                         this->T3_isSelection = true;
-                        ShouldIbreak = true;
-                        break;
+                        goto T3isSelectionDone;
                     }
                 }
-                if (ShouldIbreak) break;
             }
         } else if (this->T3_fitnessLandscapeType=='G')
         {
@@ -3841,6 +4338,13 @@ void SpeciesSpecificParameters::IsThereSelection()
             std::cout << "Internal error in funciton IsThereSelection\n";
             abort();
         }
+        T3isSelectionDone:
+
+
+        if (T3_isSelection) T3_isLocalSelection = true; // This could really be improved. A priori I don't think it will have any consequence for the moment though
+    } else
+    {
+        this->T3_isSelection = false;
     }
     
 #ifdef CALLENTRANCEFUNCTIONS
@@ -3850,62 +4354,85 @@ void SpeciesSpecificParameters::IsThereSelection()
 
 
 #ifdef CALLENTRANCEFUNCTIONS
-    std::cout << "In 'IsThereSelection' start of T5_isSelection\n";
+    std::cout << "In 'IsThereSelection' start of T56_isSelection\n";
 #endif        
-    ShouldIbreak = false;
     
     //std::cout << "T5sel_nbBits = " << T5sel_nbBits << "\n";
-    if (T5sel_nbBits)
+    if (T56sel_nbBits)
     {
-        this->T5_isSelection = 1;
+        this->T56_isSelection = true;
     } else
     {
-        this->T5_isSelection=0;
-        this->T5_isMultiplicitySelection = 0;
+        this->T56_isSelection = false;
+        this->T56_isMultiplicitySelection = false;
+        this->T56_isLocalSelection = false;
     }
         
 
-    //std::cout << "this->T5_isSelection = " << this->T5_isSelection << "\n";
+    //std::cout << "this->T56_isSelection = " << this->T56_isSelection << "\n";
 
-    if (this->T5_isSelection)
+    if (this->T56_isSelection)
     {
-        assert(this->T5_FitnessEffects.size() == this->MaxEverHabitat + 1);
-        for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
+        assert(this->T56_FitnessEffects.size() == this->MaxEverHabitat + 1);
+        for (int locus = 0 ; locus < this->T5sel_nbBits ; ++locus)
         {
-            for (int locus = 0 ; locus < this->T5sel_nbBits ; ++locus)
+            for (int Habitat = 0 ; Habitat <= this->MaxEverHabitat ; Habitat++)
             {
-                if (this->T5_isMultiplicitySelection)
+                if (this->T56_isMultiplicitySelection)
                 {
                     
-                    assert(this->T5_FitnessEffects[Habitat].size() > locus);
-                    assert(this->T5_FitnessEffects[Habitat][locus] >= 0.0);
+                    assert(this->T56_FitnessEffects[Habitat].size() > locus);
+                    assert(this->T56_FitnessEffects[Habitat][locus] >= 0.0);
+                    if (this->T56_FitnessEffects[Habitat][locus] != this->T56_FitnessEffects[0][locus])
+                    {
+                        this->T56_isLocalSelection = true;
+                        // no need for goto as I actually want the assert statements to run by security
+                    }
                 } else
                 {
                     for (int geno = 0; geno < 2; geno++) // only values for het and double mutant
                     {
-                        assert(this->T5_FitnessEffects[Habitat].size() > (2 * locus + geno));
-                        assert(this->T5_FitnessEffects[Habitat][2 * locus + geno] >= 0.0);
+                        assert(this->T56_FitnessEffects[Habitat].size() > (2 * locus + geno));
+                        assert(this->T56_FitnessEffects[Habitat][2 * locus + geno] >= 0.0);
+                        if (this->T56_FitnessEffects[Habitat][2 * locus + geno] != this->T56_FitnessEffects[0][2 * locus + geno])
+                        {
+                            this->T56_isLocalSelection = true;
+                            // no need for goto as I actually want the assert statements to run by security
+                        }
                     }
                 } 
             }
         }
     }
 #ifdef CALLENTRANCEFUNCTIONS
-    std::cout << "In 'IsThereSelection' end of T5_isSelection\n";
+    std::cout << "In 'IsThereSelection' end of T56_isSelection\n";
 #endif
 
-
-
-    // Dispersal probability cannot be a function of fitness if there is no selection
-    if (!this->T1_isSelection && !this->T1_isEpistasis && !this->T2_isSelection && !this->T3_isSelection  && !this->T5_isSelection )
-    {
-        this->DispWeightByFitness = false;
-    }
 
     // if fecundity is different from -1, then dispersal rate necessarily depends on fitness
     if (this->fecundityForFitnessOfOne != -1.0)
     {
         this->DispWeightByFitness = true;   
+    }
+
+    // Dispersal probability cannot be a function of fitness if there is no selection
+    if (!this->T1_isSelection && !this->T1_isEpistasis && !this->T2_isSelection && !this->T3_isSelection  && !this->T56_isSelection )
+    {
+        isAnySelection = false;
+        this->DispWeightByFitness = false;
+        this->selectionOn = 0; // This is to avoid some bullshit in lifeCycle.pp
+    } else
+    {
+        isAnySelection = true;
+    }
+
+
+    if (this->MaxEverHabitat == 1)
+    {
+        this->T1_isLocalSelection = false;
+        this->T2_isLocalSelection = false;
+        this->T3_isLocalSelection = false;
+        this->T56_isLocalSelection = false;
     }
 }
 
@@ -3950,12 +4477,14 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     this->patchSize.shrink_to_fit();
     assert(this->patchSize.size() == GP->PatchNumber);
 
-    // Set patch size to carrying capacity if it is not allowed to differ from it
+    // Set patch size to carrying capacity if it is not allowed to differ from it. Also change TotalpatchSize
+    TotalpatchSize = 0;
     if (this->fecundityForFitnessOfOne == -1.0)
     {
         for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             this->patchSize[patch_index] = this->patchCapacity[patch_index];
+            TotalpatchSize += this->patchCapacity[patch_index];
         }
     }
 
@@ -3968,6 +4497,8 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     {
         this->TotalpatchCapacity += OnepatchCapacity;
     }
+    if (T5_freqThresholdWasSetToDefault)
+        this->resetT56_freqThresholToDefault();
 
     // change Habitat
     this->Habitats = this->__Habitats[generation_index];
@@ -4103,7 +4634,7 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
                 //std::cout << "T1_nbBits = " << T1_nbBits << "\n";
                 if (locus < 0 || locus >= T1_nbBits)
                 {
-                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T5_nbBits = "<<T5_nbBits<<")\n";
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T56_nbBits = "<<T56_nbBits<<")\n";
                     abort();
                 }
                 if (
@@ -4122,7 +4653,7 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
             {
                 if (locus < 0 || locus >= T2_nbChars)
                 {
-                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T5_nbBits = "<<T5_nbBits<<")\n";
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T56_nbBits = "<<T56_nbBits<<")\n";
                     abort();
                 }
                 if (
@@ -4141,7 +4672,7 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
             {
                 if (locus < 0 || locus >= T3_nbChars)
                 {
-                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T5_nbBits = "<<T5_nbBits<<")\n";
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T56_nbBits = "<<T56_nbBits<<")\n";
                     abort();
                 }  
                 if (
@@ -4160,7 +4691,7 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
             {
                 if (locus < 0 || locus >= T1_nbBits)
                 {
-                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T5_nbBits = "<<T5_nbBits<<")\n";
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T56_nbBits = "<<T56_nbBits<<")\n";
                     abort();
                 }
                 if (
@@ -4179,9 +4710,9 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
             {
                 //std::cout << "locus = " << locus << "\n";
                 //std::cout << "T1_nbBits = " << T1_nbBits << "\n";
-                if (locus < 0 || locus >= T5_nbBits)
+                if (locus < 0 || locus >= T56_nbBits)
                 {
-                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T5_nbBits = "<<T5_nbBits<<")\n";
+                    std::cout << "For option --fitnessStats_file, in function SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input), received the locus index " << locus << " for trait of type "<<whichT<<". Only positive number lower than the total number of loci is accepted. As a reminder, the first locus has index 0 and the last locus has index nbLociForThisTrait-1 (T1_nbBits = "<<T1_nbBits<<", T2_nbChars = "<<T2_nbChars<<", T3_nbChars = "<<T3_nbChars<<", T56_nbBits = "<<T56_nbBits<<")\n";
                     abort();
                 }
                 if (
@@ -4258,13 +4789,13 @@ void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputRea
 
 void SpeciesSpecificParameters::readQuickScreenOfOptionL(InputReader& input)
 {
-    quickScreenAtL_T5_nbBits = 0;
+    quickScreenAtL_T56_nbBits = 0;
     while( input.IsThereMoreToRead() )
     {
         std::string Type = input.GetNextElementString();
         if (Type == "5" || Type == "T5" || Type == "t5")
         {
-            quickScreenAtL_T5_nbBits += input.GetNextElementInt();
+            quickScreenAtL_T56_nbBits += input.GetNextElementInt();
         } else
         {
             if (
@@ -4284,5 +4815,5 @@ void SpeciesSpecificParameters::readQuickScreenOfOptionL(InputReader& input)
             input.skipElement();
         }
     }
-    //std::cout << "quickScreenAtL_T5_nbBits = " << quickScreenAtL_T5_nbBits << "\n";
+    //std::cout << "quickScreenAtL_T56_nbBits = " << quickScreenAtL_T56_nbBits << "\n";
 }
