@@ -47,22 +47,14 @@ public:
         {{"additiveEffectAmongLoci"},                   {"S"}, false},
         {{"selectionOn"},                               {"L","S"}, false},
 
+
         // Genetics and Selection T1
         {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}, false},
-        {{"T1_fit", "T1_FitnessEffects"},               {"H","S", "seed", "L"}, false},
-        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L","PN"}, false},
         {{"T1_epistasis","T1_EpistaticFitnessEffects"}, {"H","S", "L"}, false},
         //{{"T1mutsDirectional"},                         {"S", "L"}, false},
 
         // Genetics and Selection T2
         {{"T2_mu","T2_MutationRate"},                   {"S", "L"}, false},
-        {{"T2_fit", "T2_FitnessEffects"},               {"S","H", "L"}, false},
-
-        // Genetics and Selection T3
-        {{"T3_mu","T3_MutationRate"},                   {"S", "L"}, false},
-        {{"T3_pheno", "T3_PhenotypicEffects"},          {"S", "H", "L"}, false},
-        {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
-        {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},
 
         // Genetics and Selection T4
         {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
@@ -71,17 +63,32 @@ public:
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
         // T5_fit appears before --L
-        {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L","PN"}, false},
         {{"T5_toggleMutsEveryNGeneration"},                   {"S", "L"}, false},
         {{"T5_freqThreshold", "T5_frequencyThresholdForFlippingMeaning"},              {"S", "L","PN","N"}, false},
         // {{"reverseFixedT5selMuts"},              {"S", "L"}, false},
         //{{"T5mutsDirectional"},                         {"S", "L", "H","T5_fit"}, false},
+
+        // Genetics and Selection T3
+        {{"T3_mu","T3_MutationRate"},                   {"S", "L"}, false},
+        {{"T3_pheno", "T3_PhenotypicEffects"},          {"S", "H", "L"}, false},
+        {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
+        {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},
+
+        {{"T1_fit", "T1_FitnessEffects"},               {"H","S", "seed", "L"}, false},
+        {{"T2_fit", "T2_FitnessEffects"},               {"S","H", "L"}, false},
 
         // Genetics and Selection for T1, T2, T3 and T4 (second part)
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
         {{"recRateOnMismatch"},                         {"S", "L"}, false},
         {{"FitnessMapInfo"},           {"S", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
         {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
+
+        // Initializer
+        {{"resetGenetics"},                             {"L","nbGenerations","S","PN","N", "T5_MutationRate"}, false},
+        {{"indIni","individualInitialization"},         {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
+        {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L","PN","indIni"}, false},
+        {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L","PN", "indIni"}, false},
+
 
         // Outputs
         {{"GP", "GeneralPath"},                     {}, false},
@@ -131,8 +138,7 @@ public:
         {{"Overwrite"},                   		            {}, false},
         {{"readPopFromBinary"},           		            {"S"}, false},
         {{"DryRun"},                         		        {}, false},
-        {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
-        {{"resetGenetics"},                                 {"L","nbGenerations","S","PN","N", "T5_MutationRate"}, false}
+        {{"centralT1LocusForExtraGeneticInfo"},             {}, false}
     };
 
     //void received(std::string& optionNameReceived);

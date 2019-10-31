@@ -122,9 +122,14 @@ Patch::Patch(const int patch_index, char Abiogenesis)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\n";
 #endif
-
-
-    if (
+    if (SSP->isIndividualInitialization)
+    {
+        assert(SSP->IndividualTypeMatchingForInitialization[patch_index].size() == SSP->patchSize[patch_index]);
+        for (auto& individualTypeName : SSP->IndividualTypeMatchingForInitialization[patch_index])
+        {
+            inds.push_back(SSP->IndividualTypeForInitialization[individualTypeName]); // copy
+        }        
+    } else if (
         (SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->T1_Initial_AlleleFreqs_AllOnes)
         &&
         (SSP->T56_Initial_AlleleFreqs_AllZeros || SSP->T56_Initial_AlleleFreqs_AllOnes)
@@ -143,7 +148,7 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
         for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {
             Individual ind(patch_index, Abiogenesis, ind_index);
-            inds.push_back(std::move(ind));
+            inds.push_back(ind);
         }
     }
 }

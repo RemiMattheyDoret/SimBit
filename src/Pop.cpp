@@ -144,8 +144,11 @@ std::cout << "Enters in 'Pop::Pop'\n";
     assert(patches.size() == GP->PatchNumber);
 
     // I won't need these anymore
-    SSP->funkyMathForQuasiRandomT1AllFreqInitialization.resize(0);
-    SSP->funkyMathForQuasiRandomT56AllFreqInitialization.resize(0);
+    std::vector<std::vector<int>>().swap(SSP->funkyMathForQuasiRandomT1AllFreqInitialization);
+    std::vector<std::vector<int>>().swap(SSP->funkyMathForQuasiRandomT56AllFreqInitialization);
+    std::map<std::string, Individual>().swap(SSP->IndividualTypeForInitialization);
+    std::vector<std::vector<std::string>>().swap(SSP->IndividualTypeMatchingForInitialization);
+    std::vector<std::vector<double>>().swap(SSP->T1_Initial_AlleleFreqs);
 }
 
 

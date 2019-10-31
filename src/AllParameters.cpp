@@ -640,7 +640,6 @@ std::cout << "Enters in 'SetParameters'\n";
         #ifdef DEBUG
         std::cout << "Start SSPi.setFromLocusToFitnessMapIndex()\n" << std::endl;
         #endif 
-        SSPi.setFromLocusToFitnessMapIndex();
 
         // Check initial population size and patch capacity for fecundity = -1
         // Check also that DispWeightByFitness is correct.
@@ -1180,14 +1179,19 @@ void AllParameters::setOptionToDefault(std::string& flag)
         InputReader input(std::string("@S0 1.0"), "In Default value for --T5_approximationForNtrl,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_approximationForNtrl);
     }
+    else if (flag == "indIni")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --indIni,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualInitialization);
+    }
     else if (flag == "T1_ini")
     {
-        InputReader input(std::string("@S0 AllZeros"), "In Default value for --T1_ini,");
+        InputReader input(std::string("@S0 default"), "In Default value for --T1_ini,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_Initial_AlleleFreqs);
     }
     else if (flag == "T5_ini")
     {
-        InputReader input(std::string("@S0 AllZeros"), "In Default value for --T5_ini,");
+        InputReader input(std::string("@S0 default"), "In Default value for --T5_ini,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_Initial_AlleleFreqs);
     }
     else if (flag == "T1_epistasis")
@@ -1307,7 +1311,8 @@ void AllParameters::setOptionToDefault(std::string& flag)
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readGrowthK);
     } else if (flag == "resetGenetics")
     {
-        // nothing to do
+        InputReader input("default", std::string("In '--") + flag + std::string("', "));
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readResetGenetics); // must enter here because it calls isThereSelection
     }
     else if (flag == "Overwrite")
     {
@@ -1767,6 +1772,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "T5_FitnessEffects" || flag == "T5_fit")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_FitnessEffects);
+        
+    } else if (flag == "individualInitialization" || flag == "indIni")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualInitialization);
         
     } else if (flag == "T1_Initial_AlleleFreqs" || flag == "T1_ini")
     {   

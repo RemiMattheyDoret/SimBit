@@ -130,6 +130,9 @@ public:
     std::vector<std::vector<double>>                T1_Initial_AlleleFreqs;
     bool                                            T1_Initial_AlleleFreqs_AllZeros;
     bool                                            T1_Initial_AlleleFreqs_AllOnes;
+    std::map<std::string, Individual>               IndividualTypeForInitialization;
+    std::vector<std::vector<std::string>>           IndividualTypeMatchingForInitialization;
+    bool                                            isIndividualInitialization;
     int                                             T1_nbChars;
     int                                             T1_nbBits;
     std::vector<std::vector<double>>                T1_FitnessEffects;
@@ -289,6 +292,8 @@ public:
     void readSwapInLifeCycle(InputReader& input);
     void readDispMat(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
+    Haplotype getHaplotypeForReadIndividualInitialization(InputReader& input, bool haploIndex, std::string& IndividualTypeName);
+    void readIndividualInitialization(InputReader& input);
     void readInitialpatchSize(InputReader& input);
     void readCloningRate(InputReader& input);
     void readSelfingRate(InputReader& input);

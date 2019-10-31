@@ -332,6 +332,12 @@ std::cout << "Enters in 'Individual::Individual(Haplotype knownHaplotype, char A
     haplo1 = knownHaplotype;
 }
 
+Individual::Individual(Haplotype& h0, Haplotype& h1)
+{
+    haplo0 = h0;
+    haplo1 = h1;
+}
+
 Individual::Individual(const Haplotype& knownHaplotype)
 {
     haplo0 = knownHaplotype;
@@ -339,7 +345,7 @@ Individual::Individual(const Haplotype& knownHaplotype)
 }
 
 
-
+Individual::Individual(){}
 
 Individual::Individual(const Individual& I)
 {

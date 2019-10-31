@@ -157,7 +157,8 @@ void Haplotype::setT1_char(int& char_index, unsigned char&& c)
     T1_Alleles[char_index] = c;
 }
 
-void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const int& value)
+template<typename valueType>
+void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const valueType& value)
 {
     //assert(bit_index < EIGHT);
     //assert(bit_index >= 0);
@@ -542,6 +543,81 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
         T5selTrueHaplotype.insert(T5selTrueHaplotype.begin(), T5selTrueHaplotype.size()); // insert the size of the vector as a start
         
         file.writeBinary(reinterpret_cast<const char*>(&T5selTrueHaplotype[0]), T5selTrueHaplotype.size()*sizeof(unsigned int));
+    }
+}
+
+Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<char> T3_info, std::vector<unsigned int> T56_info)
+{
+    assert(SSP != nullptr); 
+
+    /*
+    std::cout << "T1_info: ";
+    for (auto& e : T1_info) {std::cout << e << " ";}
+    std::cout << "\n";
+    */
+
+    T1_Alleles = T1_info;
+    assert(T1_Alleles.size() == SSP->T1_nbChars);
+    T2_Alleles = T2_info;
+    assert(T2_Alleles.size() == SSP->T2_nbChars);
+    T3_Alleles = T3_info;
+    assert(T3_Alleles.size() == SSP->T3_nbChars);
+
+    assert(SSP->isT56neutral.size() == SSP->T56_nbBits);
+    assert(T56_info.size() <= SSP->T56_nbBits);
+
+
+    // Assign values
+    for (unsigned T56_info_index = 0 ; T56_info_index < T56_info.size() ; ++T56_info_index)
+    {
+        auto& mutPos = T56_info[T56_info_index];
+
+        // Make sure T56_info is strictly increasing
+        if (T56_info_index > 0)
+        {
+            assert(mutPos > T56_info[T56_info_index-1]);
+        }
+
+        // assign mutPos
+        if (SSP->isT56neutral[mutPos])
+        {
+            if (SSP->T56ntrl_compress)
+            {
+                T6ntrl_Alleles.push_back(mutPos);
+            } else
+            {
+                T5ntrl_Alleles.push_back(mutPos);
+            }
+        } else
+        {
+            if (SSP->T56sel_compress)
+            {
+                T6sel_Alleles.push_back(mutPos);
+            } else
+            {
+                T5sel_Alleles.push_back(mutPos);
+            }
+        }
+    }
+
+
+    if (SSP->T1_isMultiplicitySelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->T1_nbBits > 0);
+        W_T1.resize(SSP->NbElementsInFitnessMap,-1.0);
+    }
+    if (SSP->T2_isSelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->T2_nbChars > 0);
+        W_T2.resize(SSP->NbElementsInFitnessMap,-1.0);
+    }
+    if (SSP->T56_isMultiplicitySelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->T56sel_nbBits > 0);
+        W_T56.resize(SSP->NbElementsInFitnessMap,-1.0);
     }
 }
 

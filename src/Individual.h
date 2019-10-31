@@ -63,12 +63,12 @@ public:
     void CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
-    Individual(Haplotype& matChrom, Haplotype& patChrom);
+    Individual(Haplotype& h0, Haplotype& h1);
     Individual(const int patch_index,char Abiogenesis, int ind_index);
     Individual(bool ShouldReadPopFromBinary);
     Individual(Haplotype& knownHaplotype, char Abiogenesis);
     Individual(const Haplotype& knownHaplotype);   // copy constructor
-
+    Individual();
     Individual(const Individual& I);
     Individual(const Individual&& I);
     Individual operator=(const Individual& I);

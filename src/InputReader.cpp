@@ -32,6 +32,35 @@ Note for Remi of things to do:
 
  */
 
+
+InputReader::InputReader(InputReader& fullInput, int from, int to)
+{
+    if (to == -1)
+    {
+        to = fullInput.V.size();
+    }
+    auto first = fullInput.V.begin() + from;
+    auto last = fullInput.V.begin() + to;
+    this->V = std::vector<std::string>(first, last);
+    this->VIndex = 0;
+    this->VIndex_previous_habitat = 0;
+    this->VIndex_previous_generation = 0;
+    this->ErrorMessage = fullInput.ErrorMessage;
+}
+
+int InputReader::nextUntilPosition(std::vector<std::string> untils)
+{
+    for (auto VIndex2 = VIndex ; VIndex2 < V.size() ; ++VIndex2)
+    {
+        if (std::find(untils.begin(), untils.end(), V[VIndex2]) != untils.end())
+        {
+            return VIndex2;
+        }
+    }
+
+    return V.size();
+}
+
 std::string InputReader::GetErrorMessage()
 {
     return ErrorMessage;
@@ -364,7 +393,7 @@ int InputReader::GetNextHabitatMarker(const int habitat)
 
 }
 
-int InputReader::GetNextElementBool()
+bool InputReader::GetNextElementBool()
 {
     std::string r = this->PeakNextElementString();
     if (r.at(0)=='@')
@@ -386,7 +415,7 @@ int InputReader::GetNextElementBool()
     }
 }
 
-int InputReader::GetNextElementInt()
+long long int InputReader::GetNextElementInt()
 {
     if (!this->IsThereMoreToRead())
     {

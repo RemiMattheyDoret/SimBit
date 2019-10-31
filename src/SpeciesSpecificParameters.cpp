@@ -765,7 +765,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
             //std::cout << "T5sel_nbBits = " << T5sel_nbBits << "\n";
             assert(fits.size() == T56sel_nbBits * 2);
         }
-        std::vector<bool>().swap(isT56neutral);
+        // std::vector<bool>().swap(isT56neutral); Don't empty it now, we will need it for --indIni
     }
 /*
     std::cout << "T56_nbBits = " << T56_nbBits << "\n";
@@ -1058,10 +1058,18 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
     #ifdef DEBUG
     std::cout << "For option '--resetGenetics', the std::string that is read is: " << input.print() << std::endl;
 #endif 
+    IsThereSelection();
+
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        return;
+    }
 
     // input example --resetGenetics @S0 event 100 T1 setTo0 lociList 2 4 6 8 haplo both patch 0 allInds patch 2 indsList 1 2 3 4 5 
     //                                          ^generation
     
+
     int eventIndex = 0;
     while (input.IsThereMoreToRead())
     {
@@ -1358,7 +1366,6 @@ void SpeciesSpecificParameters::readfecundityForFitnessOfOne(InputReader& input)
 
 void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
 {
-    IsThereSelection();
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
@@ -1570,6 +1577,280 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
 }
 
 
+Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization(InputReader& input, bool haploIndex, std::string& IndividualTypeName)
+{
+    // IsThereSelection() is called in resetGenetics that comes first.
+    std::string beginKeyword;
+    std::string endKeyword;
+    if (!haploIndex) // if haplo0
+    {
+        beginKeyword = "haplo0";
+        endKeyword = "haplo1";
+    } else
+    {
+        beginKeyword = "haplo1";
+        endKeyword = "ind";
+    }
+
+    if (!input.IsThereMoreToRead())
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but the input has been completely read aleready.\n";
+        abort();
+    }
+    
+    if (input.PeakNextElementString() != beginKeyword)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but got " << input.PeakNextElementString() << "instead.\n";
+        abort();
+    }
+    input.skipElement(); // skipping the beginKeyword
+
+
+    // Gather info
+    bool receivedT1_info = false;
+    bool receivedT2_info = false;
+    bool receivedT3_info = false;
+    bool receivedT4_info = false;
+    bool receivedT56_info = false;
+    std::vector<unsigned char> T1_info;
+    std::vector<unsigned char> T2_info;
+    std::vector<char> T3_info;
+    std::vector<unsigned int> T56_info;
+
+    while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "haplo" && input.PeakNextElementString().substr(0,5) != "patch" && input.PeakNextElementString() != "ind")
+    {
+        auto TT = input.GetNextElementString();
+        if (TT == "T1" || TT == "t1")
+        {
+            // Security
+            if (receivedT1_info)
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                abort(); 
+            }
+            receivedT1_info = true;
+
+            // read info
+            T1_info.resize(this->T1_nbChars,0); // put all zeros for every bit
+            for (unsigned locus = 0 ; locus < this->T1_nbBits ; ++locus)
+            {
+                auto char_index = locus / 8;
+                auto bit_index = locus % 8;
+                assert(char_index * 8 + bit_index == locus);
+                assert(char_index < T1_info.size());
+                bool value = input.GetNextElementBool();
+
+                // Set value (code just copy pasted from haplotype.cpp; not a great design to copy paste!)
+                //std::cout << "set locus " << locus << " to " << value << "\n";
+                //std::cout << "char_index " << char_index << " bit_index " << bit_index << "\n";
+
+                if (value)
+                {
+                    T1_info[char_index] |= 1 << bit_index;
+                } else
+                {
+                    T1_info[char_index] &= ~(1 << bit_index);
+                }
+            }
+        } else if (TT == "T2" || TT == "t2")
+        {
+            // Security
+            if (receivedT2_info)
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                abort(); 
+            }
+            receivedT2_info = true;
+
+            // read info
+            T2_info.reserve(this->T2_nbChars);
+            for (unsigned T2locus = 0 ; T2locus < this->T2_nbChars ; ++T2locus)
+            {
+                T2_info.push_back(input.GetNextElementInt()); // implicit cast
+            }
+        } else if (TT == "T3" || TT == "t3")
+        {
+            // Security
+            if (receivedT3_info)
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                abort(); 
+            }
+            receivedT3_info = true;
+
+            // read info
+            T3_info.reserve(this->T3_nbChars);
+            for (unsigned T3locus = 0 ; T3locus < this->T3_nbChars ; ++T3locus)
+            {
+                T3_info.push_back(input.GetNextElementInt()); // implicit cast
+            }
+
+        } else if (TT == "T4" || TT == "t4")
+        {
+            // Security
+            if (receivedT4_info)
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                abort(); 
+            }
+            receivedT4_info = true;
+
+            // read info
+            std::cout << "In --indIni (--IndividualInitialization), received info about type of locus T4. Sorry, --indIni is currently not able to initialize the T4 loci.\n";
+            abort();
+        } else if (TT == "T5" || TT == "t5" || TT == "T6" || TT == "t6"  || TT == "T56" || TT == "t56")
+        {
+            // Security
+            if (receivedT56_info)
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                abort(); 
+            }
+            receivedT56_info = true;
+
+            // read info
+            // Watch out T56 get index of mutations
+            while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "patch" && input.PeakNextElementString() != endKeyword && input.PeakNextElementString().at(0) != 'T' && input.PeakNextElementString().at(0) != 't')
+            {
+                auto newMutPosition = input.GetNextElementInt();
+                if (T56_info.size() != 0 && T56_info.back() >= newMutPosition)
+                {
+                    std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. When reading info about T5 loci, got the mutation position " << newMutPosition << " after mutPosition " << T56_info.back() << ". Please make sure that the info value are strictly increased. Note that for T5 loci, you are expected to indicate mutation positions (unlike for T1 loci that expects T1_nbBits boolean values).\n";
+                    abort();
+                }
+                T56_info.push_back(newMutPosition);
+            }
+        } else if (TT == "T7" || TT == "t7") 
+        {
+            std::cout << "In --indIni (--IndividualInitialization), received info about type of locus T7. Sorry, --indIni is currently not able to initialize the T7 loci.\n";
+            abort();
+        } else
+        {
+            std::cout << "In --indIni (--IndividualInitialization), received unknown type of locus (" << TT << "). Please if you want to indicate locus of type 1, write either T1 or t1. Same logic apply to other type of loci. Maybe you tried to write 'haplo1' but wrote 'Haplo1 or something like that!'\n";
+            abort(); 
+        }
+    }
+
+    // Security
+    if (T1_nbBits && !receivedT1_info)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T1 loci but did not receive it!\n";
+        abort();
+    }
+    if (T2_nbChars && !receivedT2_info)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T2 loci but did not receive it!\n";
+        abort();
+    }
+    if (T3_nbChars && !receivedT3_info)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T3 loci but did not receive it!\n";
+        abort();
+    }
+    if (T56_nbBits && !receivedT56_info)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T56 (aka T5; aka T6) loci but did not receive it!\n";
+        abort();
+    }
+    assert(T1_info.size() == T1_nbChars);
+    assert(T2_info.size() == T2_nbChars);
+    return Haplotype(T1_info, T2_info, T3_info, T56_info);
+}
+
+void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
+{
+    setFromLocusToFitnessMapIndex();
+
+    // Set isIndividualInitialization to inform other initialization option that this one has been used
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        this->isIndividualInitialization = false;
+        return;
+    } else
+    {
+        this->isIndividualInitialization = true;
+    }
+        
+
+    ////////////////////////////////////////
+    // Collect Individual Types genotypes //
+    ////////////////////////////////////////
+    assert(this->IndividualTypeForInitialization.size() == 0);
+    while (input.PeakNextElementString() == "ind")
+    {
+        input.skipElement(); // skipping "ind"
+
+        // Get name and make sure it is a new name
+        auto IndividualTypeName = input.GetNextElementString();
+        if (IndividualTypeForInitialization.find(IndividualTypeName) != IndividualTypeForInitialization.end())
+        {
+            std::cout << "In --indIni, you start a new individualType (with keyword 'ind') and you name it " << IndividualTypeName << ". This name has already been used by a previous IndiivdualType. Please use unique names! Just call them with number if you are lazy to give them names!\n";
+            abort();
+        }
+
+        // Get Haplotypes
+        Haplotype haplo0 = getHaplotypeForReadIndividualInitialization(input, 0, IndividualTypeName);
+        Haplotype haplo1 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName);
+
+        // Add IndividualType
+        IndividualTypeForInitialization[IndividualTypeName] = Individual(haplo0, haplo1);
+
+    }
+
+    // security
+    if (IndividualTypeForInitialization.size() == 0)
+    {
+        std::cout << "In --indIni (--IndividualInitialization), did not receive any IndividualType! The first word after the option --indIni should be 'ind' to indicate an individualType\n";
+        abort();
+    }
+
+    ////////////////////////////
+    // Assign individual type //
+    ////////////////////////////
+
+    assert(IndividualTypeMatchingForInitialization.size() == 0);
+    IndividualTypeMatchingForInitialization.resize(GP->PatchNumber);
+    for (unsigned patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        std::string patchKeyword = "patch" + std::to_string(patch_index);
+        if (input.PeakNextElementString() != patchKeyword)
+        {
+            std::cout << "In --indIni (--IndividualInitialization), expected keyword "<<patchKeyword<< " but got " << input.PeakNextElementString() << " instead\n";
+            abort();
+        }
+        input.skipElement(); // skipping patch<number>
+
+        unsigned ind_index = 0;
+        while (ind_index < this->patchSize[patch_index])
+        {
+            auto IndividualTypeName = input.GetNextElementString();
+            if (IndividualTypeForInitialization.find(IndividualTypeName) == IndividualTypeForInitialization.end())
+            {
+                std::cout << "In --indIni (--IndividualInitialization), asking for individual type " << IndividualTypeName << " in patch " << patch_index << " but individual type " << IndividualTypeName << " has not been defined previously. It is probably caused by a typo when naming individual types.\n";
+                abort();
+            }
+            unsigned howMany = input.GetNextElementInt();
+
+            // security
+            ind_index += howMany;
+            if (ind_index > this->patchSize[patch_index])
+            {
+                std::cout << "In --indIni (--IndividualInitialization), for patch " << patch_index << " received more individuals than was set as initial patch size (initial patch size for this patch is " << this->patchSize[patch_index] << "). Note that if you have not specified the initial patch size yourself, then it is set to carrying capacity of this patch at generation 0.\n";
+                abort();
+            }
+
+            for (unsigned howMany_index = 0 ; howMany_index < howMany ; ++howMany_index )
+            {
+                IndividualTypeMatchingForInitialization[patch_index].push_back(IndividualTypeName);
+            }
+        }
+        assert(ind_index == this->patchSize[patch_index]);
+        assert(IndividualTypeMatchingForInitialization[patch_index].size() == this->patchSize[patch_index]);
+    }
+}
+
+
 void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
 {
 #ifdef DEBUG
@@ -1585,14 +1866,20 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
         input.skipElement();
     } else
     {
-        std::string Mode;
+        std::string Mode = input.GetNextElementString();
 
-        Mode = input.GetNextElementString();
+        if (Mode != "default" && isIndividualInitialization)
+        {
+            std::cout << "You cannot use both --individualInitialization (--indIni) and --T1_Initial_AlleleFreqs\n";
+            abort();
+        }
+
 
         this->T1_Initial_AlleleFreqs_AllZeros = false; // Set to true laster if received "AllZeros"
         this->T1_Initial_AlleleFreqs_AllOnes = false;  // Set to true laster if received "AllOnes"
         
-        if (Mode.compare("A") == 0)
+
+        if (Mode.compare("freqs") == 0)
         {
             for (int patch_index = 0 ; patch_index < GP->__PatchNumber[0] ; ++patch_index)
             {
@@ -1663,7 +1950,7 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
                 assert(line.size() == this->T1_nbBits);
                 this->T1_Initial_AlleleFreqs.push_back(line);
             }
-        } else if (Mode.compare("AllZeros") == 0)
+        } else if (Mode.compare("AllZeros") == 0 || Mode.compare("default") == 0)
         {
             this->T1_Initial_AlleleFreqs_AllZeros = true;
         } else if (Mode.compare("AllOnes") == 0)
@@ -1671,7 +1958,7 @@ void SpeciesSpecificParameters::readT1_Initial_AlleleFreqs(InputReader& input)
             this->T1_Initial_AlleleFreqs_AllOnes = true;
         } else
         {
-            std::cout << "Sorry, for '--T1_Initial_AlleleFreqs', the Mode " << Mode << " has not been implemented yet. Only Modes 'A', 'AllZeros', 'AllOnes' and 'Shift' are accepted for the moment.";
+            std::cout << "Sorry, for '--T1_Initial_AlleleFreqs', the Mode " << Mode << " has not been implemented yet. Only Modes 'freqs' (note that 'freqs' was previously called 'A'), 'AllZeros', 'AllOnes' and 'Shift' are accepted for the moment.";
             abort();
         }
     }
@@ -1736,6 +2023,12 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
         std::string Mode;
 
         Mode = input.GetNextElementString();
+
+        if (Mode != "default" && isIndividualInitialization)
+        {
+            std::cout << "You cannot use both --individualInitialization (--indIni) and --T56_Initial_AlleleFreqs\n";
+            abort();
+        }
 
         this->T56_Initial_AlleleFreqs_AllZeros = false; // Set to true later if received "AllZeros"
         this->T56_Initial_AlleleFreqs_AllOnes = false;  // Set to true later if received "AllOnes"
@@ -1811,7 +2104,7 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
                 assert(line.size() == this->T56_nbBits);
                 this->T56_Initial_AlleleFreqs.push_back(line);
             }
-        } else if (Mode.compare("AllZeros") == 0)
+        } else if (Mode.compare("AllZeros") == 0 || Mode.compare("default") == 0)
         {
             this->T56_Initial_AlleleFreqs_AllZeros = true;
         } else if (Mode.compare("AllOnes") == 0)
@@ -2209,50 +2502,53 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
         {
             input.GetNextHabitatMarker(habitat);
 
-            // Get number of groups of loci for this habitat
-            int nbGroupsOfLoci = input.GetNextElementInt();
-            if (nbGroupsOfLoci < 0)
-            {
-                std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', for species "<<this->speciesName<<", receive a value lower than 0 (received "<<nbGroupsOfLoci<<")\n";
-                abort();
-            }
-
             // Get info for this habitat
             std::vector<std::vector<T1_locusDescription>> LociIndices_ForASingleHabitat;
             std::vector<std::vector<double>>              FitnessEffects_ForASingleHabitat;
 
-            for (int groupOfLociIndex = 0 ; groupOfLociIndex < nbGroupsOfLoci ; groupOfLociIndex++)
+
+            unsigned locusSetIndex = 0;
+            while (input.IsThereMoreToRead() && input.PeakNextElementString().at(0) != '@')
             {
-                //std::cout << "groupOfLociIndex = " << groupOfLociIndex << "\n";
+                // Initialize vector to fill
                 std::vector<T1_locusDescription> LociIndices_ForASingleGroupOfLoci;
                 std::vector<double>              FitnessEffects_ForASingleGroupOfLoci;
 
-                // Get 'nbLociUnderEpistasis'
-                int nbLociUnderEpistasis = input.GetNextElementInt();
-                if (nbLociUnderEpistasis >= 20)
-                {
-                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', the nbLociUnderEpistasis indicated for habitat " << habitat << " and groupOfLociIndex "<< groupOfLociIndex <<" is " << nbLociUnderEpistasis << ". Such a 'nbLociUnderEpistasis' will require you to indicate" << pow(3,nbLociUnderEpistasis) << " fitness values! Is this really what you want to do? If yes comment out this security check in file SpeciesSpecificParameters.cpp! Please be well aware that all the fitness values that you will input will be stored in the RAM!" << std::endl;
-                    abort();
-                }
-                if (nbLociUnderEpistasis < 2)
-                {
-                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', the nbLociUnderEpistasis indicated for habitat " << habitat << " and groupOfLociIndex "<< groupOfLociIndex <<" is " << nbLociUnderEpistasis << ". To have an epistatic interaction, you need at least two loci in a group of loci." << std::endl;
-                    abort();
-                }
 
-                for (int i = 0 ; i < nbLociUnderEpistasis ; i++)
+                // 'Set' keyword
+                std::string setNumberString = "set" + std::to_string(locusSetIndex);
+                if (input.PeakNextElementString() != setNumberString)
+                {
+                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', for species "<<this->speciesName<<", expected string '"<<setNumberString<< "' but received "<<input.PeakNextElementString()<<" instead.\n";
+                }
+                input.skipElement(); // skip expectedString (set<number>)
+
+
+                // 'loci' keyword
+                if (input.PeakNextElementString() != "loci")
+                {
+                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', for species "<<this->speciesName<<", expected string 'loci' but received "<<input.PeakNextElementString()<<" instead.\n";
+                }
+                input.skipElement(); // skip expectedString (set<number>)
+
+                // Read interacting loci
+                while (input.PeakNextElementString() != "fit")
                 {
                     int LocusPosition = input.GetNextElementInt();
                     if ( LocusPosition < 0 || LocusPosition >= this->T1_nbBits )
                     {
-                      std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', the " << i << "th locus position indicated for habitat " << habitat << " and groupOfLociIndex "<< groupOfLociIndex <<" is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting). The locus position received is " << LocusPosition << ".\n";
+                      std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received locus position "<<LocusPosition<<" (indicated for habitat " << habitat << " and "<< setNumberString <<") that is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting).\n";
                         abort();  
                     }
                     //std::cout << "LocusPosition = " << LocusPosition << "\n";
                     T1_locusDescription T1_locus(LocusPosition / EIGHT, LocusPosition % EIGHT, LocusPosition);
                     LociIndices_ForASingleGroupOfLoci.push_back(T1_locus);
                 }
+                auto nbLociUnderEpistasis = LociIndices_ForASingleGroupOfLoci.size();
+                input.skipElement(); // skip "fit"
 
+
+                // Read fitness effects
                 /*
                 SSP->T1_Epistasis_LociIndices[Habitat][0].
                 locus 1:    00 00 00 00 00 00 00 00 00 01 01 01 01 01 01 01 01 01 11 11 11 11 11 11 11 11 11
@@ -2273,10 +2569,12 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                     FitnessEffects_ForASingleGroupOfLoci.push_back(fit);               
                 }
 
+                // Push to "for a single habitat"
                 LociIndices_ForASingleHabitat.push_back(LociIndices_ForASingleGroupOfLoci);
-                FitnessEffects_ForASingleHabitat.push_back(FitnessEffects_ForASingleGroupOfLoci);   
+                FitnessEffects_ForASingleHabitat.push_back(FitnessEffects_ForASingleGroupOfLoci); 
 
-            } // end of for groupLociIndex
+            }
+
             this->T1_Epistasis_LociIndices.push_back(LociIndices_ForASingleHabitat);
             this->T1_Epistasis_FitnessEffects.push_back(FitnessEffects_ForASingleHabitat); 
         } // end of for habitat
@@ -2285,9 +2583,7 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
         assert(this->T1_Epistasis_FitnessEffects.size() == this->MaxEverHabitat + 1);
 
         //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex]
-    } // end of if "NA"
-
-    
+    } // end of if "NA"  
 }
 
 void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
@@ -2298,6 +2594,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
     // WATCH OUT: This option is read before --L. Only a quick screen of L has been done to set quickScreenAtL_T56_nbBits
 
     assert(SSP != nullptr);
+    this->T56_isMultiplicitySelection = false;
     if (input.PeakNextElementString() == "NA")
     {
         if (this->quickScreenAtL_T56_nbBits != 0)

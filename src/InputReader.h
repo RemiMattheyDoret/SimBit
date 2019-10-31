@@ -53,10 +53,12 @@ private:
 public:
     InputReader(std::string entry,std::string ForErrorMessage);
     InputReader(InputReader& fullInput, int from, int to, int speciesIndex);
+    InputReader(InputReader& fullInput, int from, int to = -1);
     void removeAlreadyRead();
 
-    int GetNextElementInt();
-    int GetNextElementBool();
+    int nextUntilPosition(std::vector<std::string> untils);
+    long long int GetNextElementInt();
+    bool GetNextElementBool();
     std::string GetErrorMessage();
     double GetNextElementDouble();
     std::string GetNextElementString();

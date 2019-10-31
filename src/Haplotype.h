@@ -103,7 +103,8 @@ public:
     //int getT5ntrl_nthMutation(const int n);
     //int getT5sel_nthMutation(const int n);
 
-    void setT1_Allele(const int& char_index, const int& bit_index, const int& value);
+    template<typename valueType>
+    void setT1_Allele(const int& char_index, const int& bit_index, const valueType& value);
     void setT1_AlleleToOne(int& char_index, int& bit_index);
     void setT1_AlleleToZero(int& char_index, int& bit_index);
     void setT1_char(int& T1_char_index, unsigned char& c);
@@ -178,6 +179,7 @@ public:
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
+    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<char> T3_info, std::vector<unsigned int> T56_info);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);

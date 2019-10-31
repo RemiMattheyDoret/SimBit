@@ -2,13 +2,16 @@
 	 / ___|(_)_ __ ___ | __ )(_) |_ 
 	 \___ \| | '_ ` _ \|  _ \| | __|
 	  ___) | | | | | | | |_) | | |_ 
-	 |____/|_|_| |_| |_|____/|_|\__| version 4.2.23
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.7.10
 
 Random seed:
-	712235279
+	814455900
 
 User Input:
-	--PN 1 --N unif 100 --L T5 1e5 --T5_mu unif 1e-6 --r rate unif 1e-3 --nbGens 1e6 
+	--PN 1 --N unif 1e3 --L T1 5 T1 2 --T1_fit MultiplicityA rep 0.99 5 rep 1.0 2 --T1_epistasis set0 loci 5 6 fit 1 1 0.99 1 0.98 1 0.99 1 1 --nbGens 1e3 --indIni ind resident haplo0 T1 1 1 1 1 1 1 1 haplo1 T1 1 1 1 1 1 1 1 ind mutant haplo0 T1 0 0 0 0 0 0 0 haplo1 T1 0 0 0 0 0 0 0 patch0 mutant 5 resident 995 --T1_mu unif 0 --T1_LargeOutput_file test seqInt 0 1e3 10 --fitness_file test seqInt 0 1e3 10 
 
-		Time for initialization: 0 seconds (0.05061 seconds)
+		Time for initialization: 0 seconds (0.02342 seconds)
 
+		Time for the simulation: 1 seconds (0.9569 seconds)
+
+		------ Simulation is over. Good Job! ----

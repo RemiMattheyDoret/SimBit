@@ -355,3 +355,5 @@ SimBit_4.7.7
 SimBit_4.7.8
 	In case of local selection with multiplicity assumption and with multiple T type of loci, only the right type of loci has its fitness (in the fitness map) set back to -1
 
+SimBit_4.7.10
+	Add --individualInitialization
