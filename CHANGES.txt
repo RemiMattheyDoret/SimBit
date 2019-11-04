@@ -357,3 +357,9 @@ SimBit_4.7.8
 
 SimBit_4.7.10
 	Add --individualInitialization
+
+SimBit_4.7.11
+	Add keyword 'haploBoth' for option --individualInitialization
+
+SimBit_4.7.12
+	Add codeToInsert

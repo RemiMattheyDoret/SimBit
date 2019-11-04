@@ -115,6 +115,8 @@ Note for Remi of things to do:
 #include "T1_locusDescription.cpp"
 #include "TreeNode.cpp"
 #include "Tree.cpp"
+
+#include "codeToInsert.cpp"
     
 //#include <boost/tokenizer.hpp> // was used to split strings but now the code only uses STL functions
 //#include <omp.h> // If cannot find this file, then the Alejandro answer at 'http://stackoverflow.com/questions/35134681/installing-openmp-on-mac-os-x-10-11' can be helpful!
@@ -133,7 +135,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.7.10");
+    std::string VERSION("version 4.7.12");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -424,6 +426,9 @@ int main(int argc, char *argv[])
 
             // Save patchSize to GP
             GP->saveSSPPatchSize_toGP();
+
+            // Code inserted
+            codeToInsert(pop_Offspring);
 
             // WriteOutputs if you asked for it
             outputWriter.WriteOutputs(pop_Offspring); // includes genealogy updates for coalescence

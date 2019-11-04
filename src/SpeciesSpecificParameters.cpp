@@ -1598,12 +1598,12 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
         abort();
     }
     
-    if (input.PeakNextElementString() != beginKeyword)
+    if (input.PeakNextElementString() != beginKeyword && input.PeakNextElementString() != "haploBoth")
     {
         std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but got " << input.PeakNextElementString() << "instead.\n";
         abort();
     }
-    input.skipElement(); // skipping the beginKeyword
+    input.skipElement();
 
 
     // Gather info
@@ -1790,8 +1790,18 @@ void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
         }
 
         // Get Haplotypes
-        Haplotype haplo0 = getHaplotypeForReadIndividualInitialization(input, 0, IndividualTypeName);
-        Haplotype haplo1 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName);
+        Haplotype haplo0;
+        Haplotype haplo1;
+        if (input.PeakNextElementString() == "bothHaplo")
+        {
+            haplo0 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName); // second argument is 1 so that it stops at keyword 'ind'
+            haplo1 = haplo0;
+        } else
+        {
+            haplo0 = getHaplotypeForReadIndividualInitialization(input, 0, IndividualTypeName);
+            haplo1 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName);
+        }
+            
 
         // Add IndividualType
         IndividualTypeForInitialization[IndividualTypeName] = Individual(haplo0, haplo1);
