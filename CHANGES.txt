@@ -363,3 +363,7 @@ SimBit_4.7.11
 
 SimBit_4.7.12
 	Add codeToInsert
+
+SimBit_4.8.0
+	Add --IndTypes
+

@@ -130,8 +130,10 @@ public:
     std::vector<std::vector<double>>                T1_Initial_AlleleFreqs;
     bool                                            T1_Initial_AlleleFreqs_AllZeros;
     bool                                            T1_Initial_AlleleFreqs_AllOnes;
-    std::map<std::string, Individual>               IndividualTypeForInitialization;
-    std::vector<std::vector<std::string>>           IndividualTypeMatchingForInitialization;
+    
+    std::map<std::string, Individual>               individualTypes;
+    std::vector<std::vector<std::string>>           individualTypesForInitialization;
+
     bool                                            isIndividualInitialization;
     int                                             T1_nbChars;
     int                                             T1_nbBits;
@@ -282,6 +284,8 @@ public:
     void readT1mutsDirectional(InputReader& input);
     //void readT5mutsDirectional(InputReader& input);
     void readResetGenetics(InputReader& input);
+    ResetGeneticsEvent_A readResetGenetics_readEventA(InputReader& input, int& eventIndex);
+    ResetGeneticsEvent_B readResetGenetics_readEventB(InputReader& input, int& eventIndex);
     void readHabitats(InputReader& input);
     void readSelectionOn(InputReader& input);
     void readGrowthK(InputReader& input);
@@ -292,7 +296,8 @@ public:
     void readSwapInLifeCycle(InputReader& input);
     void readDispMat(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
-    Haplotype getHaplotypeForReadIndividualInitialization(InputReader& input, bool haploIndex, std::string& IndividualTypeName);
+    Haplotype getHaplotypeForIndividualType(InputReader& input, bool haploIndex, std::string& IndividualTypeName);
+    void readIndividualTypes(InputReader& input);
     void readIndividualInitialization(InputReader& input);
     void readInitialpatchSize(InputReader& input);
     void readCloningRate(InputReader& input);

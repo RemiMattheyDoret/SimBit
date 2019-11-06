@@ -44,6 +44,8 @@ private:
 
     
 public:
+    bool hasCrazyResettingHappened = true; // is used to know if it has to recompute CumSumFits because resetGenetics messed things around oor because pops have been updated
+
     std::vector<std::vector<std::vector<double>>> CumSumFits; // each patch, each gender, each individual fitness
 
     Patch& getPatch(const int& patch_index);

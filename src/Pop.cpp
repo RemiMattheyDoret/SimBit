@@ -146,8 +146,8 @@ std::cout << "Enters in 'Pop::Pop'\n";
     // I won't need these anymore
     std::vector<std::vector<int>>().swap(SSP->funkyMathForQuasiRandomT1AllFreqInitialization);
     std::vector<std::vector<int>>().swap(SSP->funkyMathForQuasiRandomT56AllFreqInitialization);
-    std::map<std::string, Individual>().swap(SSP->IndividualTypeForInitialization);
-    std::vector<std::vector<std::string>>().swap(SSP->IndividualTypeMatchingForInitialization);
+    // std::map<std::string, Individual>().swap(SSP->individualTypes); // Will need these for resetGenetics eventB
+    std::vector<std::vector<std::string>>().swap(SSP->individualTypesForInitialization);
     std::vector<std::vector<double>>().swap(SSP->T1_Initial_AlleleFreqs);
 }
 
@@ -326,7 +326,7 @@ void Pop::CalculateFitnesses()
     {
         if (GP->startAtGeneration != GP->CurrentGeneration && (GP->__GenerationChange.size() == 1 || std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end())) // no recent updates in population
         {
-            if (!SSP->resetGenetics.isGeneration()) // No recent weird genetic change
+            if (!this->hasCrazyResettingHappened) // No recent weird genetic change
             {
                 // No need to compute fitness as we should already know them all!
                 // CumSumFitsNextGeneration must get ready to get news values
@@ -337,6 +337,7 @@ void Pop::CalculateFitnesses()
             }
         }
     }
+    
 
 
     //////////////////////////////////////////////////////////
@@ -500,6 +501,9 @@ int Pop::SelectionOriginPatch(size_t patch_to)
 
 void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes)
 {
+    pop1.hasCrazyResettingHappened = true;
+    pop2.hasCrazyResettingHappened = true;
+
     //std::cout << "Enters in Pop::updatePops\n";
     // Change number of patches
     // If there are more patches than before, then the first patch is simply copied several times.

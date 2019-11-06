@@ -53,6 +53,12 @@ void Patch::removeLastIndividual()
     inds.shrink_to_fit();
 }
 
+void Patch::setInd(Individual& ind, const int& ind_index)
+{
+    assert(inds.size() > ind_index);
+    inds[ind_index] = ind;
+}
+
 Individual& Patch::getInd(const int& ind_index)
 {
     assert(ind_index < inds.size());
@@ -122,14 +128,23 @@ Patch::Patch(const int patch_index, char Abiogenesis)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\n";
 #endif
+
+    //////////////////////////////////////
+    /// Initialize with indiviualTypes ///
+    //////////////////////////////////////
     if (SSP->isIndividualInitialization)
     {
-        assert(SSP->IndividualTypeMatchingForInitialization[patch_index].size() == SSP->patchSize[patch_index]);
-        for (auto& individualTypeName : SSP->IndividualTypeMatchingForInitialization[patch_index])
+        assert(SSP->individualTypesForInitialization[patch_index].size() == SSP->patchSize[patch_index]);
+        for (auto& individualTypeName : SSP->individualTypesForInitialization[patch_index])
         {
-            inds.push_back(SSP->IndividualTypeForInitialization[individualTypeName]); // copy
+            inds.push_back(SSP->individualTypes[individualTypeName]); // copy
         }        
-    } else if (
+    }
+
+    //////////////////////////////////////////
+    /// Initialize with default parameters ///
+    //////////////////////////////////////////
+    else if (
         (SSP->T1_Initial_AlleleFreqs_AllZeros || SSP->T1_Initial_AlleleFreqs_AllOnes)
         &&
         (SSP->T56_Initial_AlleleFreqs_AllZeros || SSP->T56_Initial_AlleleFreqs_AllOnes)
@@ -143,7 +158,13 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
         {
             inds.push_back(ConstantInd);
         }
-    } else
+    }
+
+
+    ////////////////////////////////////////////////////////
+    /// Initialize with T1_ini and other stuff like that /// // That's an old method. Might need to be deprecated
+    ///////////////////////////////////////////////////////
+    else
     {
         for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {

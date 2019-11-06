@@ -1053,12 +1053,326 @@ void SpeciesSpecificParameters::readPloidy(InputReader& input)
     }
 }
 
+
+ResetGeneticsEvent_A SpeciesSpecificParameters::readResetGenetics_readEventA(InputReader& input, int& eventIndex)
+{
+    // generation
+    int generation = input.GetNextElementInt();
+    if (generation < 0)
+    {
+        std::cout << "For option '--resetGenetics', the generation must be 0 or larger. Received generation = " << generation << ".\n";
+        abort();
+    }
+    int generation_index = std::upper_bound(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), generation) - GP->__GenerationChange.begin() - 1;
+
+    // loci type
+    std::string locusType = input.GetNextElementString();
+    if (locusType != "T1" && locusType != "T2" && locusType != "T3"  && locusType != "T5")
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), the locus type is  '" << locusType <<"'. Sorry only mutation types 'T1', 'T2', 'T3' and 'T5' (but not T4) are accepted.\n";
+        abort();
+    }
+
+    // mutation type
+    char mutationType;
+    if (locusType == "T1" || locusType == "T5")
+    {
+        std::string string_mutationType = input.GetNextElementString();
+        if (string_mutationType == "setTo0")
+        {
+            mutationType = 0;
+            /*if (SSP->T5mutsDirectional)
+            {
+                std::cout << "For option --resetGenetics, you indicated a mutation type 'setTo0'. It is impossible to ask to set a T5 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
+                abort();
+            }*/
+        } else if (string_mutationType == "setTo1")
+        {
+            mutationType = 1;
+        } else if (string_mutationType == "toggle")
+        {
+            mutationType = 2;
+            /*if (SSP->T5mutsDirectional)
+            {
+                std::cout << "For option --resetGenetics, you indicated a mutation type 'toggle'. This means that it could happen that resetGenetics would attempt to convert a 1 into a 0. It is impossible to ask to set a T5 or T1 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
+                abort();
+            }*/
+        } else
+        {
+            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<") for loci of type "<<locusType<<", the mutation type received is '" << string_mutationType <<"'. Sorry only mutation types 'setTo0', 'setTo1' and 'toggle' are accepted.\n";
+            abort();
+        }
+    } else
+    {
+        mutationType = -1;
+    }
+
+    // Loci indices
+    std::string lociKeyword = input.GetNextElementString();
+    if (lociKeyword != "lociList" && lociKeyword != "allLoci")
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<") expected the keyword 'lociList' or 'allLoci' but instead received "<<lociKeyword<<".\n";
+            abort();
+    }
+
+    std::vector<int> T1loci;
+    std::vector<int> T2loci;
+    std::vector<int> T3loci;
+    std::vector<int> T5loci;
+    if (lociKeyword == "lociList")
+    {
+        while (input.PeakNextElementString() != "haplo")
+        {
+            if (locusType == "T1")
+            {
+                int T1locus = input.GetNextElementInt();
+                if (T1locus < 0)
+                {
+                    std::cout << "For option --resetGenetics received T1locus index of "<<T1locus<<" for an event happening at generation "<<generation<<".\n";
+                    abort();
+                }
+                if (T1locus >= SSP->T1_nbBits)
+                {
+                    std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T1locus index of "<<T1locus<<" while there are only "<<SSP->T1_nbBits<<" T1 loci (in bits) in total. As a reminder, the first locus has index 0.\n";
+                    abort();
+                }
+                T1loci.push_back(T1locus);
+            } else if (locusType == "T2")
+            {
+                int T2locus = input.GetNextElementInt();
+                if (T2locus < 0)
+                {
+                    std::cout << "For option --resetGenetics received T2 locus index of "<<T2locus<<" for an event happening at generation "<<generation<<".\n";
+                    abort();
+                }
+                if (T2locus >= SSP->T2_nbChars)
+                {
+                    std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T2 locus index of "<<T2locus<<" while there are only "<<SSP->T2_nbChars<<" T2 loci in total. As a reminder, the first locus has index 0.\n";
+                    abort();
+                }
+                T2loci.push_back(T2locus);
+            } else if (locusType == "T3")
+            {
+                int T3locus = input.GetNextElementInt();
+                if (T3locus < 0)
+                {
+                    std::cout << "For option --resetGenetics received T3locus index of "<<T3locus<<" for an event happening at generation "<<generation<<".\n";
+                    abort();
+                }
+                if (T3locus >= SSP->T3_nbChars)
+                {
+                    std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->T3_nbChars<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
+                    abort();
+                }
+                T3loci.push_back(T3locus);
+            } else if (locusType == "T5")
+            {
+                int T5locus = input.GetNextElementInt();
+                if (T5locus < 0)
+                {
+                    std::cout << "For option --resetGenetics received T5locus index of "<<T5locus<<" for an event happening at generation "<<generation<<".\n";
+                    abort();
+                }
+                if (T5locus >= SSP->T56_nbBits)
+                {
+                    std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T5locus index of "<<T5locus<<" while there are only "<<SSP->T56_nbBits<<" T5 loci in total. As a reminder, the first locus has index 0.\n";
+                    abort();
+                }
+                T5loci.push_back(T5locus);
+            }
+        }
+    } else // lociKeyword == "allLoci"
+    {
+        if (locusType == "T1")
+        {
+            for (int T1locus = 0 ; T1locus < SSP->T1_nbBits; T1locus++)
+            {
+                T1loci.push_back(T1locus);
+            }
+        } else if (locusType == "T2")
+        {
+            for (int T2locus = 0 ; T2locus < SSP->T2_nbChars; T2locus++)
+            {
+                T2loci.push_back(T2locus);
+            }
+        } else if (locusType == "T3")
+        {
+            for (int T3locus = 0 ; T3locus < SSP->T3_nbChars; T3locus++)
+            {
+                T3loci.push_back(T3locus);
+            }
+        } else if (locusType == "T5")
+        {
+            for (int T5locus = 0 ; T5locus < SSP->T56_nbBits; T5locus++)
+            {
+                T5loci.push_back(T5locus);
+            }
+        }
+    }
+
+    // haplotypes concerned
+    std::string haploString = input.GetNextElementString();
+    if (haploString != "haplo")
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), expected the keyword 'haplo' but instead received '" << haploString <<"'.\n";
+        abort();
+    }
+    std::string haploDescription = input.GetNextElementString();
+    std::vector<int> haplotypes;
+    if (haploDescription == "0" || haploDescription == "f" || haploDescription == "F")
+    {
+        haplotypes.push_back(0);
+    } else if (haploDescription == "1" || haploDescription == "m" || haploDescription == "M")
+    {
+        haplotypes.push_back(1);
+    } else if (haploDescription == "both")
+    {
+        haplotypes.push_back(0);
+        haplotypes.push_back(1);
+    }
+
+
+
+    // patches and individuals
+    std::vector<std::vector<int>> individuals;
+    std::vector<int> patches;
+    while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "event")
+    {
+        // patch
+        std::string patchString = input.GetNextElementString();
+        if (patchString != "patch")
+        {
+            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), expected the keyword 'patch' but instead received '" << patchString <<"'.\n";
+            abort();
+        }
+
+        
+
+        int patch_index = input.GetNextElementInt();
+        if (patch_index < 0 || patch_index > GP->__PatchNumber[generation_index])
+        {
+            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), after the keyword 'patch' received the patch index '" << patch_index <<"'. At the generation "<<generation<<" there are "<<GP->__PatchNumber[generation_index]<< "patches. The patch index must be lower than the number of patches (because it is a zero based counting) and positive.\n";
+            abort();
+        }
+        patches.push_back(patch_index);
+
+
+        // individuals
+        std::string modeOfEntryOfIndividuals = input.GetNextElementString();
+
+        if (modeOfEntryOfIndividuals == "allInds")
+        {
+
+            assert(SSP->__patchCapacity[generation_index].size() == GP->__PatchNumber[generation_index]);
+
+            std::vector<int> onePatchIndviduals;
+            onePatchIndviduals.reserve(SSP->__patchCapacity[generation_index][patch_index]);
+            for (int ind_index = 0 ; ind_index < SSP->__patchCapacity[generation_index][patch_index]; ind_index++)
+            {
+                onePatchIndviduals.push_back(ind_index);
+            }
+            individuals.push_back(onePatchIndviduals);
+
+        } else if (modeOfEntryOfIndividuals == "indsList")
+        {
+            std::vector<int> onePatchIndviduals;
+            while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "event" && input.PeakNextElementString() != "patch")
+            {
+                onePatchIndviduals.push_back(input.GetNextElementInt());
+            }
+            if (onePatchIndviduals.size() == 0)
+            {
+                std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), for patch index "<< patch_index <<" there seems to have no individuals indicated.\n";
+                abort();
+            }
+            individuals.push_back(onePatchIndviduals);
+
+
+        } else
+        {
+            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), for patch index "<< patch_index <<" expected mode of entry of individuals (either 'indsList' or 'allInds') but instead received '" << modeOfEntryOfIndividuals <<"'.\n";
+            abort();
+        }
+    }
+    if (patches.size() == 0)
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), there seems to have no patch indicated.\n";
+        abort();
+    }
+
+
+    return ResetGeneticsEvent_A(
+        generation,
+        mutationType,
+        T1loci,
+        T2loci,
+        T3loci,
+        T5loci,
+        patches,
+        haplotypes,
+        individuals
+    );
+}
+
+ResetGeneticsEvent_B SpeciesSpecificParameters::readResetGenetics_readEventB(InputReader& input, int& eventIndex)
+{
+    // generation
+    int generation = input.GetNextElementInt();
+    if (generation < 0)
+    {
+        std::cout << "For option '--resetGenetics', the generation must be 0 or larger. Received generation = " << generation << ".\n";
+        abort();
+    }
+    int generation_index = std::upper_bound(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), generation) - GP->__GenerationChange.begin() - 1;
+
+    // patch index
+    int patch_index = input.GetNextElementInt();
+    
+    if (patch_index < 0 || patch_index >= GP->__PatchNumber[generation_index])
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), after the keyword 'patch' received the patch index '" << patch_index <<"'. At the generation "<<generation<<" there are "<<GP->__PatchNumber[generation_index]<< "patches. The patch index must be lower than the number of patches (because it is a zero based counting) and positive.\n";
+        abort();
+    }
+
+    // Type
+    std::vector<std::string> typeNames;
+    std::vector<unsigned> howManys;
+    while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "event")
+    {
+        std::string typeName = input.GetNextElementString();
+        if (this->individualTypes.find(typeName) == this->individualTypes.end())
+        {
+            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), indicated individualType "<< typeName << " but no individual type with this name has been defined in option --indTypes\n";
+            abort();
+        }
+        typeNames.push_back(typeName);
+        howManys.push_back((unsigned)input.GetNextElementInt());
+    }
+
+    // Security
+    auto sumNbInds = std::accumulate(howManys.begin(), howManys.end(),0);
+    if (sumNbInds > this->__patchCapacity[generation_index][patch_index])
+    {
+        std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"). Indicated a total of "<<sumNbInds<<" individuals but the carrying capacity will only be " << this->__patchCapacity[generation_index][patch_index] << " at generation "<< generation << " (generation index: "<< generation_index <<")\n";
+        abort();
+    }
+
+    // return
+    return ResetGeneticsEvent_B(
+        generation,
+        typeNames,
+        howManys,
+        patch_index
+    );
+
+
+}
+
 void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
 {
     #ifdef DEBUG
     std::cout << "For option '--resetGenetics', the std::string that is read is: " << input.print() << std::endl;
 #endif 
-    IsThereSelection();
 
     if (input.PeakNextElementString() == "default")
     {
@@ -1066,278 +1380,25 @@ void SpeciesSpecificParameters::readResetGenetics(InputReader& input)
         return;
     }
 
-    // input example --resetGenetics @S0 event 100 T1 setTo0 lociList 2 4 6 8 haplo both patch 0 allInds patch 2 indsList 1 2 3 4 5 
+
+    // input example with eventA's --resetGenetics @S0 event 100 T1 setTo0 lociList 2 4 6 8 haplo both patch 0 allInds patch 2 indsList 1 2 3 4 5 
     //                                          ^generation
-    
 
     int eventIndex = 0;
     while (input.IsThereMoreToRead())
     {
         std::string eventString = input.GetNextElementString();
-        if (eventString != "event")
+        if (eventString == "eventA")
         {
-            std::cout << "For option '--resetGenetics', for the "<<eventIndex<<"th event (species "<<SSP->speciesName<<"), expected the keyword 'event' but got "<<eventString<<"\n";
-            abort();
-        }
-
-        // generation
-        int generation = input.GetNextElementInt();
-        if (generation < 0)
+            resetGenetics.addEvent(readResetGenetics_readEventA(input, eventIndex));
+        } else if (eventString == "eventB")
         {
-            std::cout << "For option '--resetGenetics', the generation must be 0 or larger. Received generation = " << generation << ".\n";
-            abort();
-        }
-        int generation_index = std::upper_bound(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), generation) - GP->__GenerationChange.begin() - 1;
-
-        // loci type
-        std::string locusType = input.GetNextElementString();
-        if (locusType != "T1" && locusType != "T2" && locusType != "T3"  && locusType != "T5")
-        {
-            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), the locus type is  '" << locusType <<"'. Sorry only mutation types 'T1', 'T2', 'T3' and 'T5' (but not T4) are accepted.\n";
-            abort();
-        }
-
-        // mutation type
-        char mutationType;
-        if (locusType == "T1" || locusType == "T5")
-        {
-            std::string string_mutationType = input.GetNextElementString();
-            if (string_mutationType == "setTo0")
-            {
-                mutationType = 0;
-                /*if (SSP->T5mutsDirectional)
-                {
-                    std::cout << "For option --resetGenetics, you indicated a mutation type 'setTo0'. It is impossible to ask to set a T5 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
-                    abort();
-                }*/
-            } else if (string_mutationType == "setTo1")
-            {
-                mutationType = 1;
-            } else if (string_mutationType == "toggle")
-            {
-                mutationType = 2;
-                /*if (SSP->T5mutsDirectional)
-                {
-                    std::cout << "For option --resetGenetics, you indicated a mutation type 'toggle'. This means that it could happen that resetGenetics would attempt to convert a 1 into a 0. It is impossible to ask to set a T5 or T1 allele to 0 when the model chosen is direction. The option --T5mutsDirectional was indeed set to 'true' (either by the user or by default). Note that it would be relatively easy to allow that. Just ask Remi to make a few modifications. Otherwise, you could set --T1mutsDirectional (and/or --T5mutsDirectional) to false (which might makes things slower).\n";
-                    abort();
-                }*/
-            } else
-            {
-                std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<") for loci of type "<<locusType<<", the mutation type received is '" << string_mutationType <<"'. Sorry only mutation types 'setTo0', 'setTo1' and 'toggle' are accepted.\n";
-                abort();
-            }
+            resetGenetics.addEvent(readResetGenetics_readEventB(input, eventIndex));
         } else
         {
-            mutationType = -1;
-        }
-
-        // Loci indices
-        std::string lociKeyword = input.GetNextElementString();
-        if (lociKeyword != "lociList" && lociKeyword != "allLoci")
-        {
-            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<") expected the keyword 'lociList' or 'allLoci' but instead received "<<lociKeyword<<".\n";
-                abort();
-        }
-
-        std::vector<int> T1loci;
-        std::vector<int> T2loci;
-        std::vector<int> T3loci;
-        std::vector<int> T5loci;
-        if (lociKeyword == "lociList")
-        {
-            while (input.PeakNextElementString() != "haplo")
-            {
-                if (locusType == "T1")
-                {
-                    int T1locus = input.GetNextElementInt();
-                    if (T1locus < 0)
-                    {
-                        std::cout << "For option --resetGenetics received T1locus index of "<<T1locus<<" for an event happening at generation "<<generation<<".\n";
-                        abort();
-                    }
-                    if (T1locus >= SSP->T1_nbBits)
-                    {
-                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T1locus index of "<<T1locus<<" while there are only "<<SSP->T1_nbBits<<" T1 loci (in bits) in total. As a reminder, the first locus has index 0.\n";
-                        abort();
-                    }
-                    T1loci.push_back(T1locus);
-                } else if (locusType == "T2")
-                {
-                    int T2locus = input.GetNextElementInt();
-                    if (T2locus < 0)
-                    {
-                        std::cout << "For option --resetGenetics received T2 locus index of "<<T2locus<<" for an event happening at generation "<<generation<<".\n";
-                        abort();
-                    }
-                    if (T2locus >= SSP->T2_nbChars)
-                    {
-                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T2 locus index of "<<T2locus<<" while there are only "<<SSP->T2_nbChars<<" T2 loci in total. As a reminder, the first locus has index 0.\n";
-                        abort();
-                    }
-                    T2loci.push_back(T2locus);
-                } else if (locusType == "T3")
-                {
-                    int T3locus = input.GetNextElementInt();
-                    if (T3locus < 0)
-                    {
-                        std::cout << "For option --resetGenetics received T3locus index of "<<T3locus<<" for an event happening at generation "<<generation<<".\n";
-                        abort();
-                    }
-                    if (T3locus >= SSP->T3_nbChars)
-                    {
-                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->T3_nbChars<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
-                        abort();
-                    }
-                    T3loci.push_back(T3locus);
-                } else if (locusType == "T5")
-                {
-                    int T5locus = input.GetNextElementInt();
-                    if (T5locus < 0)
-                    {
-                        std::cout << "For option --resetGenetics received T5locus index of "<<T5locus<<" for an event happening at generation "<<generation<<".\n";
-                        abort();
-                    }
-                    if (T5locus >= SSP->T56_nbBits)
-                    {
-                        std::cout << "For option --resetGenetics for an event happening at generation "<<generation<<", received T5locus index of "<<T5locus<<" while there are only "<<SSP->T56_nbBits<<" T5 loci in total. As a reminder, the first locus has index 0.\n";
-                        abort();
-                    }
-                    T5loci.push_back(T5locus);
-                }
-            }
-        } else // lociKeyword == "allLoci"
-        {
-            if (locusType == "T1")
-            {
-                for (int T1locus = 0 ; T1locus < SSP->T1_nbBits; T1locus++)
-                {
-                    T1loci.push_back(T1locus);
-                }
-            } else if (locusType == "T2")
-            {
-                for (int T2locus = 0 ; T2locus < SSP->T2_nbChars; T2locus++)
-                {
-                    T2loci.push_back(T2locus);
-                }
-            } else if (locusType == "T3")
-            {
-                for (int T3locus = 0 ; T3locus < SSP->T3_nbChars; T3locus++)
-                {
-                    T3loci.push_back(T3locus);
-                }
-            } else if (locusType == "T5")
-            {
-                for (int T5locus = 0 ; T5locus < SSP->T56_nbBits; T5locus++)
-                {
-                    T5loci.push_back(T5locus);
-                }
-            }
-        }
-
-        // haplotypes concerned
-        std::string haploString = input.GetNextElementString();
-        if (haploString != "haplo")
-        {
-            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), expected the keyword 'haplo' but instead received '" << haploString <<"'.\n";
+            std::cout << "For option '--resetGenetics', for the "<<eventIndex<<"th event (species "<<SSP->speciesName<<"), expected the keyword 'eventA' or 'eventB' but got "<<eventString<<"\n";
             abort();
         }
-        std::string haploDescription = input.GetNextElementString();
-        std::vector<int> haplotypes;
-        if (haploDescription == "0" || haploDescription == "f" || haploDescription == "F")
-        {
-            haplotypes.push_back(0);
-        } else if (haploDescription == "1" || haploDescription == "m" || haploDescription == "M")
-        {
-            haplotypes.push_back(1);
-        } else if (haploDescription == "both")
-        {
-            haplotypes.push_back(0);
-            haplotypes.push_back(1);
-        }
-
-
-
-        // patches and individuals
-        std::vector<std::vector<int>> individuals;
-        std::vector<int> patches;
-        while (input.IsThereMoreToRead() && input.PeakNextElementString() != "event")
-        {
-            // patch
-            std::string patchString = input.GetNextElementString();
-            if (patchString != "patch")
-            {
-                std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), expected the keyword 'patch' but instead received '" << patchString <<"'.\n";
-                abort();
-            }
-
-            
-
-            int patch_index = input.GetNextElementInt();
-            if (patch_index < 0 || patch_index > GP->__PatchNumber[generation_index])
-            {
-                std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), after the keyword 'patch' received the patch index '" << patch_index <<"'. At the generation "<<generation<<" there are "<<GP->__PatchNumber[generation_index]<< "patches. The patch index must be lower than the number of patches (because it is a zero based counting) and positive.\n";
-                abort();
-            }
-            patches.push_back(patch_index);
-
-
-            // individuals
-            std::string modeOfEntryOfIndividuals = input.GetNextElementString();
-
-            if (modeOfEntryOfIndividuals == "allInds")
-            {
-
-                assert(SSP->__patchCapacity[generation_index].size() == GP->__PatchNumber[generation_index]);
-
-                std::vector<int> onePatchIndviduals;
-                onePatchIndviduals.reserve(SSP->__patchCapacity[generation_index][patch_index]);
-                for (int ind_index = 0 ; ind_index < SSP->__patchCapacity[generation_index][patch_index]; ind_index++)
-                {
-                    onePatchIndviduals.push_back(ind_index);
-                }
-                individuals.push_back(onePatchIndviduals);
-
-            } else if (modeOfEntryOfIndividuals == "indsList")
-            {
-                std::vector<int> onePatchIndviduals;
-                while (input.IsThereMoreToRead() && input.PeakNextElementString() != "event" && input.PeakNextElementString() != "patch")
-                {
-                    onePatchIndviduals.push_back(input.GetNextElementInt());
-                }
-                if (onePatchIndviduals.size() == 0)
-                {
-                    std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), for patch index "<< patch_index <<" there seems to have no individuals indicated.\n";
-                    abort();
-                }
-                individuals.push_back(onePatchIndviduals);
-
-
-            } else
-            {
-                std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), for patch index "<< patch_index <<" expected mode of entry of individuals (either 'indsList' or 'allInds') but instead received '" << modeOfEntryOfIndividuals <<"'.\n";
-                abort();
-            }
-        }
-        if (patches.size() == 0)
-        {
-            std::cout << "For option '--resetGenetics', " << eventIndex << "th event, for the "<<eventIndex<<"th event (generation "<<generation<<"; species "<<SSP->speciesName<<"), there seems to have no patch indicated.\n";
-            abort();
-        }
-
-
-        resetGenetics.addEvent(
-            ResetGeneticsEvent(
-                generation,
-                mutationType,
-                T1loci,
-                T2loci,
-                T3loci,
-                T5loci,
-                patches,
-                haplotypes,
-                individuals
-            )
-        );
         eventIndex++;
     }
 }
@@ -1577,7 +1638,7 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
 }
 
 
-Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization(InputReader& input, bool haploIndex, std::string& IndividualTypeName)
+Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& input, bool haploIndex, std::string& IndividualTypeName)
 {
     // IsThereSelection() is called in resetGenetics that comes first.
     std::string beginKeyword;
@@ -1594,13 +1655,13 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
 
     if (!input.IsThereMoreToRead())
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but the input has been completely read aleready.\n";
+        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but the input has been completely read already.\n";
         abort();
     }
     
-    if (input.PeakNextElementString() != beginKeyword && input.PeakNextElementString() != "haploBoth")
+    if (input.PeakNextElementString() != beginKeyword && input.PeakNextElementString() != "bothHaplo")
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword "<<beginKeyword<< " but got " << input.PeakNextElementString() << "instead.\n";
+        std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. expected keyword '"<<beginKeyword<< "'' (or 'bothHaplo') but got " << input.PeakNextElementString() << " instead.\n";
         abort();
     }
     input.skipElement();
@@ -1625,7 +1686,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
             // Security
             if (receivedT1_info)
             {
-                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
                 abort(); 
             }
             receivedT1_info = true;
@@ -1657,7 +1718,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
             // Security
             if (receivedT2_info)
             {
-                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
                 abort(); 
             }
             receivedT2_info = true;
@@ -1673,7 +1734,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
             // Security
             if (receivedT3_info)
             {
-                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
                 abort(); 
             }
             receivedT3_info = true;
@@ -1690,20 +1751,20 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
             // Security
             if (receivedT4_info)
             {
-                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
                 abort(); 
             }
             receivedT4_info = true;
 
             // read info
-            std::cout << "In --indIni (--IndividualInitialization), received info about type of locus T4. Sorry, --indIni is currently not able to initialize the T4 loci.\n";
+            std::cout << "In --indTypes, received info about type of locus T4. Sorry, --indIni is currently not able to initialize the T4 loci.\n";
             abort();
         } else if (TT == "T5" || TT == "t5" || TT == "T6" || TT == "t6"  || TT == "T56" || TT == "t56")
         {
             // Security
             if (receivedT56_info)
             {
-                std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
+                std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. Received info about "<<TT<<" twice!\n";
                 abort(); 
             }
             receivedT56_info = true;
@@ -1715,18 +1776,18 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
                 auto newMutPosition = input.GetNextElementInt();
                 if (T56_info.size() != 0 && T56_info.back() >= newMutPosition)
                 {
-                    std::cout << "In --indIni (--IndividualInitialization), for individualType '" << IndividualTypeName << "'. When reading info about T5 loci, got the mutation position " << newMutPosition << " after mutPosition " << T56_info.back() << ". Please make sure that the info value are strictly increased. Note that for T5 loci, you are expected to indicate mutation positions (unlike for T1 loci that expects T1_nbBits boolean values).\n";
+                    std::cout << "In --indTypes, for individualType '" << IndividualTypeName << "'. When reading info about T5 loci, got the mutation position " << newMutPosition << " after mutPosition " << T56_info.back() << ". Please make sure that the info value are strictly increased. Note that for T5 loci, you are expected to indicate mutation positions (unlike for T1 loci that expects T1_nbBits boolean values).\n";
                     abort();
                 }
                 T56_info.push_back(newMutPosition);
             }
         } else if (TT == "T7" || TT == "t7") 
         {
-            std::cout << "In --indIni (--IndividualInitialization), received info about type of locus T7. Sorry, --indIni is currently not able to initialize the T7 loci.\n";
+            std::cout << "In --indTypes, received info about type of locus T7. Sorry, --indIni is currently not able to initialize the T7 loci.\n";
             abort();
         } else
         {
-            std::cout << "In --indIni (--IndividualInitialization), received unknown type of locus (" << TT << "). Please if you want to indicate locus of type 1, write either T1 or t1. Same logic apply to other type of loci. Maybe you tried to write 'haplo1' but wrote 'Haplo1 or something like that!'\n";
+            std::cout << "In --indTypes, received unknown type of locus (" << TT << "). Please if you want to indicate locus of type 1, write either T1 or t1. Same logic apply to other type of loci. Maybe you tried to write 'haplo1' but wrote 'Haplo1 or something like that!'\n";
             abort(); 
         }
     }
@@ -1734,22 +1795,22 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
     // Security
     if (T1_nbBits && !receivedT1_info)
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T1 loci but did not receive it!\n";
+        std::cout << "In --indTypes, for individualType "<< IndividualTypeName<< " expected info for T1 loci but did not receive it!\n";
         abort();
     }
     if (T2_nbChars && !receivedT2_info)
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T2 loci but did not receive it!\n";
+        std::cout << "In --indTypes, for individualType "<< IndividualTypeName<< " expected info for T2 loci but did not receive it!\n";
         abort();
     }
     if (T3_nbChars && !receivedT3_info)
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T3 loci but did not receive it!\n";
+        std::cout << "In --indTypes, for individualType "<< IndividualTypeName<< " expected info for T3 loci but did not receive it!\n";
         abort();
     }
     if (T56_nbBits && !receivedT56_info)
     {
-        std::cout << "In --indIni (--IndividualInitialization), for individualType "<< IndividualTypeName<< " expected info for T56 (aka T5; aka T6) loci but did not receive it!\n";
+        std::cout << "In --indTypes, for individualType "<< IndividualTypeName<< " expected info for T56 (aka T5; aka T6) loci but did not receive it!\n";
         abort();
     }
     assert(T1_info.size() == T1_nbChars);
@@ -1757,33 +1818,34 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForReadIndividualInitialization
     return Haplotype(T1_info, T2_info, T3_info, T56_info);
 }
 
-void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
-{
-    setFromLocusToFitnessMapIndex();
 
-    // Set isIndividualInitialization to inform other initialization option that this one has been used
+
+void SpeciesSpecificParameters::readIndividualTypes(InputReader& input)
+{
+    setFromLocusToFitnessMapIndex(); // Need that to initialize individual types
+    IsThereSelection();              // Need that to initialize individual types
+
+    // Default 
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
-        this->isIndividualInitialization = false;
         return;
-    } else
-    {
-        this->isIndividualInitialization = true;
     }
-        
+    
 
-    ////////////////////////////////////////
-    // Collect Individual Types genotypes //
-    ////////////////////////////////////////
-    assert(this->IndividualTypeForInitialization.size() == 0);
-    while (input.PeakNextElementString() == "ind")
+    // Read and build individual types
+    while (input.IsThereMoreToRead())
     {
+        if (input.PeakNextElementString() != "ind")
+        {
+            std::cout << "In --indIni, expected keyword 'ind' but instead received '" << input.PeakNextElementString() << "'\n";
+            abort();
+        }
         input.skipElement(); // skipping "ind"
 
         // Get name and make sure it is a new name
         auto IndividualTypeName = input.GetNextElementString();
-        if (IndividualTypeForInitialization.find(IndividualTypeName) != IndividualTypeForInitialization.end())
+        if (individualTypes.find(IndividualTypeName) != individualTypes.end())
         {
             std::cout << "In --indIni, you start a new individualType (with keyword 'ind') and you name it " << IndividualTypeName << ". This name has already been used by a previous IndiivdualType. Please use unique names! Just call them with number if you are lazy to give them names!\n";
             abort();
@@ -1794,33 +1856,51 @@ void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
         Haplotype haplo1;
         if (input.PeakNextElementString() == "bothHaplo")
         {
-            haplo0 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName); // second argument is 1 so that it stops at keyword 'ind'
+            haplo0 = getHaplotypeForIndividualType(input, 1, IndividualTypeName); // second argument is 1 so that it stops at keyword 'ind'
             haplo1 = haplo0;
         } else
         {
-            haplo0 = getHaplotypeForReadIndividualInitialization(input, 0, IndividualTypeName);
-            haplo1 = getHaplotypeForReadIndividualInitialization(input, 1, IndividualTypeName);
+            haplo0 = getHaplotypeForIndividualType(input, 0, IndividualTypeName);
+            haplo1 = getHaplotypeForIndividualType(input, 1, IndividualTypeName);
         }
             
-
         // Add IndividualType
-        IndividualTypeForInitialization[IndividualTypeName] = Individual(haplo0, haplo1);
+        individualTypes[IndividualTypeName] = Individual(haplo0, haplo1);
+    }
+}
 
+
+
+
+
+
+void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
+{
+    // Set isIndividualInitialization to inform other initialization option that this one has been used
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        this->isIndividualInitialization = false;
+        return;
+    } else
+    {
+        this->isIndividualInitialization = true;
     }
 
     // security
-    if (IndividualTypeForInitialization.size() == 0)
+    if (individualTypes.size() == 0)
     {
-        std::cout << "In --indIni (--IndividualInitialization), did not receive any IndividualType! The first word after the option --indIni should be 'ind' to indicate an individualType\n";
+        std::cout << "You explicitely used the option '--indIni (--IndividualInitialization)', but no individual types have been defined (with option --indTypes).\n";
         abort();
     }
+        
+
 
     ////////////////////////////
     // Assign individual type //
     ////////////////////////////
-
-    assert(IndividualTypeMatchingForInitialization.size() == 0);
-    IndividualTypeMatchingForInitialization.resize(GP->PatchNumber);
+    
+    individualTypesForInitialization.resize(GP->PatchNumber);
     for (unsigned patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         std::string patchKeyword = "patch" + std::to_string(patch_index);
@@ -1835,7 +1915,7 @@ void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
         while (ind_index < this->patchSize[patch_index])
         {
             auto IndividualTypeName = input.GetNextElementString();
-            if (IndividualTypeForInitialization.find(IndividualTypeName) == IndividualTypeForInitialization.end())
+            if (individualTypes.find(IndividualTypeName) == individualTypes.end())
             {
                 std::cout << "In --indIni (--IndividualInitialization), asking for individual type " << IndividualTypeName << " in patch " << patch_index << " but individual type " << IndividualTypeName << " has not been defined previously. It is probably caused by a typo when naming individual types.\n";
                 abort();
@@ -1852,11 +1932,11 @@ void SpeciesSpecificParameters::readIndividualInitialization(InputReader& input)
 
             for (unsigned howMany_index = 0 ; howMany_index < howMany ; ++howMany_index )
             {
-                IndividualTypeMatchingForInitialization[patch_index].push_back(IndividualTypeName);
+                individualTypesForInitialization[patch_index].push_back(IndividualTypeName);
             }
         }
         assert(ind_index == this->patchSize[patch_index]);
-        assert(IndividualTypeMatchingForInitialization[patch_index].size() == this->patchSize[patch_index]);
+        assert(individualTypesForInitialization[patch_index].size() == this->patchSize[patch_index]);
     }
 }
 
@@ -2020,6 +2100,15 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
 #ifdef DEBUG
     std::cout << "For option --T5_Initial_AlleleFreqs, the std::string that is read is: " << input.print() << std::endl;
 #endif
+
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        this->T56_Initial_AlleleFreqs_AllZeros = true;
+        this->T56_Initial_AlleleFreqs_AllOnes = false;
+        return;
+    }
+
     if (input.PeakNextElementString() == "NA")
     {
         if (this->T56_nbBits != 0)

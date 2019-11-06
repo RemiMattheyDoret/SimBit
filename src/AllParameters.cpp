@@ -379,7 +379,6 @@ std::cout << "Enters in 'SetParameters'\n";
         reduceString(entry);
         reduceString(flag);
 
-        assert(entry.size() > 0);
         assert(flag.size() > 0);
         
         UserEntries.push_back(std::pair<std::string, std::string>(flag, entry));
@@ -518,6 +517,10 @@ std::cout << "Enters in 'SetParameters'\n";
             quickScreenAtOptionL(UserEntries);
         }
 
+        #ifdef DEBUG
+        std::cout << "flag = " << flag << "\n";
+        std::cout << "NbMatchIOnUserEntry = " << UserInputIndexForFlags.size() << "\n";
+        #endif
         // if flag not found in UserEntries
         if (UserInputIndexForFlags.size() == 0) 
         {
@@ -1179,6 +1182,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
         InputReader input(std::string("@S0 1.0"), "In Default value for --T5_approximationForNtrl,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_approximationForNtrl);
     }
+    else if (flag == "indTypes")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --indTypes,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualTypes);
+    }
     else if (flag == "indIni")
     {
         InputReader input(std::string("@S0 default"), "In Default value for --indIni,");
@@ -1361,6 +1369,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "T1_LargeOutput_file")
     {
+        
         OutputFile file(input.GetNextElementString(), T1_LargeOutputFile);
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
@@ -1772,6 +1781,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "T5_FitnessEffects" || flag == "T5_fit")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_FitnessEffects);
+        
+    } else if (flag == "individualTypes" || flag == "indTypes")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualTypes);
         
     } else if (flag == "individualInitialization" || flag == "indIni")
     {

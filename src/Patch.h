@@ -33,6 +33,7 @@ private:
     std::vector<Individual> inds;
 public:
     Individual& getInd(const int& ind_index);
+    void setInd(Individual& ind, const int& ind_index);
     Individual& getInd(const int& ind_index, const int& patch_index);
     void removeLastIndividual();
     void AddIndividual(Individual& newInd);

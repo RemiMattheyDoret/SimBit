@@ -26,11 +26,24 @@
 
  */
 
+
 class ResetGeneticsEvent
 {
 friend class ResetGenetics;
-private:
+friend class ResetGeneticsEvent_A;
+friend class ResetGeneticsEvent_B;
+public:
     int generation;
+    int generalAssertEvent();
+    char eventType;
+};
+
+
+
+class ResetGeneticsEvent_A : public ResetGeneticsEvent
+{
+friend class ResetGenetics;
+private:
     char mutationType;
     // 0: set T1 to 0
     // 1: set T1 to 1
@@ -45,7 +58,7 @@ private:
     std::vector<std::vector<int>> individuals;
 
 public:
-    ResetGeneticsEvent(
+    ResetGeneticsEvent_A(
         int g,
         char MT,
         std::vector<int> T1l,
@@ -55,9 +68,29 @@ public:
         std::vector<int> pa,
         std::vector<int> hap,
         std::vector<std::vector<int>> inds
-        );
-
+    );
 };
+
+
+class ResetGeneticsEvent_B : public ResetGeneticsEvent
+{
+friend class ResetGenetics;
+private:
+    std::vector<std::string> individualTypeNames;
+    std::vector<unsigned> howManyIndividualOfEachType;
+    int patch_index;
+
+
+public:
+
+    ResetGeneticsEvent_B(
+        int g,
+        std::vector<std::string> indTypeNames,
+        std::vector<unsigned> h,
+        int pa
+    );
+};
+
 
 /*
 ######################################################################
@@ -68,10 +101,17 @@ public:
 class ResetGenetics
 {
 private:
-    std::vector<ResetGeneticsEvent> events;
+    std::vector<ResetGeneticsEvent_A> eventsA;
+    std::vector<ResetGeneticsEvent_B> eventsB;
+
+    bool isEventAGeneration();
+    bool isEventBGeneration();
+    void makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop);
+    void makeEventBHappen(ResetGeneticsEvent_B& event, Pop& pop);
 
 public:
-    void addEvent(ResetGeneticsEvent event);
+    void addEvent(ResetGeneticsEvent_A event);
+    void addEvent(ResetGeneticsEvent_B event);
     void resetPopIfNeeded(Pop& pop);
-    bool isGeneration();
+    bool isGeneration(); // Is used in pop.cpp to make sure nothing funky has just happened
 };

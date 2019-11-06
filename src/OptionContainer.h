@@ -84,8 +84,9 @@ public:
         {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
         // Initializer
-        {{"resetGenetics"},                             {"L","nbGenerations","S","PN","N", "T5_MutationRate"}, false},
-        {{"indIni","individualInitialization"},         {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
+        {{"indTypes","individualTypes"},                {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
+        {{"resetGenetics"},                             {"indTypes","L","nbGenerations","S","PN","N", "T5_MutationRate"}, false},
+        {{"indIni","individualInitialization"},         {"indTypes", "L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
         {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L","PN","indIni"}, false},
         {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L","PN", "indIni"}, false},
 

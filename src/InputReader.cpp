@@ -528,6 +528,9 @@ InputReader::InputReader(std::string entry, std::string ForErrorMessage)
         abort();
     }
     //std::cout << ErrorMessage << " V.size() = " << V.size() << "\n";
+    #ifdef DEBUG
+    std::cout << this->print() << "\n";
+    #endif
 }
 
 double InputReader::readDouble(const std::string& s)
@@ -762,6 +765,11 @@ void InputReader::interpretKeywords()
                 
         } else if (currentKeyword == "seqInt")
         {
+            if (V.size() <= vi + 3)
+            {
+                std::cout << "In InputReader::interpretKeywords, received the keyword 'seqInt' followed by less than three values. seqInt expects a 'from', a 'to' and a 'by' value\n";
+                abort();
+            }
             int from = (int) std::stod(V[vi+1]);
             int to   = (int) std::stod(V[vi+2]);
             int by   = (int) std::stod(V[vi+3]);
