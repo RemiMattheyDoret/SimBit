@@ -1,0 +1,17 @@
+	  ____  _           ____  _ _   
+	 / ___|(_)_ __ ___ | __ )(_) |_ 
+	 \___ \| | '_ ` _ \|  _ \| | __|
+	  ___) | | | | | | | |_) | | |_ 
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.8.1
+
+Random seed:
+	1234
+
+User Input:
+	--PN 1 --T1_mu unif 0 --seed 1234 --nbGens 500 --r rate unif 1e-2 --N unif 1e3 --L t1 10 --indTypes ind resident bothHaplo T1 rep 0 10 ind migrant bothHaplo t1 rep 1 10 --indIni patch0 migrant 10 resident 990 --fitness_file test seqInt 0 500 10 --T1_LargeOutput_file test seqInt 0 500 10 --m island 0 --resetGenetics eventB 10 0 migrant 10 eventB 20 0 migrant 10 --T1_fit A 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 1 0.99 0.98 --T1_epistasis set0 loci 0 1 fit rep 0.1 8 1 set1 loci 2 3 fit 1 rep 0.95 8 
+
+		Time for initialization: 0 seconds (0.02358 seconds)
+
+		Time for the simulation: 1 seconds (0.6641 seconds)
+
+		------ Simulation is over. Good Job! ----

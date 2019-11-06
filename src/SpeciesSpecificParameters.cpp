@@ -2636,7 +2636,7 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                     int LocusPosition = input.GetNextElementInt();
                     if ( LocusPosition < 0 || LocusPosition >= this->T1_nbBits )
                     {
-                      std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received locus position "<<LocusPosition<<" (indicated for habitat " << habitat << " and "<< setNumberString <<") that is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting).\n";
+                        std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received locus position "<<LocusPosition<<" (indicated for habitat " << habitat << " and "<< setNumberString <<") that is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting).\n";
                         abort();  
                     }
                     //std::cout << "LocusPosition = " << LocusPosition << "\n";
@@ -2645,6 +2645,12 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                 }
                 auto nbLociUnderEpistasis = LociIndices_ForASingleGroupOfLoci.size();
                 input.skipElement(); // skip "fit"
+                if (nbLociUnderEpistasis <= 1)
+                {
+                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received "<<nbLociUnderEpistasis<<" loci but it takes at least 2 loci to have an epistatic interaction.\n";
+                    abort();  
+                }
+
 
 
                 // Read fitness effects

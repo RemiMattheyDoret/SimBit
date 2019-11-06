@@ -787,6 +787,8 @@ void InputReader::interpretKeywords()
             //std::cout << "nbRepeats = " << nbRepeats << "\n";
             std::vector<std::string> whatToRepeat;
             assert(whatToRepeat_original.size() >= 1);
+            
+            
 
             if (whatToRepeat_original[0] == '{')
             {
