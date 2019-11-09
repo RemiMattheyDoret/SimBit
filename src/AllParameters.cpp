@@ -760,12 +760,12 @@ void AllParameters::Update(bool updatePopsToo)
 
             
 
-            ///////////////////////////
+            /*///////////////////////////
             //// Change SimTracker ////
             ///////////////////////////
 
             if (GP->CurrentGeneration != 0 && SSP->T1_isSelection)
-                SSP->simTracker.forceToRecomputeNextTime = true;
+                SSP->simTracker.forceToRecomputeNextTime = true;*/
 
         }
         SSP = nullptr;
@@ -941,14 +941,14 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
         {
-            SSPi.simTracker.genealogy.setGenealogyToNothing();
+            SSPi.genealogy.setGenealogyToNothing();
         }   
     }
     else if (flag == "coalesce")
     {
         for (auto& SSPi : this->SSPs)
         {
-            SSPi.simTracker.genealogy.setcoalesceGenealogyFrequency(0);
+            SSPi.genealogy.setcoalesceGenealogyFrequency(0);
         }   
     }
     else if (flag == "T4_LargeOutput_file")
@@ -1533,20 +1533,20 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
                         for (auto& SSPi : this->SSPs)
         {
-            SSPi.simTracker.genealogy.setGenealogyTimes(file.getTimes());
+            SSPi.genealogy.setGenealogyTimes(file.getTimes());
         }   
         outputWriter.insertOutputFile(std::move(file));
     }  else if (flag == "coalesce" )
     {
-                int coalesceGenealogyFrequency = input.GetNextElementInt();
-                if (coalesceGenealogyFrequency < 0)
+        int coalesceGenealogyFrequency = input.GetNextElementInt();
+        if (coalesceGenealogyFrequency < 0)
         {
             std::cout << "In option --coalesced, the values received is negative ( is "<<coalesceGenealogyFrequency<<"). Value of zero mean no coalescence. Any value bigger than 0 indicates the frequency at which SimBit will coalesce. This frequency won't change anything to the output but might well affect the computational time (should not affect the RAM though).\n";
             abort();
         }
         for (auto& SSPi : this->SSPs)
         {
-            SSPi.simTracker.genealogy.setcoalesceGenealogyFrequency(coalesceGenealogyFrequency);
+            SSPi.genealogy.setcoalesceGenealogyFrequency(coalesceGenealogyFrequency);
         }   
     } 
     else if (flag == "T4_LargeOutput_file")

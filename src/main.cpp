@@ -61,6 +61,9 @@ Note for Remi of things to do:
 #include "ForwardClassDeclarations.h"
 #include "GlobalVariables.h"
 
+#include "T1_locusDescription.h"
+#include "T1_locusDescription.cpp"
+
 // SmallOrderingSortingFunctions.cpp
 #include "SmallOrderingSortingFunctions.cpp"
 
@@ -70,7 +73,7 @@ Note for Remi of things to do:
 #include "Option.h"
 #include "OptionContainer.h"
 #include "GeneralParameters.h"
-#include "SimulationTracker.h"
+//#include "SimulationTracker.h"
 #include "DispersalData.h" 
 #include "ResetGenetics.h"
 #include "OutputFile.h"
@@ -88,7 +91,7 @@ Note for Remi of things to do:
 #include "LifeCycle_InnerDataClasses.h"
 #include "OutputWriter.h"
 #include "Patch.h"
-#include "T1_locusDescription.h"
+
 
 // .cpp    
 #include "CompressedSortedDeque.cpp"      // also contains the .cpp for CompressedSortedDeque::iterator and CompressedSortedDeque::CompressedSortedDequeBlock
@@ -110,9 +113,8 @@ Note for Remi of things to do:
 #include "OutputFile.cpp"
 #include "OutputWriter.cpp"
 #include "Patch.cpp"
-#include "SimulationTracker.cpp"
+//#include "SimulationTracker.cpp"
 #include "SpeciesSpecificParameters.cpp"
-#include "T1_locusDescription.cpp"
 #include "TreeNode.cpp"
 #include "Tree.cpp"
 
@@ -135,7 +137,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.8.1");
+    std::string VERSION("version 4.8.6");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -277,11 +279,11 @@ int main(int argc, char *argv[])
                 std::cout << "-------- pop has been created --------" << std::endl;
             #endif
 
-            SSP->simTracker.Initialization(pop_odd); // The initialization will differ depending on whether the starting population explicity has not variance or whether it does.
+            //SSP->simTracker.Initialization(pop_odd); // The initialization will differ depending on whether the starting population explicity has not variance or whether it does.
 
-            #ifdef DEBUG
-                std::cout << "-------- simTracker initialized --------" << std::endl;
-            #endif
+            //#ifdef DEBUG
+            //    std::cout << "-------- simTracker initialized --------" << std::endl;
+            //#endif
 
             pop_odd.CalculateFitnesses();
 
@@ -380,7 +382,7 @@ int main(int argc, char *argv[])
             // Get the big pointer for the species parameters
             SSP = allParameters.getSSPaddress(speciesIndex);
 
-            if (!SSP->isSpeciesExtinct)
+            if (SSP->whenDidExtinctionOccur == -1) // is not exctinct yet
             {
                 assert(SSP->nbSubGenerationsPerGeneration > 0);
                 for (int subGeneration = 0 ; subGeneration < SSP->nbSubGenerationsPerGeneration ; subGeneration++ )

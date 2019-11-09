@@ -38,13 +38,13 @@ private:
 
 public:
 
-    SimulationTracker                               simTracker;
+    Genealogy                                       genealogy;
     ResetGenetics                                   resetGenetics;
     
     // species ID
     std::string                                     speciesName;
     int                                             speciesIndex;
-    bool                                            isSpeciesExtinct = false;
+    int                                             whenDidExtinctionOccur = -1; // -1 means not extinct (yet)
 
     //Initialization
     std::string                                     readPopFromBinaryPath;

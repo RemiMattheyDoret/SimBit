@@ -82,5 +82,7 @@ public:
     std::vector<std::vector<unsigned>> computePatchSpecificT56selFrequencies();
     std::vector<std::vector<unsigned>> computePatchSpecificT56Frequencies();
 
+    std::vector<T1_locusDescription> listT1PolymorphicLoci();
+
 };
 

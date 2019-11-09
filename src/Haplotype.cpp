@@ -96,7 +96,8 @@ void Haplotype::setW_T2(double w, int fitnessMapIndex)
     W_T2[fitnessMapIndex] = w;
 }
 
-unsigned char Haplotype::getT1_char(int& char_index)
+template<typename INT>
+unsigned char Haplotype::getT1_char(INT char_index)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->T1_nbChars);
@@ -221,7 +222,7 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
 
 
     toggleT1_Allele(byte_index, bit_index);
-    SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
+    //SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
 
     if (SSP->T1_isMultiplicitySelection)
     {
@@ -2395,19 +2396,100 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
         if (getW_T1(fitnessMapIndex) == -1.0)
         {
             double w = 1.0;
-            //std::cout << "T1 muts: ";
-            for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessMultiplicityCalculation[fitnessMapIndex])
+
+            auto to = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T1;
+            assert(to <= SSP->T1_nbBits);
+            auto from = 0;
+            if (fitnessMapIndex != 0)
             {
-                //assert(polymorphicLocus.locus >= T1_locusFrom && polymorphicLocus.locus < T1_locusTo);
-                
+                from = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex - 1].T1;
+            }
+
+            auto byteFrom = from / 8;
+            auto bitFrom = from % 8;
+            auto byteTo = to / 8;
+            auto bitTo = to % 8;
+            auto locus = from;
+
+            // first bits
+            if (bitFrom != 0)
+            {
+                auto firstByteBitTo = 8;
+                if (byteFrom == byteTo)
+                {
+                    firstByteBitTo = bitTo;
+                }
+                assert(bitFrom < firstByteBitTo);
+
+                if (getT1_char(byteFrom))
+                {
+                    for (auto bit = bitFrom ; bit < firstByteBitTo ; ++bit)
+                    {
+                        if (getT1_Allele(byteFrom, bit))
+                        {
+                            w *= fits[locus];
+                        }
+                        ++locus;
+                    }
+                } else
+                {
+                    locus += firstByteBitTo - bitFrom; // that might be wrong when byteFrom == byteTo but it does not matter for this case
+                }
+                ++byteFrom;
+            }
+
+            // First Bytes
+            auto firstBytesByteTo = byteTo;
+            if (bitTo != 0)
+            {
+                --firstBytesByteTo;   
+            }
+            for (auto byte = byteFrom ; byte < (byteTo-1) ; ++byte)
+            {
+                if (getT1_char(byte))
+                {
+                    for (auto bit = bitFrom ; bit < 8 ; ++bit)
+                    {
+                        if (getT1_Allele(byte, bit))
+                        {
+                            w *= fits[locus];
+                        }
+                        ++locus;
+                    }    
+                } else
+                {
+                    locus += 8;
+                }
+            }
+
+            // Last byte
+            if (bitTo != 0 && getT1_char(byteTo))
+            {
+                for (auto bit = 0 ; bit < bitTo ; ++bit)
+                {
+                    if (getT1_Allele(byteTo, bit))
+                    {
+                        w *= fits[locus];
+                    }
+                    ++locus;
+                }
+            } else
+            {
+                locus += 8; // only needed for assertions below
+            }
+
+            assert(locus == to);
+
+
+            /*for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessMultiplicityCalculation[fitnessMapIndex])
+            {
                 if (getT1_Allele(polymorphicLocus.byte_index, polymorphicLocus.bit_index))
                 {
-                    //std::cout << polymorphicLocus.locus << " ";
                     w *= fits[polymorphicLocus.locus];
                 }
                 
-            }
-            //std::cout << std::endl;
+            }*/
+            
             assert(w<=1.0 && w>=0.0);
             setW_T1(w, fitnessMapIndex);
             r *= w;

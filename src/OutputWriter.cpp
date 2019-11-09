@@ -1084,7 +1084,7 @@ void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
     // compute alleleFreq at each patch
     std::vector<std::vector<double>> alleleFreqs;  // alleleFreqs[patch][locus]
     alleleFreqs.resize(GP->PatchNumber);
-    auto polymorphicLoci = file.removeSitesWeDontWant(SSP->simTracker.listAllPolymorphicT1Sites(pop), SSP->speciesIndex);
+    auto polymorphicLoci = file.removeSitesWeDontWant(pop.listT1PolymorphicLoci(), SSP->speciesIndex);
     
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
@@ -2434,7 +2434,7 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
     //std::cout << "In OutputWriter::WriteOutputs_T1_vcf at generation " <<GP->CurrentGeneration<<"\n";
 
     // Find Polymorphic Sites
-    auto polymorphicLoci = file.removeSitesWeDontWant(SSP->simTracker.listAllPolymorphicT1Sites(pop), SSP->speciesIndex);
+    auto polymorphicLoci = file.removeSitesWeDontWant(pop.listT1PolymorphicLoci(), SSP->speciesIndex);
 
 
     const std::string s_tab = "\t";
@@ -2478,7 +2478,7 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
     
     // Write Data
     std::string s_vert = "|";
-    for (auto& TrackedMutation : polymorphicLoci) // SSP->simTracker.PolymorphicT1Sites contain only the sites in  file.getSubsetToConsider(SSP->speciesIndex)
+    for (auto& TrackedMutation : polymorphicLoci)
     {
         int byte_index  = TrackedMutation.byte_index;
         int bit_index   = TrackedMutation.bit_index;
@@ -2609,7 +2609,7 @@ void OutputWriter::WriteOutputs_T4_vcf(OutputFile& file)
  
     // Write Data
     std::string s_vert = "|";
-    for (auto& locus : polymorphicLoci) // SSP->simTracker.PolymorphicT1Sites contain only the sites in  file.getSubsetToConsider(SSP->speciesIndex)
+    for (auto& locus : polymorphicLoci)
     {
         std::string s;
         s.reserve(SSP->TotalpatchCapacity * 6);
@@ -3096,7 +3096,7 @@ void OutputWriter::WriteOutputs_extinction(OutputFile& file)
     for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; speciesIndex++)
     {
         SSP = allParameters.getSSPaddress(speciesIndex);
-        int g = SSP->simTracker.whenDidExtinctionOccur;
+        int g = SSP->whenDidExtinctionOccur;
         std::string& speciesName = SSP->speciesName;
         if (g != -1)
         {
@@ -3433,19 +3433,13 @@ void OutputWriter::WriteOutputs(Pop& realPop)
             // Copy the entire pop.
             Pop seqErrorPop = realPop;
 
-            // Copy SimTracker
-            SimulationTracker realPopSimTracker = SSP->simTracker;
-
-            // Make the sequencing error (they will be tracked in the simTracker of seqErrorPopSSP)
+            // Make the sequencing error
             imitateSequencingError(seqErrorPop);
 
             // Produce outputs
             OutputFile::sequencingErrorStringToAddToFilnames = "_sequencingError";
             WriteOutputs_forDefinedPop(seqErrorPop);
             OutputFile::sequencingErrorStringToAddToFilnames = "";
-
-            // reset SimTracker
-            SSP->simTracker = realPopSimTracker;
         }
 
     }
@@ -3456,7 +3450,7 @@ void OutputWriter::WriteOutputs(Pop& realPop)
      #### genealogy -> coalescence ####
      ##################################
      */
-    if (SSP->simTracker.genealogy.isCoalesce())
+    if (SSP->genealogy.isCoalesce())
     {
         #ifdef DEBUG
         std::cout << "Write coalescence\n";
@@ -3465,24 +3459,24 @@ void OutputWriter::WriteOutputs(Pop& realPop)
         {
             assert(this->isFile(genealogy));
             auto& file = this->get_OutputFiles(genealogy)[0];
-            SSP->simTracker.genealogy.removeFilesAtStart(file);
+            SSP->genealogy.removeFilesAtStart(file);
         }
-        if ( SSP->simTracker.genealogy.isTimeToCoalesce() )
+        if ( SSP->genealogy.isTimeToCoalesce() )
         {
             assert(this->isFile(genealogy));
             auto& file = this->get_OutputFiles(genealogy)[0];
-            SSP->simTracker.genealogy.coalesce(file);
+            SSP->genealogy.coalesce(file);
         }
     }
 
-    if (SSP->simTracker.genealogy.isTimeToMerge())
+    if (SSP->genealogy.isTimeToMerge())
     {
         #ifdef DEBUG
         std::cout << "Merge coalescence\n";
         #endif
         assert(this->isFile(genealogy));
         auto& file = this->get_OutputFiles(genealogy)[0];
-        SSP->simTracker.genealogy.mergeFiles(file);
+        SSP->genealogy.mergeFiles(file);
     }
 
 

@@ -62,7 +62,43 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
 
     double W_T1_WholeIndividual = 1.0;
 
-    for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessNoMultiplicityCalculation)
+    // All but the last byte
+    int fitPosStart = 0;
+    for (int byte = 0 ; byte < (SSP->T1_nbChars - 1) ; ++byte)
+    {    
+        for (auto bit = 0 ; bit < 8 ; ++bit)       
+        {
+            W_T1_WholeIndividual *= 
+                fits[
+                    fitPosStart + 
+                    haplo0.getT1_Allele(byte, bit) +
+                    haplo1.getT1_Allele(byte, bit)
+                ];
+            fitPosStart += 3;
+        }
+    }
+
+    // Last byte
+    auto lastByte = SSP->T1_nbChars - 1;
+    for (auto bit = 0 ; bit < SSP->T1_nbBitsLastByte ; ++bit)       
+    {
+        /*
+        assert(fitPosStart == (lastByte * 8 + bit) * 3);
+        std::cout << "fitPosStart = " << fitPosStart << "\n";
+        std::cout << "index = " << fitPosStart + haplo0.getT1_Allele(lastByte, bit) + haplo1.getT1_Allele(lastByte, bit) << "\n";
+        std::cout << "fit = " << fits[fitPosStart + haplo0.getT1_Allele(lastByte, bit) +haplo1.getT1_Allele(lastByte, bit)] << "\n";
+        */
+        W_T1_WholeIndividual *= 
+            fits[
+                fitPosStart + 
+                haplo0.getT1_Allele(lastByte, bit) +
+                haplo1.getT1_Allele(lastByte, bit)
+            ];
+        fitPosStart += 3;
+    }
+    assert(fitPosStart == SSP->T1_nbBits * 3);
+
+    /*for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessNoMultiplicityCalculation)
     {
         W_T1_WholeIndividual *= 
             fits[
@@ -70,7 +106,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
                 haplo0.getT1_Allele(polymorphicLocus.byte_index,polymorphicLocus.bit_index) +
                 haplo1.getT1_Allele(polymorphicLocus.byte_index,polymorphicLocus.bit_index)
             ];
-    }
+    }*/
     
     return W_T1_WholeIndividual;
     //std::cout << "W_T1_WholeIndividual = " << W_T1_WholeIndividual << std::endl;

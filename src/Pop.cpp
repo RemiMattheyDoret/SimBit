@@ -404,9 +404,8 @@ int Pop::SelectionParent(int patch_from, int sex)
     assert(this->CumSumFits[patch_from].size() > sex);
     
     int parent_index;
-    if (SSP->isAnySelection)
+    if (SSP->isAnySelection && SSP->selectionOn != 1) // selection on fertility (maybe on both)
     {
-        // selection on fertility
 
         //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].size() = " << this->CumSumFits[patch_from][sex].size() << "\n";
         //assert(this->CumSumFits[patch_from][sex].back() > 0.0);
@@ -1161,4 +1160,53 @@ std::vector<unsigned> Pop::computeT56Frequencies()
     assert(r.size() == SSP->T56_nbBits);
 
     return r;
+}
+
+
+
+std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
+{
+    std::vector<bool> isPoly(SSP->T1_nbBits, false);
+
+    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    {
+        for (int ind_index=0;ind_index<SSP->patchSize[patch_index];++ind_index)
+        {
+            for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
+            { 
+                auto& haplo = getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+
+                unsigned locus = 0;
+                // First bytes
+                for (unsigned byte = 0 ; byte < (SSP->T1_nbChars-1) ; ++byte )
+                {
+                    if (haplo.getT1_char(byte))
+                    {
+                        for (unsigned bit = 0 ; bit < 8 ; ++bit )
+                        {
+                            isPoly[locus] = haplo.getT1_Allele(byte, bit);
+                            ++locus;
+                        }
+                    } else
+                    {
+                        locus+=8;
+                    }
+                }
+                assert(locus == (SSP->T1_nbChars-1) * 8);
+
+                // last byte
+                auto lastByte = SSP->T1_nbChars-1;
+                if (haplo.getT1_char(lastByte))
+                {
+                    for (unsigned bit = 0 ; bit < SSP->T1_nbBitsLastByte ; ++bit )
+                    {
+                        isPoly[locus] = haplo.getT1_Allele(lastByte, bit);
+                        ++locus;
+                    }
+                }
+            }
+        }
+    }
+    
+    return whichT1_locusDescription(isPoly);
 }

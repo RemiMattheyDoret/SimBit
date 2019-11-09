@@ -45,13 +45,13 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
 
     // Calculate fitness
-    SSP->simTracker.prepareT1SitesForFitness(Parent_pop);
-    Parent_pop.CalculateFitnesses(); // also set Index First Male; Will compute fitness only if it is needed
+    //SSP->simTracker.prepareT1SitesForFitness(Parent_pop);
+    if (SSP->selectionOn != 1) Parent_pop.CalculateFitnesses(); // also set Index First Male; Will compute fitness only if it is needed
 
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     std::vector<int> patchSizeNextGeneration;
 
-    if (SSP->fecundityForFitnessOfOne != -1.0 || SSP->DispWeightByFitness)
+    if (SSP->fecundityForFitnessOfOne != -1.0 || SSP->DispWeightByFitness) // if SSP->fecundityForFitnessOfOne != -1.0 then SSP->selectionOn != 1 (assured in SSP.cpp)
     {
         patchSizeNextGeneration = SSP->dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes(
                 Parent_pop.CumSumFits, 
@@ -68,13 +68,13 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     Offspring_pop.prepareNextGenerationAndIndexFirstMale();
 
     // 4.5 Genealogy
-    if (SSP->simTracker.genealogy.isTime())
-        SSP->simTracker.genealogy.startNewGeneration();
+    if (SSP->genealogy.isTime())
+        SSP->genealogy.startNewGeneration();
 
     // Loop through each patch and through each individual offspring to be created
     //#pragma omp parallel for
     ParentsData PD;
-    if (SSP->SwapInLifeCycle)
+    if (SSP->SwapInLifeCycle && SSP->selectionOn == 0) // no selection on viability
     {
         PD = findAllParents(Parent_pop, patchSizeNextGeneration);
     } else
@@ -273,7 +273,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
 
             // 4.5 Genealogy. Will do something only if the last isTime was true
-            SSP->simTracker.genealogy.addOffspringIfIsTime(patch_index, offspring_index, CD.mother.patch, CD.mother.ind, CD.father.patch, CD.father.ind);
+            SSP->genealogy.addOffspringIfIsTime(patch_index, offspring_index, CD.mother.patch, CD.mother.ind, CD.father.patch, CD.father.ind);
 
 
             //std::cout << "End Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
@@ -283,34 +283,36 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             //std::cout << "Begin father.getHaplo(CD.father.segregationIndex).nbT56muts() = "<< father.getHaplo(CD.father.segregationIndex).nbT56muts() << "\n\n\n\n\n";
         }
     }
-    // set patch size
-    SSP->patchSize = patchSizeNextGeneration;
-    GP->saveSSPPatchSize_toGP();
+    
+    
+    
 
     // 4.5 Genealogy. Will do something only if the last isTime was true
     //std::cout << "line 184\n";
-    SSP->simTracker.genealogy.printBufferIfIsTime();
+    SSP->genealogy.printBufferIfIsTime();
     //std::cout << "line 186\n";
 
-/*    if (SSP->fecundityForFitnessOfOne != -1.0)
+    // Check if species is extinct and set patch size
+    if (SSP->fecundityForFitnessOfOne != -1.0)
     {
-        assert(!SSP->isSpeciesExtinct);
-        SSP->isSpeciesExtinct = true;
+        assert(SSP->whenDidExtinctionOccur == -1); // assert it has nt gone extinct yet
+        bool didGetExtinct = true;
         for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             SSP->patchSize[patch_index] = patchSizeNextGeneration[patch_index];
-            assert(Offspring_pop.CumSumFits[patch_index].size() == patchSizeNextGeneration[patch_index]);
             if (patchSizeNextGeneration[patch_index] > 0)
             {
-                SSP->isSpeciesExtinct = false;
+                didGetExtinct = false;
             }
         }
-        if (SSP->isSpeciesExtinct)
+        if (didGetExtinct)
         {
-            SSP->simTracker.gotExtinct();
+            SSP->whenDidExtinctionOccur = GP->CurrentGeneration;
         }
+
+        GP->saveSSPPatchSize_toGP();
     }
-    */
+    
 
     if (SSP->T4_nbBits > 0)
     {
@@ -1155,7 +1157,7 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
     if (mother_patch_from != patch_index) NBMIGRANTS++;
     #endif
     // Select the mother
-    int mother_index = pop.SelectionParent(mother_patch_from,0); // selection on fertility in there
+    int mother_index = pop.SelectionParent(mother_patch_from, 0); // Selection on fertility (if applicable) in there
 
     if (SSP->cloningRate != 0.0 && (SSP->cloningRate == 1.0 || (GP->random_0and1(GP->mt) < SSP->cloningRate)))
     {

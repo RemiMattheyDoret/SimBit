@@ -92,8 +92,8 @@ public:
     void setW_T2(double w, int fitnessMapIndex);
     void setW_T56(double w, int fitnessMapIndex);
 
-
-    unsigned char getT1_char(int& T1_char_index);
+    template<typename INT>
+    unsigned char getT1_char(INT T1_char_index);
     bool getT1_Allele(const int T1Locus);
     bool getT1_Allele(const int char_index, const int bit_index);
     unsigned char getT2_Allele(const int char_index);

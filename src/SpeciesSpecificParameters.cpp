@@ -117,7 +117,7 @@ void SpeciesSpecificParameters::readSwapInLifeCycle(InputReader& input)
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
-        if (TotalRecombinationRate < 10.0 && TotalNbLoci > 100)
+        if (selectionOn == 0 && TotalRecombinationRate < 10.0 && TotalNbLoci > 100)
         {
             SwapInLifeCycle = true;
         } else
@@ -127,6 +127,11 @@ void SpeciesSpecificParameters::readSwapInLifeCycle(InputReader& input)
     } else
     {
         SwapInLifeCycle = input.GetNextElementBool();
+        if (SwapInLifeCycle && selectionOn != 0)
+        {
+            std::cout << "You asked for selection to be not only on fecundity and for SwapInLifeCycle. Swapping is only possible if selection is only on fecundity.\n";
+            abort();
+        }
     }
 }
 
@@ -245,7 +250,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
 
         if (ShouldThereBeSeveralFitnessBlocks)
         {
-            // Long security
+            // Get locusType and long security
             if (interlocus == 0)
             {
                 assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus == 1);
@@ -378,7 +383,12 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             sumOfProb += r;
 
             // test if needs to make a new boundary
-            if (setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
+            bool avoidTooMuchByteSplitting_mustRunDecidingFun = true;
+            if (locusType == 1 && (T1_locus%8) != 7)
+            {
+                avoidTooMuchByteSplitting_mustRunDecidingFun = false;
+            }
+            if (avoidTooMuchByteSplitting_mustRunDecidingFun && setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
             {
                 FitnessMapIndex++;
                 sumOfProb = 0.0;
@@ -2308,6 +2318,11 @@ void SpeciesSpecificParameters::readSelectionOn(InputReader& input)
     } else if (s == "viability")
     {
         selectionOn = 1;
+        if (fecundityForFitnessOfOne != -1)
+        {
+            std::cout << "You asked for fecundityForFitnessOfOne different from -1 (" << fecundityForFitnessOfOne << ") and for selection on viability only. Sorry, variation of patch size must be computed from selection on fertility and therefore both can not be simulated simultaneously.\n";
+            abort();
+        }
     } else if (s == "both" || s == "fertilityAndViability")
     {
         selectionOn = 2;
@@ -2606,21 +2621,11 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
             std::vector<std::vector<double>>              FitnessEffects_ForASingleHabitat;
 
 
-            unsigned locusSetIndex = 0;
             while (input.IsThereMoreToRead() && input.PeakNextElementString().at(0) != '@')
             {
                 // Initialize vector to fill
                 std::vector<T1_locusDescription> LociIndices_ForASingleGroupOfLoci;
                 std::vector<double>              FitnessEffects_ForASingleGroupOfLoci;
-
-
-                // 'Set' keyword
-                std::string setNumberString = "set" + std::to_string(locusSetIndex);
-                if (input.PeakNextElementString() != setNumberString)
-                {
-                    std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', for species "<<this->speciesName<<", expected string '"<<setNumberString<< "' but received "<<input.PeakNextElementString()<<" instead.\n";
-                }
-                input.skipElement(); // skip expectedString (set<number>)
 
 
                 // 'loci' keyword
@@ -2636,7 +2641,7 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                     int LocusPosition = input.GetNextElementInt();
                     if ( LocusPosition < 0 || LocusPosition >= this->T1_nbBits )
                     {
-                        std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received locus position "<<LocusPosition<<" (indicated for habitat " << habitat << " and "<< setNumberString <<") that is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting).\n";
+                        std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', received locus position "<<LocusPosition<<" (indicated for habitat " << habitat << " that is either lower than zero or greater or equal to the number of T1 sites (" << this->T1_nbBits <<"). As a reminder the first locus is the zeroth locus (zero based counting).\n";
                         abort();  
                     }
                     //std::cout << "LocusPosition = " << LocusPosition << "\n";
@@ -2677,7 +2682,6 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                 // Push to "for a single habitat"
                 LociIndices_ForASingleHabitat.push_back(LociIndices_ForASingleGroupOfLoci);
                 FitnessEffects_ForASingleHabitat.push_back(FitnessEffects_ForASingleGroupOfLoci); 
-
             }
 
             this->T1_Epistasis_LociIndices.push_back(LociIndices_ForASingleHabitat);

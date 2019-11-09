@@ -273,6 +273,20 @@ std::vector<unsigned int> whichUnsignedInt(std::vector<bool> b)
   return r;
 }
 
+
+std::vector<T1_locusDescription> whichT1_locusDescription(std::vector<bool> b)
+{
+  std::vector<T1_locusDescription> r;
+  for (size_t i = 0 ; i < b.size() ; ++i)
+  {
+    if (b[i])
+    {
+      r.push_back(T1_locusDescription(i/8, i%8, i));
+    }
+  }
+  return r;
+}
+
 template<typename INT, typename INTT>
 std::vector<bool> inverseWhich(std::vector<INT> idx, INTT size )
 {

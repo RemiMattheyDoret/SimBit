@@ -37,7 +37,7 @@ std::vector<T> OutputFile::removeSitesWeDontWant(std::vector<T> sites, int speci
     // sites must be sorted
     //std::cout << "From OutputFile::removeSitesWeDontWant: speciesIndex = " << speciesIndex << "\n";
     //std::cout << "From OutputFile::removeSitesWeDontWant: this->subset.size() = " << this->subset.size() << "\n";
-    return intersection(this->subset[speciesIndex],sites);
+    return intersection(this->subset[speciesIndex], sites);
 }
 
 const std::vector<std::string> OutputFile::OutputFileTypesNames = {
