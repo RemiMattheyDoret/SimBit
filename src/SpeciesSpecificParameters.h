@@ -98,6 +98,7 @@ public:
 
     // Fitness Map
     std::vector<int>                                FromLocusToFitnessMapIndex;
+    std::vector<int>                                FitnessMapInfo_wholeDescription;
     std::vector<FromLocusToTXLocusElement>          FromFitnessMapIndexToTXLocus;
     int                                             NbElementsInFitnessMap;
     double                                          FitnessMapProbOfEvent;

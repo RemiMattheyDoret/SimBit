@@ -369,3 +369,6 @@ SimBit_4.8.0
 
 SimBit_4.8.11
 	get rid of SimTracker and performance improvement with T1 sites
+
+SimBit_4.8.12
+	Add mode 'descr' in --fitnessMapInfo

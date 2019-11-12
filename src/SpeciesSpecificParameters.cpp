@@ -231,12 +231,12 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     //std::cout << "T56_isMultiplicitySelection = " << T56_isMultiplicitySelection << "\n";
     bool ShouldThereBeSeveralFitnessBlocks = (this->T1_isSelection && this->T1_isMultiplicitySelection) || (this->T56_isSelection && this->T56_isMultiplicitySelection) || this->T2_isSelection;
 
-    double sumOfProb = 0.0;
+    double sumOfProb = 0.0; // only used if not whole description
     int FitnessMapIndex = 0;
     int nbLociInPiece = 0;
     for (int interlocus = 0 ; interlocus < (this->TotalNbLoci - 1) ; interlocus++)
     {
-        nbLociInPiece++;
+        nbLociInPiece++; // only used if not whole description
 
         // Get Locus info
         int T1_locus = this->FromLocusToTXLocus[interlocus].T1;
@@ -306,102 +306,92 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             }
             assert(locusType == this->FromLocusToTXLocus[interlocus].TType);
 
-            // Get Recombination Rate info
-            double r;
-            if (locusType == 1 || locusType == 2 || locusType == 50  || locusType == 51)
+            // Has there been a whole description of the map
+            if (this->FitnessMapInfo_wholeDescription.size())
             {
-                if (this->RecombinationRate.size() == 1) // which is the case if the rate is constant between any two loci.
+                //std::cout << "this->FitnessMapInfo_wholeDescription.size() = " << this->FitnessMapInfo_wholeDescription.size() << "\n";
+                //std::cout << "FitnessMapIndex = " << FitnessMapIndex << "\n";
+                assert(this->FitnessMapInfo_wholeDescription.size() > FitnessMapIndex);
+                //std::cout << "nbLociInPiece = " << nbLociInPiece << "\n";
+                //std::cout << "this->FitnessMapInfo_wholeDescription["<<FitnessMapIndex<<"] = " << this->FitnessMapInfo_wholeDescription[FitnessMapIndex] << "\n";
+                if (nbLociInPiece == this->FitnessMapInfo_wholeDescription[FitnessMapIndex] && FitnessMapIndex != this->FitnessMapInfo_wholeDescription.size() - 1) // Don't add the last element in FromFitnessMapIndexToTXLocus as it will be done afterward.
                 {
-                    r = this->RecombinationRate[0];
-                } else
+                    FitnessMapIndex++;
+                    nbLociInPiece = 0;
+                    FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
+                    FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
+                }
+            } else
+            {
+                // Get Recombination Rate info
+                double r;
+                if (locusType == 1 || locusType == 2 || locusType == 50  || locusType == 51)
                 {
-                    if (interlocus == 0)
+                    if (this->RecombinationRate.size() == 1) // which is the case if the rate is constant between any two loci.
                     {
                         r = this->RecombinationRate[0];
                     } else
                     {
-                        assert(this->RecombinationRate.size() > interlocus);
-                        r = this->RecombinationRate[interlocus] - this->RecombinationRate[interlocus - 1];
-                    }
-                }
-            } else
-            {
-                r = 0.0;
-            }
-            if (locusType == 50 || locusType == 51)
-            {
-                r *= this->FitnessMapT5WeightProbOfEvent;
-            }
-            
-
-            // Get Mutation rate info
-            /*double mu;
-            bool ShouldIConsiderMutations = false;
-            if (ShouldIConsiderMutations)
-            {
-                if (locusType == 1) // T1
-                {
-                    if (T1_locus == 0 || this->T1_MutationRate.size()==1)
-                    {
-                        mu = this->T1_MutationRate[0];
-                    } else
-                    {
-                        assert(this->T1_MutationRate.size() > T1_locus);
-                        mu = this->T1_MutationRate[T1_locus] - this->T1_MutationRate[T1_locus - 1];
-                    }
-                } else if (locusType == 2) // T2
-                {
-                    if (T2_locus == 0 || this->T2_MutationRate.size()==1)
-                    {
-                        mu = this->T2_MutationRate[0];
-                    } else
-                    {
-                        assert(this->T2_MutationRate.size() > T2_locus);
-                        mu = this->T2_MutationRate[T2_locus] - this->T2_MutationRate[T2_locus - 1];
-                    }
-                } else if (locusType == 3) // T3
-                {
-                    if (T3_locus == 0 || this->T3_MutationRate.size()==1)
-                    {
-                        mu = this->T3_MutationRate[0];
-                    } else
-                    {
-                        assert(this->T3_MutationRate.size() > T3_locus);
-                        mu = this->T3_MutationRate[T3_locus] - this->T3_MutationRate[T3_locus - 1];
+                        if (interlocus == 0)
+                        {
+                            r = this->RecombinationRate[0];
+                        } else
+                        {
+                            assert(this->RecombinationRate.size() > interlocus);
+                            r = this->RecombinationRate[interlocus] - this->RecombinationRate[interlocus - 1];
+                        }
                     }
                 } else
                 {
-                    std::cout << "Internal error in 'void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()'.\n";
-                    abort();
+                    r = 0.0;
                 }
-            } else
-            {
-                mu = 0.0;
-            }*/
+                if (locusType == 50 || locusType == 51)
+                {
+                    r *= this->FitnessMapT5WeightProbOfEvent;
+                }
+                
 
-            // Sum probabilities of an event
-            sumOfProb += r;
+                // Sum probabilities of an event
+                sumOfProb += r;
 
-            // test if needs to make a new boundary
-            bool avoidTooMuchByteSplitting_mustRunDecidingFun = true;
-            if (locusType == 1 && (T1_locus%8) != 7)
-            {
-                avoidTooMuchByteSplitting_mustRunDecidingFun = false;
-            }
-            if (avoidTooMuchByteSplitting_mustRunDecidingFun && setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
-            {
-                FitnessMapIndex++;
-                sumOfProb = 0.0;
-                FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
-                FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
-                nbLociInPiece = 0;
+                // test if needs to make a new boundary
+                bool avoidTooMuchByteSplitting_mustRunDecidingFun = true;
+                if (locusType == 1 && (T1_locus%8) != 7)
+                {
+                    avoidTooMuchByteSplitting_mustRunDecidingFun = false;
+                }
+                if (avoidTooMuchByteSplitting_mustRunDecidingFun && setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
+                {
+                    FitnessMapIndex++;
+                    sumOfProb = 0.0;
+                    FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
+                    FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
+                    nbLociInPiece = 0;
+                }
             }
         } 
     }
 
+    ++FitnessMapIndex;
+    NbElementsInFitnessMap = FitnessMapIndex;
+    
+    if (this->FitnessMapInfo_wholeDescription.size())
+    {
+        //std::cout << "this->FitnessMapInfo_wholeDescription.size() = " << this->FitnessMapInfo_wholeDescription.size() << "\n";
+        //std::cout << "NbElementsInFitnessMap = " << NbElementsInFitnessMap << "\n";
+        assert(this->FitnessMapInfo_wholeDescription.size() == NbElementsInFitnessMap);
+        std::vector<int>().swap(this->FitnessMapInfo_wholeDescription);
+    } else
+    {
+        assert(this->FitnessMapInfo_wholeDescription.size() == 0);   
+    }
+        
 
+    
+    
+
+    // Other assertions
     assert(this->FromLocusToTXLocus.size() == this->TotalNbLoci);
-    NbElementsInFitnessMap = FitnessMapIndex + 1;
 
     // Add last element to boundaries
     FromLocusToTXLocusElement E(this->T1_nbBits, this->T2_nbChars, this->T3_nbChars, this->T4_nbBits, this->T56ntrl_nbBits, this->T56sel_nbBits, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
@@ -1502,6 +1492,7 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
 void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
     this->FitnessMapMinimNbLoci = 0; // This is set to a different value (in allParameters.cpp) only if used default
+    this->FitnessMapProbOfEvent = 0.0;
     std::string mode;
     if (!this->T1_isMultiplicitySelection && !this->T56_isMultiplicitySelection &&  this->T2_nbChars == 0)
     {
@@ -1550,10 +1541,31 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
                 std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received not strictly positive value for 'FitnessMapT5WeightProbOfEvent'(received "<<this->FitnessMapT5WeightProbOfEvent<<").\n";
                 abort();        
             }
-        } else
+        } else if (mode == "descr")
         {
-            std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo, received mode = " << mode << ". Sorry only modes 'prob' and 'coef' are allowed\n";
-            std::cout << "Hum.... actually even mode 'coef' is not allowed on this version due to potential misfunctioning and slow down. Sorry! Please use 'prob'.\n";
+            assert(this->FitnessMapInfo_wholeDescription.size() == 0);
+            int sum = 0;
+            while (input.IsThereMoreToRead())
+            {
+                auto x = input.GetNextElementInt();
+                if (x < 1)
+                {
+                    std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received a number of loci that is lower than 1 (received "<<x<<").\n";
+                    abort();
+                }
+                sum += x;
+                this->FitnessMapInfo_wholeDescription.push_back(x);
+            }
+            if (sum != this->TotalNbLoci)
+            {
+                std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo ( mode = " << mode << ") received a total of "<<sum<<" loci but there is a total of "<< this->TotalNbLoci << " loci asked for option --L. Please note that all loci must be allocated to a fitness map index whether or not the fitness of that locus will be saved for use in next generation. In other words, even for a T3 locus who cannot do the assumption of multiplciity, you have to tell which index map this locus will fall on. It is a little confusing maybe but that's how SimBit works and I've got my reasons :)\n";
+                abort();
+            }
+        }
+        else
+        {
+            std::cout << "For species " << this->speciesName << " when reading --FitnessMapInfo, received mode = " << mode << ". Sorry only modes 'prob', 'descr' and 'coef' are allowed\n";
+            std::cout << "Hum.... actually even mode 'coef' is not allowed on this version due to potential misfunctioning and slow down. Sorry! Please use 'prob' or 'descr'.\n";
             abort(); 
         }
     }
@@ -1832,8 +1844,8 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
 
 void SpeciesSpecificParameters::readIndividualTypes(InputReader& input)
 {
-    setFromLocusToFitnessMapIndex(); // Need that to initialize individual types
     IsThereSelection();              // Need that to initialize individual types
+    setFromLocusToFitnessMapIndex(); // Need that to initialize individual types
 
     // Default 
     if (input.PeakNextElementString() == "default")

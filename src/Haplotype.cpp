@@ -2395,9 +2395,11 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
     {
         if (getW_T1(fitnessMapIndex) == -1.0)
         {
+            //std::cout << "must recompute fitnessMapIndex " << fitnessMapIndex << "\n";
             double w = 1.0;
 
             auto to = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T1;
+            //std::cout << "to " << to << "\n";
             assert(to <= SSP->T1_nbBits);
             auto from = 0;
             if (fitnessMapIndex != 0)
@@ -2410,64 +2412,21 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
             auto byteTo = to / 8;
             auto bitTo = to % 8;
             auto locus = from;
+            /*
+            std::cout << "from " << from << "\n";
+            std::cout << "to " << to << "\n";
+            std::cout << "byteFrom " << byteFrom << "\n";
+            std::cout << "bitFrom " << bitFrom << "\n";
+            std::cout << "byteTo " << byteTo << "\n";
+            std::cout << "bitTo " << bitTo << "\n";
+            */
 
-            // first bits
-            if (bitFrom != 0)
+            if (byteFrom == byteTo)
             {
-                auto firstByteBitTo = 8;
-                if (byteFrom == byteTo)
+                // Special case where the fitness map block is so small that it is contain within a single byte!
+                for (auto bit = bitFrom ; bit < bitTo ; ++bit)
                 {
-                    firstByteBitTo = bitTo;
-                }
-                assert(bitFrom < firstByteBitTo);
-
-                if (getT1_char(byteFrom))
-                {
-                    for (auto bit = bitFrom ; bit < firstByteBitTo ; ++bit)
-                    {
-                        if (getT1_Allele(byteFrom, bit))
-                        {
-                            w *= fits[locus];
-                        }
-                        ++locus;
-                    }
-                } else
-                {
-                    locus += firstByteBitTo - bitFrom; // that might be wrong when byteFrom == byteTo but it does not matter for this case
-                }
-                ++byteFrom;
-            }
-
-            // First Bytes
-            auto firstBytesByteTo = byteTo;
-            if (bitTo != 0)
-            {
-                --firstBytesByteTo;   
-            }
-            for (auto byte = byteFrom ; byte < (byteTo-1) ; ++byte)
-            {
-                if (getT1_char(byte))
-                {
-                    for (auto bit = bitFrom ; bit < 8 ; ++bit)
-                    {
-                        if (getT1_Allele(byte, bit))
-                        {
-                            w *= fits[locus];
-                        }
-                        ++locus;
-                    }    
-                } else
-                {
-                    locus += 8;
-                }
-            }
-
-            // Last byte
-            if (bitTo != 0 && getT1_char(byteTo))
-            {
-                for (auto bit = 0 ; bit < bitTo ; ++bit)
-                {
-                    if (getT1_Allele(byteTo, bit))
+                    if (getT1_Allele(byteFrom, bit))
                     {
                         w *= fits[locus];
                     }
@@ -2475,7 +2434,66 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
                 }
             } else
             {
-                locus += 8; // only needed for assertions below
+                // first bits
+                if (bitFrom != 0)
+                {
+                    if (getT1_char(byteFrom))
+                    {
+                        for (auto bit = bitFrom ; bit < 8 ; ++bit)
+                        {
+                            if (getT1_Allele(byteFrom, bit))
+                            {
+                                w *= fits[locus];
+                            }
+                            ++locus;
+                        }
+                    } else
+                    {
+                        locus += 8 - bitFrom; // that might be wrong when byteFrom == byteTo but it does not matter for this case
+                    }
+                    ++byteFrom;
+                }
+                //std::cout << "after first bits: locus " << locus << "\n";
+
+                // First Bytes
+                for (auto byte = byteFrom ; byte < byteTo ; ++byte)
+                {
+                    if (getT1_char(byte))
+                    {
+                        for (auto bit = 0 ; bit < 8 ; ++bit)
+                        {
+                            if (getT1_Allele(byte, bit))
+                            {
+                                w *= fits[locus];
+                            }
+                            ++locus;
+                        }    
+                    } else
+                    {
+                        locus += 8;
+                    }
+                }
+                //std::cout << "after first bytes: locus " << locus << "\n";
+
+                // Last byte
+                if (bitTo != 0)
+                {
+                    if (getT1_char(byteTo))
+                    {
+                        for (auto bit = 0 ; bit < bitTo ; ++bit)
+                        {
+                            if (getT1_Allele(byteTo, bit))
+                            {
+                                w *= fits[locus];
+                            }
+                            ++locus;
+                        }
+                    } else
+                    {
+                        locus += bitTo; // only needed for assertions below
+                    }
+                } 
+                //std::cout << "after last byte: locus " << locus << "\n";
             }
 
             assert(locus == to);
