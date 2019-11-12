@@ -472,6 +472,13 @@ int Pop::SelectionOriginPatch(size_t patch_to)
     {
         return 0;
     }
+
+    if (SSP->dispersalData.BackwardMigration[patch_to][0] == 1.0) // if deterministic
+    {
+        return SSP->dispersalData.BackwardMigrationIndex[patch_to][0];
+    }
+
+
     int patch_from = -1;
     
     double rnd = GP->random_0and1(GP->mt); // random between 0 and 1

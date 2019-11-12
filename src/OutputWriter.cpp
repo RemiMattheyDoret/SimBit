@@ -3555,7 +3555,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2731\n";
     if (this->isFile(fitnessStats))
     {
-        if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T3_isSelection || SSP->T1_isEpistasis)
+        if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T3_isSelection || SSP->T1_isEpistasis || SSP->T56_isSelection )
         {
             OutputFile& file = this->get_OutputFiles(fitnessStats)[0];
             if ( GP->CurrentGeneration == GP->startAtGeneration)

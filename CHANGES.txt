@@ -367,3 +367,5 @@ SimBit_4.7.12
 SimBit_4.8.0
 	Add --IndTypes
 
+SimBit_4.8.11
+	get rid of SimTracker and performance improvement with T1 sites

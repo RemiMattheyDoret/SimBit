@@ -2545,40 +2545,89 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
 }
 
 
-template<typename Iterator>
-double Haplotype::CalculateT56FitnessMultiplicity(const int& Habitat, Iterator it, Iterator itEnd)
+double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
 {
 
     auto& fits = SSP->T56_FitnessEffects[Habitat];
     assert(fits.size() == SSP->T56sel_nbBits);
 
+    std::vector<unsigned int>::iterator it    = T5sel_Alleles.begin();
+    std::vector<unsigned int>::iterator itEnd = T5sel_Alleles.end();
+
+    bool needToRecomputeIt = false;
+
     double r = 1.0;
     for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
-        while (getW_T56(fitnessMapIndex) != -1.0)
+        if (getW_T56(fitnessMapIndex) != -1.0)
         {
             r *= getW_T56(fitnessMapIndex);
-            ++fitnessMapIndex;
-            if (fitnessMapIndex == SSP->NbElementsInFitnessMap) return r;
-        }
-
-        unsigned T56_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T56sel;
-        double w = 1.0;
-        //std::cout << "T5 muts: ";
-        for (; it != itEnd && *it < T56_locusTo ; ++it)
+            needToRecomputeIt = true;
+        } else
         {
-            //std::cout << *it << " ";
-            w *= fits[*it];
+            if (needToRecomputeIt)
+            {
+                auto locusFrom = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex-1].T56sel;
+                it = std::lower_bound(it, itEnd, locusFrom);
+            }
+
+            unsigned T56_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T56sel;
+            double w = 1.0;
+
+            for (; it != itEnd && *it < T56_locusTo ; ++it)
+            {                
+                w *= fits[*it];
+            }
+            needToRecomputeIt = false;
+            
+            assert(w<=1.0 && w>=0.0);
+            setW_T56(w, fitnessMapIndex);
+            r *= w;
         }
-        
-        //std::cout << std::endl;
-
-        assert(w<=1.0 && w>=0.0);
-        setW_T56(w, fitnessMapIndex);
-        r *= w;
     }
-    
+    return r;
+}
 
+double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
+{
+
+    auto& fits = SSP->T56_FitnessEffects[Habitat];
+    assert(fits.size() == SSP->T56sel_nbBits);
+
+    CompressedSortedDeque::iterator it    = T6sel_Alleles.begin();
+    CompressedSortedDeque::iterator itEnd = T6sel_Alleles.end();
+
+    bool needToRecomputeIt = false;
+
+    double r = 1.0;
+    for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
+    {
+        if (getW_T56(fitnessMapIndex) != -1.0)
+        {
+            r *= getW_T56(fitnessMapIndex);
+            needToRecomputeIt = true;
+        } else
+        {
+            if (needToRecomputeIt)
+            {
+                auto locusFrom = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex-1].T56sel;
+                it = it.lower_bound_FromThis(locusFrom);
+            }
+
+            unsigned T56_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T56sel;
+            double w = 1.0;
+
+            for (; it != itEnd && *it < T56_locusTo ; ++it)
+            {                
+                w *= fits[*it];
+            }
+            needToRecomputeIt = false;
+            
+            assert(w<=1.0 && w>=0.0);
+            setW_T56(w, fitnessMapIndex);
+            r *= w;
+        }
+    }
     return r;
 }
 
@@ -2590,18 +2639,15 @@ double Haplotype::CalculateT56FitnessMultiplicity(const int& Habitat)
 std::cout << "Enters in 'CalculateT56FitnessMultiplicity'\n";
 #endif   
 
-    // Get the right fitness array
-    auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56sel_nbBits);
 
     double r;
     if (SSP->T5sel_nbBits)
     {
-        r = CalculateT56FitnessMultiplicity(Habitat, T5sel_Alleles.begin(), T5sel_Alleles.end());
+        r = CalculateT5FitnessMultiplicity(Habitat);
     } else
     {
         assert(SSP->T6sel_nbBits);
-        r = CalculateT56FitnessMultiplicity(Habitat, T6sel_Alleles.begin(), T6sel_Alleles.end());
+        r = CalculateT6FitnessMultiplicity(Habitat);
     }
 
 

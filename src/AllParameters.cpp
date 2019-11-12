@@ -1091,7 +1091,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
         {
-            SSPi.FitnessMapMinimNbLoci = 120;
+            SSPi.FitnessMapMinimNbLoci = 5e3 - 1; // -1 so that the next value is a multiple of 8
             SSPi.FitnessMapProbOfEvent = 0.008; // This is a default value but the optimal value will vary a lot depending upon what exactly is being simulated! I can definitely improve the decision of the FitnessMap Boundaries
     
             SSPi.FitnessMapT5WeightProbOfEvent = 0.06;
@@ -1129,7 +1129,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "T5_toggleMutsEveryNGeneration")
     {
-        InputReader input(std::string("@S0 1e3"), "In Default value for --T5_toggleMutsEveryNGeneration,");
+        InputReader input(std::string("@S0 -1"), "In Default value for --T5_toggleMutsEveryNGeneration,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_toggleMutsEveryNGeneration);
     }
     else if (flag == "T5_freqThreshold")

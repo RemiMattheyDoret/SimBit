@@ -1501,7 +1501,7 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
 
 void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
-    this->FitnessMapMinimNbLoci = 0; // This is set to a different value only if used default
+    this->FitnessMapMinimNbLoci = 0; // This is set to a different value (in allParameters.cpp) only if used default
     std::string mode;
     if (!this->T1_isMultiplicitySelection && !this->T56_isMultiplicitySelection &&  this->T2_nbChars == 0)
     {

@@ -247,9 +247,9 @@ public:
 
     double CalculateT2Fitness(const int& Habitat);
     
-    template<typename Iterator>
-    double CalculateT56FitnessMultiplicity(const int& Habitat, Iterator it, Iterator itEnd);
     double CalculateT56FitnessMultiplicity(const int& Habitat);
+    double CalculateT5FitnessMultiplicity(const int& Habitat);
+    double CalculateT6FitnessMultiplicity(const int& Habitat);
 
     double CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);

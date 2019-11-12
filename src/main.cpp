@@ -137,7 +137,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.8.6");
+    std::string VERSION("version 4.8.11");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
