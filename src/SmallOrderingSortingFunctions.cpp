@@ -263,7 +263,7 @@ void removeIndicesFromVector(std::vector<T>& v, std::vector<INT>& rm )
 std::vector<unsigned int> whichUnsignedInt(std::vector<bool> b)
 {
   std::vector<unsigned int> r;
-  for (size_t i = 0 ; i < b.size() ; ++i)
+  for (unsigned i = 0 ; i < b.size() ; ++i)
   {
     if (b[i])
     {

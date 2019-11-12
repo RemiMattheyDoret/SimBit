@@ -322,6 +322,15 @@ void Pop::CalculateFitnesses()
     ///////////////////////////////////////////////////
 
     // Start with common special case where we know for sure that all fitnesses are already correct and that there is no need 
+    /*
+    std::cout << "SSP->malesAndFemales = " << SSP->malesAndFemales << "\n";
+    std::cout << " GP->CurrentGeneration = " <<  GP->CurrentGeneration << "\n";
+    std::cout << " GP->startAtGeneration = " <<  GP->startAtGeneration << "\n";
+    std::cout << " GP->__GenerationChange.size() = " <<  GP->__GenerationChange.size() << "\n";
+    bool bFind = std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end();
+    std::cout << " std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end() = " <<  bFind << "\n";
+    std::cout << " hasCrazyResettingHappened = " <<  hasCrazyResettingHappened << "\n";
+    */
     if (!SSP->malesAndFemales) // no males index to set
     {
         if (GP->startAtGeneration != GP->CurrentGeneration && (GP->__GenerationChange.size() == 1 || std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end())) // no recent updates in population
@@ -337,6 +346,8 @@ void Pop::CalculateFitnesses()
             }
         }
     }
+    //std::cout << "recomputing fitnesses\n";
+    this->hasCrazyResettingHappened = false;
     
 
 

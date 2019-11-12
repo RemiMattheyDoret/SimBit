@@ -199,7 +199,7 @@ void ResetGenetics::addEvent(ResetGeneticsEvent_A event)
     std::stable_sort(
         eventsA.begin(), 
         eventsA.end(),
-        [](const auto& left, const auto& right)
+        [](const ResetGeneticsEvent_A& left, const ResetGeneticsEvent_A& right)
         {
           return left.generation < right.generation;
         }
@@ -213,7 +213,7 @@ void ResetGenetics::addEvent(ResetGeneticsEvent_B event)
     std::stable_sort(
         eventsB.begin(), 
         eventsB.end(),
-        [](const auto& left, const auto& right)
+        [](const ResetGeneticsEvent_B& left, const ResetGeneticsEvent_B& right)
         {
           return left.generation < right.generation;
         }
@@ -577,7 +577,7 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
             eventsB.erase(eventsB.begin());
             isB = isEventBGeneration();
         }
-
+        
         pop.hasCrazyResettingHappened = true;
     }
 }
