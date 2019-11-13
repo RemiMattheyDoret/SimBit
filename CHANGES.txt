@@ -372,3 +372,6 @@ SimBit_4.8.11
 
 SimBit_4.8.12
 	Add mode 'descr' in --fitnessMapInfo
+	
+SimBit_4.8.14
+	Change default value for logfile

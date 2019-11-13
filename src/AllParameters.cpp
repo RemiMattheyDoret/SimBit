@@ -986,7 +986,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     } 
     else if (flag == "LogfileType")
     {
-        outputWriter.LogfileType = 1;
+        outputWriter.LogfileType = 0;
     }
     else if (flag == "sequencingErrorRate")
     {

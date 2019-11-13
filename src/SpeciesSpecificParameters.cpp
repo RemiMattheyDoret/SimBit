@@ -2742,13 +2742,13 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                         (
                             (firstMode.compare("A")==0 || firstMode.compare("unif")==0)
                             &&
-                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityAGamma")==0 || Mode.compare("MultiplicityUnif")==0)
+                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || Mode.compare("MultiplicityUnif")==0)
                         )
                         ||
                         (
                             (Mode.compare("A")==0 || Mode.compare("unif")==0)
                             &&
-                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityAGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
+                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
                         )
                     )
                 {
@@ -2890,7 +2890,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected (likely an internal error)\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityAGamma")==0)
+            } else if (Mode.compare("MultiplicityGamma")==0)
             {
                 double alpha = input.GetNextElementDouble();
                 double beta = input.GetNextElementDouble();
@@ -2909,7 +2909,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
             } else
             {
-                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityAGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T56_FitnessEffects.push_back(ForASingleHabitat);
@@ -3007,13 +3007,13 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                         (
                             (firstMode.compare("A")==0 || firstMode.compare("unif")==0)
                             &&
-                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityAGamma")==0 || Mode.compare("MultiplicityUnif")==0)
+                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || Mode.compare("MultiplicityUnif")==0)
                         )
                         ||
                         (
                             (Mode.compare("A")==0 || Mode.compare("unif")==0)
                             &&
-                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityAGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
+                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
                         )
                     )
                 {
@@ -3278,7 +3278,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->T1_nbBits << " (= 8 * ( " << this->T1_nbChars << "))  were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityAGamma")==0)
+            } else if (Mode.compare("MultiplicityGamma")==0)
             {
                 double alpha = input.GetNextElementDouble();
                 double beta = input.GetNextElementDouble();
@@ -3297,7 +3297,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 }
             } else
             {
-                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), MultiplicityA', 'MultiplicityUnif' and 'MultiplicityAGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T1_FitnessEffects.push_back(ForASingleHabitat);
