@@ -106,15 +106,15 @@ unsigned char Haplotype::getT1_char(INT char_index)
 
 bool Haplotype::getT1_Allele(const int T1Locus)
 {
-    const int char_index = T1Locus / EIGHT;
-    const int bit_index  = T1Locus % EIGHT;
+    const int char_index = T1Locus / 8;
+    const int bit_index  = T1Locus % 8;
     return (this->getT1_Allele(char_index, bit_index));
 }
 
 bool Haplotype::getT1_Allele(const int char_index, const int bit_index)
 {
     /*
-    assert(bit_index < EIGHT);
+    assert(bit_index < 8);
     assert(bit_index >= 0);
     assert(char_index >= 0);
     assert(char_index < SSP->T1_nbChars);
@@ -161,7 +161,7 @@ void Haplotype::setT1_char(int& char_index, unsigned char&& c)
 template<typename valueType>
 void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const valueType& value)
 {
-    //assert(bit_index < EIGHT);
+    //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
     //assert(char_index < SSP->T1_nbChars);
@@ -171,7 +171,7 @@ void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const 
 
 void Haplotype::setT1_AlleleToOne(int& char_index, int& bit_index)
 {
-    //assert(bit_index < EIGHT);
+    //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
     //assert(char_index < SSP->T1_nbChars);
@@ -180,7 +180,7 @@ void Haplotype::setT1_AlleleToOne(int& char_index, int& bit_index)
 
 void Haplotype::setT1_AlleleToZero(int& char_index, int& bit_index)
 {;
-    //assert(bit_index < EIGHT);
+    //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
     //assert(char_index < SSP->T1_nbChars);
@@ -215,7 +215,7 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
     //std::cout << "mutation at " << MutPosition << "\n";
     int byte_index = MutPosition / 8;
     int bit_index  = MutPosition % 8;
-    //assert(bit_index < EIGHT);
+    //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(byte_index >= 0);
     //assert(byte_index < SSP->T1_nbChars);
@@ -233,16 +233,16 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
             // Note that Toggle already happened. If it is mutant, it is because it just happened!
             if ( this->getT1_Allele(byte_index, bit_index) ) // mutation added
             {
-                w *= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index];
+                w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
                 assert(w >= 0.0 && w <= 1.0);
             } else // mutation removed
             {
-                if (SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index] == 0)
+                if (SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index] == 0)
                 { 
                     w = -1.0;
                 } else
                 {
-                    w /= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index]; 
+                    w /= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index]; 
                     assert(w >= 0.0 && w <= 1.0);
                 }
             }
@@ -262,7 +262,7 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
                 double w = this->getW_T1(fitnessMapIndex);
                 if (w != -1.0)
                 {
-                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index];
+                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
                     assert(w >= 0.0 && w <= 1.0);
                     this->setW_T1( w,   fitnessMapIndex );
                 }
@@ -282,16 +282,16 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
                 // Note that Toggle already happened. If it is mutant, it is because it just happened!
                 if ( this->getT1_Allele(byte_index, bit_index) ) // mutation added
                 {
-                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index];
+                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
                     assert(w >= 0.0 && w <= 1.0);
                 } else // mutation removed
                 {
-                    if (SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index] == 0)
+                    if (SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index] == 0)
                     {
                         w = -1.0;
                     } else
                     {
-                        w /= SSP->T1_FitnessEffects[Habitat][byte_index * EIGHT + bit_index]; 
+                        w /= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index]; 
                         assert(w >= 0.0 && w <= 1.0);
                     }
                 }
@@ -412,12 +412,12 @@ void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
     assert(from >= 0);
     assert(to > from);
     
-    int ByteFrom = from / EIGHT; // integer division. It will floor automatically
-    int ByteTo   = to / EIGHT; // integer division. It will floor automatically
+    int ByteFrom = from / 8; // integer division. It will floor automatically
+    int ByteTo   = to / 8; // integer division. It will floor automatically
     assert(ByteTo <= SourceChromo.T1_Alleles.size() + 1);
 
-    int bitIndexFrom = from % EIGHT;
-    int bitIndexTo = to % EIGHT;
+    int bitIndexFrom = from % 8;
+    int bitIndexTo = to % 8;
 
     if (ByteTo == SSP->T1_nbChars - 1) // This is to deal with the last extra bits. Note that if it copies a few extra bits, it is not an issue.
     {
@@ -441,7 +441,7 @@ void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
     } else if (ByteTo > ByteFrom)
     {
         // Copy first bits
-        for (int bit_index = bitIndexFrom ; bit_index < EIGHT ; bit_index++)
+        for (int bit_index = bitIndexFrom ; bit_index < 8 ; bit_index++)
         {
             if (SourceChromo.getT1_Allele(ByteFrom, bit_index))
             {
@@ -764,11 +764,11 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
                     bit_index_to = SSP->T1_nbBitsLastByte;
                 } else
                 {
-                    bit_index_to = EIGHT;
+                    bit_index_to = 8;
                 }
                 for (int bit_index=0 ; bit_index < bit_index_to ; bit_index++ )
                 {
-                    int locus = byte_index * EIGHT + bit_index;
+                    int locus = byte_index * 8 + bit_index;
 
                     assert(SSP->T1_Initial_AlleleFreqs[patch_index].size() > locus);
                     if (SSP->T1_Initial_AlleleFreqs[patch_index][locus] == 1.0)
