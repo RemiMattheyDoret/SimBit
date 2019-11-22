@@ -49,20 +49,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     if (SSP->selectionOn != 1) Parent_pop.CalculateFitnesses(); // also set Index First Male; Will compute fitness only if it is needed
 
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
-    std::vector<int> patchSizeNextGeneration;
-
-    if (SSP->fecundityForFitnessOfOne != -1.0 || SSP->DispWeightByFitness) // if SSP->fecundityForFitnessOfOne != -1.0 then SSP->selectionOn != 1 (assured in SSP.cpp)
-    {
-        patchSizeNextGeneration = SSP->dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes(
-                Parent_pop.CumSumFits, 
-                false
-            );
-        assert(patchSizeNextGeneration.size() == GP->PatchNumber);
-    } else
-    {
-        patchSizeNextGeneration = SSP->patchCapacity;
-        SSP->TotalpatchSize = SSP->TotalpatchCapacity;
-    }
+    const std::vector<int>& patchSizeNextGeneration = SSP->dispersalData.setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(Parent_pop.CumSumFits);
+    assert(patchSizeNextGeneration.size() == GP->PatchNumber);
+    
 
     // Prepare Next Generation CumSumFits and Index First Male. For Index First Male, it needs to know the patch size in the next generation, the line must therefore come after dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes
     Offspring_pop.prepareNextGenerationAndIndexFirstMale();
@@ -309,8 +298,6 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         {
             SSP->whenDidExtinctionOccur = GP->CurrentGeneration;
         }
-
-        GP->saveSSPPatchSize_toGP();
     }
     
 

@@ -35,7 +35,7 @@ Note for Remi of things to do:
 
 GeneralParameters::GeneralParameters(){}
 
-void GeneralParameters::saveSSPPatchSize_toGP()
+/*void GeneralParameters::saveSSPPatchSize_toGP()
 {
     //std::cout << "Enters in GeneralParameters::saveSSPPatchSize_toGP. this->PatchNumber = " << this->PatchNumber << "\n";
     assert(this->allSpeciesPatchSizes.size() == this->PatchNumber);
@@ -48,7 +48,7 @@ void GeneralParameters::saveSSPPatchSize_toGP()
 
         this->allSpeciesPatchSizes[patch_index][SSP->speciesIndex] = SSP->patchSize[patch_index];
     }
-}
+}*/
 /*
 void GeneralParameters::saveSSPPatchSize_toGP_lowerSecurity()
 {
@@ -121,6 +121,168 @@ void GeneralParameters::readT1_FST_info(InputReader& input)
     input.workDone();
 }
 
+void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
+{
+    // Allocate memory fitst
+    assert(GP->nbSpecies > 0);
+    speciesInteraction.resize(GP->nbSpecies);
+    speciesCompetition.resize(GP->nbSpecies);
+    for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; ++speciesIndex)
+    {
+        speciesInteraction[speciesIndex].resize(GP->nbSpecies);
+        speciesCompetition[speciesIndex].resize(GP->nbSpecies);
+    }
+    __speciesInteraction.reserve(this->__GenerationChange.size());
+    __speciesCompetition.reserve(this->__GenerationChange.size());
+    //__typeOfSpeciesInteraction.reserve(this->__GenerationChange.size());
+        
+
+
+
+    // read input
+    for (int generation_index = 0 ; generation_index < this->__GenerationChange.size() ; generation_index++)
+    {
+        (void) input.GetNextGenerationMarker(generation_index);
+        
+
+
+        /////////////////
+        // interaction //
+        /////////////////
+        std::string s_interaction_exp = "interaction";
+        std::string s_interaction = input.GetNextElementString();
+        if (s_interaction != s_interaction_exp)
+        {
+            std::cout << "In --eco, expected the keyword '" << s_interaction_exp << "' but got '" << s_interaction << "' instead\n";
+            abort();
+        }
+
+
+        /*
+        Actually I'll only do additive
+        std::string s_mulOrAdd = input.GetNextElementString();
+        if (s_mulOrAdd == "multiply")
+        {
+            typeOfSpeciesInteraction = 'M';
+        } else if (s_mulOrAdd == "add")
+        {
+            typeOfSpeciesInteraction = 'A';
+        } else if (s_mulOrAdd == "no" || s_mulOrAdd == "default")
+        {
+            typeOfSpeciesInteraction = '0';
+        } else
+        {
+            std::cout << "In --eco, expected either keyword 'multiply', 'add' or 'no' but instead received " << s_mulOrAdd << "\n";
+            abort();
+        }*/
+
+        if (input.PeakNextElementString() == "default")
+        {
+            input.skipElement();
+            
+            for (int speciesIndexFrom = 0 ; speciesIndexFrom < GP->nbSpecies ; ++speciesIndexFrom)
+            {
+                for (int speciesIndexTo = 0 ; speciesIndexTo < GP->nbSpecies ; ++speciesIndexTo)
+                {
+                    speciesInteraction[speciesIndexTo][speciesIndexFrom] = 0.0;
+                }
+            }
+        } else
+        {
+            for (int speciesIndexFrom = 0 ; speciesIndexFrom < GP->nbSpecies ; ++speciesIndexFrom)
+            {
+                for (int speciesIndexTo = 0 ; speciesIndexTo < GP->nbSpecies ; ++speciesIndexTo)
+                {
+                    if (speciesIndexFrom == speciesIndexTo)
+                    {
+                        if (input.GetNextElementDouble() != 0.0)
+                        {
+                            std::cout << "For option --eco, received a value different from 0.0 for the interaction matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
+                            abort();
+                        }
+                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = 0.0; 
+                        
+                    } else
+                    {
+                        double x = input.GetNextElementDouble();
+                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = x;
+                    }
+                }
+            }
+        }
+
+
+
+
+        /////////////////
+        // competition //
+        /////////////////
+        std::string s_competition_exp = "competition";
+        std::string s_competition = input.GetNextElementString();
+        if (s_competition != s_competition_exp)
+        {
+            std::cout << "In --eco, expected the keyword '" << s_competition_exp << "' but got '" << s_competition << "' instead\n";
+            abort();
+        }
+
+
+        if (input.PeakNextElementString() == "default")
+        {
+            input.skipElement();
+
+            for (int speciesIndexFrom = 0 ; speciesIndexFrom < GP->nbSpecies ; ++speciesIndexFrom)
+            {
+                for (int speciesIndexTo = 0 ; speciesIndexTo < GP->nbSpecies ; ++speciesIndexTo)
+                {
+                    if (speciesIndexFrom == speciesIndexTo)
+                    {
+                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = 1.0;
+                    } else
+                    {
+                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = 0.0;
+                    }
+                }
+            }
+        } else
+        {
+            for (int speciesIndexFrom = 0 ; speciesIndexFrom < GP->nbSpecies ; ++speciesIndexFrom)
+            {
+                for (int speciesIndexTo = 0 ; speciesIndexTo < GP->nbSpecies ; ++speciesIndexTo)
+                {
+                    if (speciesIndexFrom == speciesIndexTo)
+                    {
+                        if (input.GetNextElementDouble() != 1.0)
+                        {
+                            std::cout << "For option --eco, received a value different from 1.0 for the competition matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
+                            abort();
+                        }
+                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = 1.0;
+                    } else
+                    {
+                        double x = input.GetNextElementDouble();
+                        if (x < 0.0)
+                        {
+                            std::cout << "For option --eco, received a negative value (received "<<x<< ") for the competition matrix for the effect of species index " << speciesIndexFrom << " onto species index "<<speciesIndexTo << ".\n";
+                            abort();
+                        }
+                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = x;
+                    }
+                }
+            }
+        }
+
+        ///////////////////////////
+        // Assign to __variables //
+        ///////////////////////////
+        __speciesInteraction.push_back(speciesInteraction);
+        __speciesCompetition.push_back(speciesCompetition);
+        //__typeOfSpeciesInteraction.push_back(typeOfSpeciesInteraction);
+        
+
+    }
+}
+
+
 void GeneralParameters::readPatchNumber(InputReader& input)
 {
 #ifdef DEBUG
@@ -151,7 +313,23 @@ void GeneralParameters::readPatchNumber(InputReader& input)
     assert(maxEverPatchNumber > 0);
 }
 
-void GeneralParameters::initializeAllSpeciesPatchSizes()
+void GeneralParameters::setAllPatchSizePreviousGenerationIfNeeded()
+{
+    if (nbSpecies > 1) // I could add if at least one fec is different from -1 but I am lazy and it does not matter
+    {
+        assert(allSpeciesPatchSizePreviousGeneration.size() == PatchNumber);
+        for (int patch_index = 0 ; patch_index < PatchNumber ; patch_index++)
+        {
+            assert(allSpeciesPatchSizePreviousGeneration[patch_index].size() == nbSpecies);
+            for (int speciesIndex = 0 ; speciesIndex < nbSpecies ; ++speciesIndex)
+            {
+                allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex] = allParameters.SSPs[speciesIndex].patchSize[patch_index];
+            }
+        }
+    }
+}
+
+/*void GeneralParameters::initializeAllSpeciesPatchSizes()
 {
     assert(this->PatchNumber == this->__PatchNumber[0]);
     assert(this->PatchNumber > 0);
@@ -162,7 +340,7 @@ void GeneralParameters::initializeAllSpeciesPatchSizes()
         GP->allSpeciesPatchSizes[patch_index].resize(this->nbSpecies);
     }
     assert(GP->allSpeciesPatchSizes.size() == GP->PatchNumber);
-}
+}*/
 
 
 
@@ -243,16 +421,21 @@ void GeneralParameters::readTemporalChanges(std::vector<int>& T)
 }
 
 
-void GeneralParameters::UpdateParametersPatchNumber(int generation_index)
+void GeneralParameters::update(int generation_index)
 {
-    assert(generation_index < GP->__PatchNumber.size());
+    assert(generation_index < __PatchNumber.size());
+    //assert(generation_index < __typeOfSpeciesInteraction.size());
+    
     GP->PatchNumber = GP->__PatchNumber[generation_index];
+    //typeOfSpeciesInteraction = __typeOfSpeciesInteraction[generation_index];
+    speciesInteraction = __speciesInteraction[generation_index];
+    speciesCompetition = __speciesCompetition[generation_index];
 
-    // Resize allSpeciesPatchSizes
-    allSpeciesPatchSizes.resize(this->PatchNumber);
+    // Resize allSpeciesPatchSizePreviousGeneration
+    allSpeciesPatchSizePreviousGeneration.resize(this->PatchNumber);
     for (int patch_index = 0 ; patch_index < this->PatchNumber ; patch_index++)
     {
-        allSpeciesPatchSizes[patch_index].resize(this->nbSpecies);
+        allSpeciesPatchSizePreviousGeneration[patch_index].resize(this->nbSpecies);
     }
 }
 

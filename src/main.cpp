@@ -137,7 +137,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.8.14");
+    std::string VERSION("version 4.9.6");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -235,7 +235,6 @@ int main(int argc, char *argv[])
 
 
     // start at the desired generation
-    GP->UpdateParametersPatchNumber(0);
     for (int GenerationChangeIndex = 0 ; GenerationChangeIndex < GP->__GenerationChange.size() ; GenerationChangeIndex++ )
     {
         int generation = GP->__GenerationChange[GenerationChangeIndex];
@@ -306,10 +305,6 @@ int main(int argc, char *argv[])
                 std::cout << "-------- pop has been copied --------" << std::endl;
             #endif
 
-            #ifdef DEBUG
-                std::cout << "-------- Initialization of simTracker terminated --------" << std::endl;
-            #endif
-
             pop_odd.PrintBinaryFile();    // Save population in binary file if you asked for it. It will also save the seed to binary if SSP points to the parameters for the last speciesIndex 
             outputWriter.WriteOutputs(pop_odd); // WriteOutputs if you asked for it
 
@@ -376,6 +371,9 @@ int main(int argc, char *argv[])
         // Change pops and parameters if needed. Will loop through each species and will use the globals variables.
         allParameters.UpdatePopsAndParameters();
 
+        // Set patch size after the end of the current generation. Is used for species interactions
+        GP->setAllPatchSizePreviousGenerationIfNeeded();
+
         // Loop through each species to do the breeding
         for (int speciesIndex = 0; speciesIndex < GP->nbSpecies ; speciesIndex++)
         {
@@ -425,9 +423,6 @@ int main(int argc, char *argv[])
 
             // reset genetics if needed (under user requirement only)
             SSP->resetGenetics.resetPopIfNeeded(pop_Offspring);
-
-            // Save patchSize to GP
-            GP->saveSSPPatchSize_toGP();
 
             // Code inserted
             codeToInsert(pop_Offspring);

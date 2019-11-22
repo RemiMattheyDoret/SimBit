@@ -228,7 +228,11 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
         abort();
     }
 
-    //std::cout << "T56_isMultiplicitySelection = " << T56_isMultiplicitySelection << "\n";
+    /*
+    std::cout << "T56_isMultiplicitySelection = " << T56_isMultiplicitySelection << "\n";
+    std::cout << "T1_isSelection = " << T1_isSelection << "\n";
+    std::cout << "T1_isMultiplicitySelection = " << T1_isMultiplicitySelection << "\n";
+    */
     bool ShouldThereBeSeveralFitnessBlocks = (this->T1_isSelection && this->T1_isMultiplicitySelection) || (this->T56_isSelection && this->T56_isMultiplicitySelection) || this->T2_isSelection;
 
     double sumOfProb = 0.0; // only used if not whole description
@@ -250,6 +254,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
 
         if (ShouldThereBeSeveralFitnessBlocks)
         {
+            //std::cout << "interlocus " << interlocus << " / " << this->TotalNbLoci - 1 << "\n";
             // Get locusType and long security
             if (interlocus == 0)
             {
@@ -318,6 +323,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
                 {
                     FitnessMapIndex++;
                     nbLociInPiece = 0;
+                    //std::cout << T1_locus << "\n";
                     FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
                     FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
                 }
@@ -375,15 +381,13 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     ++FitnessMapIndex;
     NbElementsInFitnessMap = FitnessMapIndex;
     
+
     if (this->FitnessMapInfo_wholeDescription.size())
     {
         //std::cout << "this->FitnessMapInfo_wholeDescription.size() = " << this->FitnessMapInfo_wholeDescription.size() << "\n";
         //std::cout << "NbElementsInFitnessMap = " << NbElementsInFitnessMap << "\n";
-        assert(this->FitnessMapInfo_wholeDescription.size() == NbElementsInFitnessMap);
+        if (ShouldThereBeSeveralFitnessBlocks) assert(this->FitnessMapInfo_wholeDescription.size() == NbElementsInFitnessMap);
         std::vector<int>().swap(this->FitnessMapInfo_wholeDescription);
-    } else
-    {
-        assert(this->FitnessMapInfo_wholeDescription.size() == 0);   
     }
         
 
@@ -623,6 +627,15 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     assert(this->T56ntrl_nbBits == this->T5ntrl_nbBits + this->T6ntrl_nbBits);
     assert(this->T56sel_nbBits == this->T5sel_nbBits + this->T6sel_nbBits);
     assert(this->TotalNbLoci == T1_nbBits + T2_nbChars + T3_nbChars + T4_nbBits + T56_nbBits );
+
+    /*
+    std::cout << "TotalNbLoci  = " << TotalNbLoci << "\n";
+    std::cout << "T1_nbBits  = " <<  T1_nbBits<< "\n";
+    std::cout << "T2_nbChars  = " << T2_nbChars << "\n";
+    std::cout << "T3_nbChars  = " << T3_nbChars << "\n";
+    std::cout << "T4_nbBits  = " << T4_nbBits << "\n";
+    std::cout << "T56_nbBits = " << T56_nbBits << "\n";
+    */
 
     this->T1_nbChars  = ceil(this->T1_nbBits/ (double) EIGHT);
 
@@ -1013,30 +1026,13 @@ void SpeciesSpecificParameters::readDispWeightByFitness(InputReader& input)
 #ifdef DEBUG
     std::cout << "For option '--DispWeightByFitness', the std::string that is read is: " << input.print() << std::endl;
 #endif
-    if (input.PeakNextElementString() == "NA")
+    
+    this->DispWeightByFitness = input.GetNextElementBool();
+    
+    if (fecundityForFitnessOfOne != -1 && !DispWeightByFitness)
     {
-        if (GP->PatchNumber != 1)
-        {
-            std::cout << "For option '--DispWeightByFitness', received 'NA' but the number of patches is different from 1 (GP->PatchNumber = "<<GP->PatchNumber<<"). Please just write '0' if you don't want disperal to be weighted by patch mean fitness.\n";
-            abort();
-        }
-        assert(GP->PatchNumber == 1);
-        this->DispWeightByFitness = false;
-        input.skipElement();
-    } else
-    {
-        int value = input.GetNextElementInt();
-        if (value == 0)
-        {
-            this->DispWeightByFitness = false;
-        } else if (value == 1)
-        {
-            this->DispWeightByFitness = true;
-        } else
-        {
-            std::cout << "'--DispWeightByFitness' must be either 0 (not weighted by fitness) or 1 (weighted by fitness). Received " <<  value << std::endl;
-            abort();
-        }
+        std::cout << "For option '--DispWeightByFitness', received 'false' and fecundityForFitnessOfOne is not -1 (is " << fecundityForFitnessOfOne << "). When the fecundity is not -1 (which means infinite), then dispersal must necessarily be weigthed by fitness (or I don't really know what it would mean otherwise).\n";
+        abort();
     }
 }
 
@@ -1425,7 +1421,7 @@ void SpeciesSpecificParameters::readfecundityForFitnessOfOne(InputReader& input)
     }
 }
 
-void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
+/*void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
 {
     if (input.PeakNextElementString() == "default")
     {
@@ -1470,7 +1466,7 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
     }
         
 
-   /* std::string s = input.GetNextElementString();
+    std::string s = input.GetNextElementString();
     if (s == "n" || s == "N" || s == "no" || s == "0")
     {
         allowToCorrectRecomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = false;
@@ -1484,10 +1480,10 @@ void SpeciesSpecificParameters::readResetTrackedT1Muts(InputReader& input)
         std::cout << "In --T1_resetTrackedT1Muts, expected yes or no (or a few equivalents) as second argument but instead received " << s << ".\n";
         abort();
     }
-*/
+
     
     //std::cout << "recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = "<< recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations << "\n";
-}
+}*/
 
 void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
@@ -2128,10 +2124,7 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
         input.skipElement();
         this->T56_Initial_AlleleFreqs_AllZeros = true;
         this->T56_Initial_AlleleFreqs_AllOnes = false;
-        return;
-    }
-
-    if (input.PeakNextElementString() == "NA")
+    } else if (input.PeakNextElementString() == "NA")
     {
         if (this->T56_nbBits != 0)
         {
@@ -2251,7 +2244,7 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
     }
 
     // Initialize flipped if T6
-    if (T56ntrl_compress && SSP->T6ntrl_nbBits)
+    if (SSP->T6ntrl_nbBits)
     {
         T6ntrl_flipped = CompressedSortedDeque(SSP->T6ntrl_nbBits);
     }
@@ -2285,7 +2278,7 @@ void SpeciesSpecificParameters::readT56_Initial_AlleleFreqs(InputReader& input)
         }*/  
     } 
 
-    // The following sound awefully sily but it is just to ensure that begin and end are not nullptr (so as to not give nullptr to ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>). I am not sure whether it will matter
+    // The following sounds awefully sily but it is just to ensure that begin and end are not nullptr (so as to not give nullptr to ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>). It probably serves no purpose though!
     if (T5ntrl_flipped.size() == 0)
     {
         T5ntrl_flipped.push_back(0);
@@ -2345,11 +2338,15 @@ void SpeciesSpecificParameters::readSelectionOn(InputReader& input)
     }
 }
 
-void SpeciesSpecificParameters::readGrowthK(InputReader& input)
+void SpeciesSpecificParameters::readPopGrowthModel(InputReader& input)
 {
 #ifdef DEBUG
-    std::cout << "For option '--GrowthK', the std::string that is read is: " << input.print() << std::endl;
+    std::cout << "For option '--popGrowthModel', the std::string that is read is: " << input.print() << std::endl;
 #endif
+
+
+    bool isAnyLogisticModel = false;// To test user input
+
 
     this->__growthK.resize(GP->__GenerationChange.size());
     for ( int generation_index = 0; generation_index < GP->__GenerationChange.size() ; generation_index++)
@@ -2365,46 +2362,91 @@ void SpeciesSpecificParameters::readGrowthK(InputReader& input)
         {
             for (int patch_index = 0 ; patch_index < currentPatchNumber ; patch_index++)
             {
-                double x;
+                int x;
                 std::string s = input.PeakNextElementString();
-                if (s == "def" || s == "Def")
+                if (s == "logistic")
                 {
                     input.skipElement();
-                    assert(this->__patchCapacity[generation_index][patch_index] > 0);
-                    x = -1.0;
+                    x = -2;
+                        
+                } else if (s == "exponential")
+                {
+                    input.skipElement(); 
+                    x = -1;
                 } else
                 {
-                    x = input.GetNextElementDouble();
+                    x = input.GetNextElementInt();
+                    if (x < -2)
+                    {
+                        std::cout << "In --popGrowthModel, received a negative K value different from -1 and -2 (-1 is aka 'exponential'; -2 (aka. 'logistic') means logistic with the carrying capacity as the growthK; k value received = "<<x << ")\n";
+                        abort();
+                    }
                 }
-                
+                if (x != -1) isAnyLogisticModel = true;
                 this->__growthK[generation_index][patch_index] = x;
             }
         } else if (Mode == "unif")
         {
             std::string s = input.PeakNextElementString();
-            double x;
-            if (s == "def" || s == "Def")
+            int x;
+            if (s == "logistic")
             {
+                input.skipElement();                
+                x = -2;
+            } else if (s == "exponential")
+            {
+                input.skipElement(); 
                 x = -1;
-                input.skipElement();
             } else
             {
-                x = input.GetNextElementDouble();
+                x = input.GetNextElementInt();
+                if (x < -2)
+                {
+                    std::cout << "In --popGrowthModel, received a negative K value different from -1 and -2 (-1 is aka 'exponential'; -2 (aka. 'logistic') means logistic with the carrying capacity as the growthK; k value received = "<<x << ")\n";
+                    abort();
+                }
             }
 
+            if (x != -1) isAnyLogisticModel = true;
             for (int patch_index = 0 ; patch_index < currentPatchNumber ; patch_index++)
             {
+                assert(this->__patchCapacity[generation_index][patch_index] >= 0);
                 this->__growthK[generation_index][patch_index] = x;
             }
         } else
         {
-            std::cout << "In --growthK, received " << Mode << " for mode. Only modes 'A' and 'unif' are recognized. Sorry\n";
+            std::cout << "In --popGrowthModel, received " << Mode << " for mode. Only modes 'A' and 'unif' are recognized. Sorry\n";
             abort(); 
         }
         
             
     }
     this->growthK = this->__growthK[0];
+
+
+    // Test user input
+    if (!isAnyLogisticModel)
+    {
+        // Then make sure user did not specify competitiono matrix
+        for (int speciesIndexA = 0 ; speciesIndexA < GP->nbSpecies ; ++speciesIndexA)
+        {
+            for (int speciesIndexB = 0 ; speciesIndexB < GP->nbSpecies ; ++speciesIndexB)
+            {
+                if (speciesIndexA == speciesIndexB)
+                {
+                    assert(GP->speciesCompetition[speciesIndexA][speciesIndexB] == 1.0);
+                } else
+                {
+                    if (GP->speciesCompetition[speciesIndexA][speciesIndexB] != 0.0)
+                    {
+                        std::cout << "When received --popGrowthModel, some values differ from -1 (-1 is aka 'exponential' in the input). So far, so good! The problem is that at the option --eco you specified a competition matrix that does have some non-zero values on the off-diagonal. Competition (unlike 'interaction') is computed through the logistic model and therefore such non-zeros off the diagonal cannot be simulated if all of the growthK are set to -1 (aka. exponential). I hope that makes sense to you! So either, remove the non-zeros values from the off-diagonal of the competition matrix or explicitely specify a logistic growth model.\n";
+                        abort();
+                    }
+                }
+                
+            }
+        }
+    }
 }
 
 void SpeciesSpecificParameters::readHabitats(InputReader& input)
@@ -2740,13 +2782,13 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
             {
                 if  (
                         (
-                            (firstMode.compare("A")==0 || firstMode.compare("unif")==0)
+                            (firstMode.compare("A")==0 || firstMode.compare("unif")==0 || firstMode.compare("cstHgamma")==0)
                             &&
                             (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || Mode.compare("MultiplicityUnif")==0)
                         )
                         ||
                         (
-                            (Mode.compare("A")==0 || Mode.compare("unif")==0)
+                            (Mode.compare("A")==0 || Mode.compare("unif")==0 || firstMode.compare("cstHgamma")==0)
                             &&
                             (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
                         )
@@ -2762,6 +2804,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
             if (Mode.compare("A")==0)
             {
                 this->T56_isMultiplicitySelection = false;
+                ForASingleHabitat.reserve(2 * this->quickScreenAtL_T56_nbBits);
                 for (int entry_index = 0 ; entry_index < (2 * this->quickScreenAtL_T56_nbBits) ; entry_index++)    
                 {
                     double fit = input.GetNextElementDouble();
@@ -2777,6 +2820,65 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects', habitat "  << habitat << ", Mode 'A' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
                     abort();
                 }
+            } else if (Mode.compare("cstHgamma") == 0)
+            {
+                this->T56_isMultiplicitySelection = false;
+                double h = input.GetNextElementDouble();
+                bool isHomoFollows;
+                {
+                    std::string s = input.GetNextElementString();
+                    if (s == "homo" || s == "Homo" || s == "HOMO")
+                    {
+                        isHomoFollows = true;
+                    } else if (s == "hetero" || s == "Hetero" || s == "HETERO")
+                    {
+                        if (h == 0.0)
+                        {
+                            std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstHgamma', receive an h value of 0.0, which means that heterozygotes have a fitness of 1.0. But the values are being specified for the heterozygotes (as indicated by keyword "<<s<<").\n";
+                            abort();
+                        }
+                        isHomoFollows = false;
+                    } else
+                    {
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstHgamma', after the 'h' value, expected either keywor 'homo' or keyword 'hetero' but got '" << s << "' instead.\n";
+                        abort();
+                    }
+                }
+
+                double alpha = input.GetNextElementDouble();
+                double beta = input.GetNextElementDouble();
+                if (alpha <= 0 || beta <= 0)
+                {
+                    std::cout << "Either alpha ("<<alpha<<") or beta ("<<beta<<") have non-positive values.\n";
+                    abort();
+                }
+                std::gamma_distribution<double> dist(alpha, beta);
+
+                for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T56_nbBits ; entry_index++)    
+                {
+                    double fitHomo;
+                    double fitHetero;
+                    if (isHomoFollows)
+                    {
+                        fitHomo = dist(GP->mt);
+                        fitHetero = 1 - h * (1 - fitHomo);
+                    } else 
+                    {
+                        fitHetero = dist(GP->mt);
+                        fitHomo   = 1 - (1-fitHetero)/h;
+                    }
+                    if (fitHomo > 1.0) fitHomo = 1.0;
+                    if (fitHomo < 0.0) fitHomo = 0.0;
+                    if (fitHetero > 1.0) fitHetero = 1.0;
+                    if (fitHetero < 0.0) fitHetero = 0.0;
+
+                    
+                    ForASingleHabitat.push_back(fitHetero);
+                    ForASingleHabitat.push_back(fitHomo);
+                }
+                assert(ForASingleHabitat.size() == 2 * this->quickScreenAtL_T56_nbBits);
+
+
             } else if (Mode.compare("cstH")==0)
             {
                 this->T56_isMultiplicitySelection = false;
@@ -2789,6 +2891,11 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                         isHomoFollows = true;
                     } else if (s == "hetero" || s == "Hetero" || s == "HETERO")
                     {
+                        if (h == 0.0)
+                        {
+                            std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', receive an h value of 0.0, which means that heterozygotes have a fitness of 1.0. But the values are being specified for the heterozygotes (as indicated by keyword "<<s<<").\n";
+                            abort();
+                        }
                         isHomoFollows = false;
                     } else
                     {
@@ -2832,6 +2939,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
             } else if (Mode.compare("MultiplicityA")==0)
             {
                 this->T56_isMultiplicitySelection = true;
+                ForASingleHabitat.reserve(this->quickScreenAtL_T56_nbBits);
                 for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T56_nbBits ; )
                 {
                     double fit01 = input.GetNextElementDouble();
@@ -2850,6 +2958,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
             } else if (Mode.compare("unif")==0)
             {
+                ForASingleHabitat.reserve(2 * this->quickScreenAtL_T56_nbBits);
                 this->T56_isMultiplicitySelection = false;
                 
                 double fitHet = input.GetNextElementDouble();
@@ -2875,6 +2984,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
             {
                 this->T56_isMultiplicitySelection = true;
                 
+                ForASingleHabitat.reserve(this->quickScreenAtL_T56_nbBits);
                 double fit01 = input.GetNextElementDouble();
                 if (fit01<0 || fit01>1)
                 {
@@ -2892,6 +3002,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
             } else if (Mode.compare("MultiplicityGamma")==0)
             {
+                this->T56_isMultiplicitySelection = true;
                 double alpha = input.GetNextElementDouble();
                 double beta = input.GetNextElementDouble();
                 if (alpha <= 0 || beta <= 0)
@@ -2900,6 +3011,8 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     abort();
                 }
                 std::gamma_distribution<double> dist(alpha, beta);
+                ForASingleHabitat.reserve(this->quickScreenAtL_T56_nbBits);
+                
                 for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; locus++)
                 {
                     double fit = 1 - dist(GP->mt);
@@ -2907,9 +3020,10 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     if (fit > 1.0) fit = 1.0;
                     ForASingleHabitat.push_back(fit);
                 }
+                assert(ForASingleHabitat.size() == this->quickScreenAtL_T56_nbBits);
             } else
             {
-                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', 'cstHgamma', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T56_FitnessEffects.push_back(ForASingleHabitat);
@@ -3802,6 +3916,8 @@ void SpeciesSpecificParameters::readT3_PhenotypicEffects(InputReader& input)
             Individual::T3_IndPhenotype.push_back(0.0); // This is a static variable that is used by all inds to calculate fitness on T3 trait
         }
 
+        input = InputReader(input, 1); // remove first element to avoid messing up when calling 'GetNextHabitatMarker'
+
         for (int habitat = 0; habitat <= this->MaxEverHabitat ; habitat++)
         {
             (void) input.GetNextHabitatMarker(habitat);
@@ -3874,6 +3990,9 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
     } else
     {
         std::string SelectionMode = input.GetNextElementString();
+        input = InputReader(input, 1); // remove first element to avoid messing up with GetNextHabitatMarker
+
+
         for (int habitat = 0; habitat <= this->MaxEverHabitat ; habitat++)
         {
             (void) input.GetNextHabitatMarker(habitat);
@@ -4362,7 +4481,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
     
     if (this->RecombinationRate.size() != this->TotalNbLoci - 1 && this->RecombinationRate.size() != 1)
     {
-        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->T1_nbBits = " << this->T1_nbBits << "    this->T2_nbChars = " << this->T2_nbChars  << "    this->T3_nbChars = " << this->T3_nbChars << "\n\n";
+        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->T1_nbBits = " << this->T1_nbBits << "    this->T2_nbChars = " << this->T2_nbChars  << "    this->T3_nbChars = " << this->T3_nbChars << "    this->T4_nbBits = " << this->T4_nbBits << "    this->T56_nbBitd = " << this->T56_nbBits << "\n\n";
         std::cout << "In '--RecombinationRate' did not receive the expected number of elements!" << std::endl;
         abort();
     }
@@ -4877,6 +4996,9 @@ void SpeciesSpecificParameters::IsThereSelection()
     }
 }*/
 
+
+
+
 std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_index)
 {
 #ifdef DEBUG
@@ -4906,8 +5028,6 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
         }
     }
 
-    // Change GP->AllSpeciesPatchSizes
-    GP->saveSSPPatchSize_toGP();
 
     // Change TotalpatchCapacity
     this->TotalpatchCapacity = 0;
@@ -4924,24 +5044,38 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     assert(this->Habitats.size() == GP->PatchNumber);
 
      // Change DispMat
+    this->dispersalData.nextGenerationPatchSizes.resize(GP->PatchNumber);
     this->dispersalData.FullFormForwardMigration = this->dispersalData.__FullFormForwardMigration[generation_index];
-    std::vector<std::vector<std::vector<double>>> emptyCumSumFits;
-    (void) this->dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes(
-        emptyCumSumFits,
-        true
-    );
+    this->dispersalData.BackwardMigration.resize(GP->PatchNumber);
+    this->dispersalData.BackwardMigrationIndex.resize(GP->PatchNumber);
+    for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        this->dispersalData.BackwardMigration[patch_index].resize(GP->PatchNumber);
+        this->dispersalData.BackwardMigrationIndex[patch_index].resize(GP->PatchNumber);
+    }
+    
+    (void) this->dispersalData.setOriginalBackwardMigrationIfNeeded();
 
     assert(this->dispersalData.FullFormForwardMigration.size() == GP->PatchNumber);
 
     return previousPatchSizes; // This return value will be used to know what individuals to duplicate
 }
 
+void SpeciesSpecificParameters::readStochasticGrowth(InputReader& input)
+{
+    #ifdef DEBUG
+    std::cout << "Enters in SpeciesSpecificParameters::readStochasticGrowth\n";
+    #endif  
+
+    stochasticGrowth = input.GetNextElementBool();
+}
 
 void SpeciesSpecificParameters::readadditiveEffectAmongLoci(InputReader& input)
 {
 #ifdef DEBUG
     std::cout << "Enters in SpeciesSpecificParameters::readadditiveEffectAmongLoci\n";
-#endif    
+#endif
+
     auto s = input.GetNextElementString();
     if (s == "n"  || s == "no" || s == "No" || s == "NO" || s == "0")
     {

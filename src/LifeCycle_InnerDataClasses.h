@@ -35,10 +35,10 @@ public:
     std::vector<std::vector<std::vector<HaplotypeData>>> lastOffspring;
     
 
-    ParentsData(std::vector<int> patchSizeNextGeneration);
+    ParentsData(const std::vector<int> patchSizeNextGeneration);
     ParentsData(); // Does nothing
 
-    void resizeCloneInfo(std::vector<int>& patchSizeNextGeneration);
+    void resizeCloneInfo(const std::vector<int>& patchSizeNextGeneration);
 
     bool shouldIClone(size_t patch_index, size_t ind_index);
     bool isLastOffspring(HaplotypeData& parent, size_t patch_index, size_t ind_index, size_t segregationIndex);

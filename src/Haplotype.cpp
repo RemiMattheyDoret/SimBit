@@ -860,11 +860,13 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
         if (SSP->T6ntrl_nbBits)
         {
             T6ntrl_Alleles = CompressedSortedDeque(SSP->T6ntrl_nbBits);
+            (void) T6ntrl_AllelesBegin();
         }
 
         if (SSP->T6sel_nbBits)
         {
             T6sel_Alleles = CompressedSortedDeque(SSP->T6sel_nbBits);
+            (void) T6sel_AllelesBegin();
         }
 
 

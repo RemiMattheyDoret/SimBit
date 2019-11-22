@@ -31,15 +31,21 @@ void CompressedSortedDeque::CSDBlock::insert(std::vector<unsigned short>::iterat
 // Constructors
 CompressedSortedDeque::CSDBlock::CSDBlock(unsigned int blockIndex)
 :adder((unsigned int) blockIndex * (unsigned int) std::numeric_limits<unsigned short>::max())
-{}
+{
+    suffixs.reserve(1);
+}
 
 CompressedSortedDeque::CSDBlock::CSDBlock(const CSDBlock& other)
 :adder(other.adder), suffixs(other.suffixs)
-{}
+{
+    suffixs.reserve(1);
+}
 
 CompressedSortedDeque::CSDBlock::CSDBlock(CSDBlock&& other)
 :adder(other.adder), suffixs(other.suffixs)
-{}
+{
+    suffixs.reserve(1);
+}
 
 CompressedSortedDeque::CSDBlock& CompressedSortedDeque::CSDBlock::operator=(const CSDBlock& other)
 { 
@@ -90,7 +96,7 @@ CompressedSortedDeque::CompressedSortedDeque(unsigned int pastMaxValue)
 // :endIterator(data.begin(), std::vector<unsigned short>::iterator(), data.end()) // That looks ugly but it is because bigPEnd cannot have a default initializer, so I have to initalize it // data(std::vector<CSDBlock>()), 
 {
     unsigned short nbBlocks = getBlockForValue(pastMaxValue) + 1;
-    
+       
     for (unsigned short blockIndex = 0 ; blockIndex < nbBlocks ; ++blockIndex)
     {
         data.push_back(CSDBlock(blockIndex));

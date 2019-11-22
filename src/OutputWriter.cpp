@@ -2088,7 +2088,7 @@ void OutputWriter::WriteOutputs_T56_LargeOutput_header(OutputFile& file)
 }
 
 template<typename ntrlIterator, typename selIterator>
-void OutputWriter::WriteOutputs_T56_LargeOutput_writeData(ntrlIterator& ntrlIt, selIterator& selIt, ntrlIterator& ntrlItEnd, selIterator& selItEnd, OutputFile& file, bool printNA)
+void OutputWriter::WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, selIterator selIt, ntrlIterator ntrlItEnd, selIterator selItEnd, OutputFile& file, bool printNA)
 {
     std::string s;
     const std::string s_tab = "\t";
@@ -2129,8 +2129,8 @@ void OutputWriter::WriteOutputs_T56_LargeOutput_writeData(ntrlIterator& ntrlIt, 
             }
         }                    
     }
-    assert(!(ntrlIt != ntrlItEnd));
-    assert(!(selIt != selItEnd));
+    assert(ntrlIt == ntrlItEnd);
+    assert(selIt == selItEnd);
     file.write(s);
 }
 
@@ -2150,44 +2150,100 @@ void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
             {
                 Haplotype& haplo = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
+                //std::cout << "SSP->T56ntrl_compress = " << SSP->T56ntrl_compress << "\n";
+                //std::cout << "SSP->T56sel_compress = " << SSP->T56sel_compress << "\n";
+
+
                 if (SSP->T56ntrl_compress)
-                {
-                    // T5ntrl
-                    if (SSP->T56sel_compress)
-                    {
-                        // T5sel
-                        auto ntrlIt      = haplo.T5ntrl_AllelesBegin();
-                        auto selIt       = haplo.T5sel_AllelesBegin();
-                        auto ntrlItEnd   = haplo.T5ntrl_AllelesEnd();
-                        auto selItEnd    = haplo.T5sel_AllelesEnd();
-                        WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
-                    } else
-                    {
-                        // T6sel
-                        auto ntrlIt      = haplo.T5ntrl_AllelesBegin();
-                        auto selIt       = haplo.T6sel_AllelesBegin();
-                        auto ntrlItEnd   = haplo.T5ntrl_AllelesEnd();
-                        auto selItEnd    = haplo.T6sel_AllelesEnd();
-                        WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
-                    }
-                } else
                 {
                     // T6ntrl
                     if (SSP->T56sel_compress)
                     {
-                        //T5sel
-                        auto ntrlIt      = haplo.T6ntrl_AllelesBegin();
-                        auto selIt       = haplo.T5sel_AllelesBegin();
-                        auto ntrlItEnd   = haplo.T6ntrl_AllelesEnd();
-                        auto selItEnd    = haplo.T5sel_AllelesEnd();
+                        // T6sel
+                        ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> ntrlIt;
+                        ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> ntrlItEnd;
+                        CompressedSortedDeque::iterator selIt;
+                        CompressedSortedDeque::iterator selItEnd;
+
+                        if (SSP->T6ntrl_nbBits)
+                        {
+                            ntrlIt = haplo.T6ntrl_AllelesBegin();;
+                            ntrlItEnd = haplo.T6ntrl_AllelesEnd();;
+                        }
+
+                        if (SSP->T6sel_nbBits)
+                        {
+                            selIt = haplo.T6sel_AllelesBegin();;
+                            selItEnd = haplo.T6sel_AllelesEnd();;
+                        }
+
                         WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
                     } else
                     {
-                        //T6sel       
-                        auto ntrlIt      = haplo.T6ntrl_AllelesBegin();
-                        auto selIt       = haplo.T6sel_AllelesBegin();
-                        auto ntrlItEnd   = haplo.T6ntrl_AllelesEnd();
-                        auto selItEnd    = haplo.T6sel_AllelesEnd();
+                        // T5sel
+                        ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> ntrlIt;
+                        ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> ntrlItEnd;
+                        std::vector<unsigned int>::iterator selIt;
+                        std::vector<unsigned int>::iterator selItEnd;
+
+                        if (SSP->T6ntrl_nbBits)
+                        {
+                            ntrlIt = haplo.T6ntrl_AllelesBegin();;
+                            ntrlItEnd = haplo.T6ntrl_AllelesEnd();;
+                        }
+
+                        if (SSP->T5sel_nbBits)
+                        {
+                            selIt = haplo.T5sel_AllelesBegin();;
+                            selItEnd = haplo.T5sel_AllelesEnd();;
+                        }
+
+                        WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
+                    }
+                } else
+                {
+                    // T5ntrl
+                    if (SSP->T56sel_compress)
+                    {
+                        //T6sel
+                        ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> ntrlIt;
+                        ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> ntrlItEnd;
+                        CompressedSortedDeque::iterator selIt;
+                        CompressedSortedDeque::iterator selItEnd;
+
+                        if (SSP->T5ntrl_nbBits)
+                        {
+                            ntrlIt = haplo.T5ntrl_AllelesBegin();;
+                            ntrlItEnd = haplo.T5ntrl_AllelesEnd();;
+                        }
+
+                        if (SSP->T6sel_nbBits)
+                        {
+                            selIt = haplo.T6sel_AllelesBegin();;
+                            selItEnd = haplo.T6sel_AllelesEnd();;
+                        }
+                        WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
+                    } else
+                    {
+                        //T5sel
+                        ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> ntrlIt;
+                        ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> ntrlItEnd;
+                        std::vector<unsigned int>::iterator selIt;
+                        std::vector<unsigned int>::iterator selItEnd;
+
+                        if (SSP->T5ntrl_nbBits)
+                        {
+                            ntrlIt = haplo.T5ntrl_AllelesBegin();;
+                            ntrlItEnd = haplo.T5ntrl_AllelesEnd();;
+                        }
+
+                        if (SSP->T5sel_nbBits)
+                        {
+                            selIt = haplo.T5sel_AllelesBegin();;
+                            selItEnd = haplo.T5sel_AllelesEnd();;
+                        }
+
+                        
                         WriteOutputs_T56_LargeOutput_writeData(ntrlIt, selIt, ntrlItEnd, selItEnd, file, shouldNABePrinted(patch_index,ind_index));
                     }
                 }
@@ -3555,20 +3611,17 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2731\n";
     if (this->isFile(fitnessStats))
     {
-        if (SSP->T1_isSelection || SSP->T2_isSelection || SSP->T3_isSelection || SSP->T1_isEpistasis || SSP->T56_isSelection )
+        OutputFile& file = this->get_OutputFiles(fitnessStats)[0];
+        if ( GP->CurrentGeneration == GP->startAtGeneration)
         {
-            OutputFile& file = this->get_OutputFiles(fitnessStats)[0];
-            if ( GP->CurrentGeneration == GP->startAtGeneration)
-            {
-                this->WriteOutputs_fitnessStats_header(file);
-            }
-            if (file.isTime())
-            {
-                #ifdef DEBUG
-                std::cout << "Write fitnessStats\n";
-                #endif
-                this->WriteOutputs_fitnessStats(pop, file);
-            }
+            this->WriteOutputs_fitnessStats_header(file);
+        }
+        if (file.isTime())
+        {
+            #ifdef DEBUG
+            std::cout << "Write fitnessStats\n";
+            #endif
+            this->WriteOutputs_fitnessStats(pop, file);
         }
     }
 

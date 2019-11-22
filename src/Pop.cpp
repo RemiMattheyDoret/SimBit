@@ -140,7 +140,7 @@ std::cout << "Enters in 'Pop::Pop'\n";
             patches.push_back(Patch(patch_index, 'A'));
         }
     }
-    GP->saveSSPPatchSize_toGP();
+    
     assert(patches.size() == GP->PatchNumber);
 
     // I won't need these anymore
@@ -560,12 +560,12 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
     assert(SSP->patchCapacity.size() == GP->PatchNumber);
     assert(SSP->patchSize.size() == GP->PatchNumber);
     assert(previousPatchSizes.size() == GP->PatchNumber);
-    assert(GP->allSpeciesPatchSizes.size() == GP->PatchNumber);
+    //assert(GP->allSpeciesPatchSizes.size() == GP->PatchNumber);
 
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         assert(pop1.getPatch(patch_index).getpatchCapacity() == pop2.getPatch(patch_index).getpatchCapacity());
-        assert(GP->allSpeciesPatchSizes[patch_index].size() == GP->nbSpecies);
+        //assert(GP->allSpeciesPatchSizes[patch_index].size() == GP->nbSpecies);
         //std::cout << "In Pop::updatePops, SSP->patchCapacity["<<patch_index<<"] = "<<SSP->patchCapacity[patch_index]<<"\n";
         //std::cout << "In Pop::updatePops, pop1.getPatch(patch_index).getpatchCapacity() = "<<pop1.getPatch(patch_index).getpatchCapacity()<<"\n";
             

@@ -37,7 +37,7 @@ LifeCycle::CoupleData::CoupleData(HaplotypeData a, HaplotypeData b)
 ///////////////////
 
 
-void LifeCycle::ParentsData::resizeCloneInfo(std::vector<int>& patchSizeNextGeneration)
+void LifeCycle::ParentsData::resizeCloneInfo(const std::vector<int>& patchSizeNextGeneration)
 {
     if (SSP->cloningRate != 0)
     {
@@ -51,7 +51,7 @@ void LifeCycle::ParentsData::resizeCloneInfo(std::vector<int>& patchSizeNextGene
 
 LifeCycle::ParentsData::ParentsData(){}
 
-LifeCycle::ParentsData::ParentsData(std::vector<int> patchSizeNextGeneration)
+LifeCycle::ParentsData::ParentsData(const std::vector<int> patchSizeNextGeneration)
 :cloneInfo(GP->PatchNumber), couples(GP->PatchNumber), lastOffspring(2)
 {
     lastOffspring[0].resize(GP->PatchNumber);

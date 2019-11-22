@@ -38,7 +38,8 @@ class GeneralParameters // is a singleton
     // attribute starting with '__' means that they store info about sequential parameters. Attributes being used have the same name without the '__' and the are reference of a single "line" of the element starting with '__'. '__GenerationChange' indicate when the parameters should be updated. All demographic parameters must have an entry for the same generations.
 public:
     // patchSize
-    std::vector<std::vector<int>>                   allSpeciesPatchSizes;  // allSpeciesPatchSizes[patch_index][speciesIndex];
+    //std::vector<std::vector<int>>                   allSpeciesPatchSizes;  // allSpeciesPatchSizes[patch_index][speciesIndex];
+    std::vector<std::vector<int>>                   allSpeciesPatchSizePreviousGeneration; // allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
     std::vector<std::string>                        speciesNames;
 
     std::vector<int>                                __GenerationChange;
@@ -65,8 +66,12 @@ public:
 
     // SpeciesStuff
     int                                             nbSpecies;
-    std::vector<std::vector<double>>                speciesEcoRel_effect;
-    std::vector<std::vector<char>>                  speciesEcoRel_type;
+    //std::vector<char>                               __typeOfSpeciesInteraction;
+    std::vector<std::vector<std::vector<double>>>   __speciesInteraction;
+    std::vector<std::vector<std::vector<double>>>   __speciesCompetition;
+    //char                                            typeOfSpeciesInteraction;
+    std::vector<std::vector<double>>                speciesInteraction; // speciesInteraction[toSpIndex][fromSpIndex]
+    std::vector<std::vector<double>>                speciesCompetition; // speciesCompetition[toSpIndex][fromSpIndex]
 
     // nbPatches
     int                                             PatchNumber;
@@ -85,13 +90,15 @@ public:
     //void readTemporalChanges(InputReader& input); // not in use anymore
     void readTemporalChanges(std::vector<int>& T);
     void readPatchNumber(InputReader& input);
+    void readSpeciesEcologicalRelationships(InputReader& input);
     void readT1_FST_info(InputReader& input);
     void readSeed(InputReader& input);
-    void saveSSPPatchSize_toGP();
+    //void saveSSPPatchSize_toGP();
     //void saveSSPPatchSize_toGP_lowerSecurity();
     //void UpdateParametersallSpeciesPatchSizes();
-    void UpdateParametersPatchNumber(int generation_index);
+    void update(int generation_index);
+    void setAllPatchSizePreviousGenerationIfNeeded();
     
-    void initializeAllSpeciesPatchSizes();
+    //void initializeAllSpeciesPatchSizes();
     GeneralParameters();
 };

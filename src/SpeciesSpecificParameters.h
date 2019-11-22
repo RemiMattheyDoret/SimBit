@@ -107,7 +107,7 @@ public:
     int                                             FitnessMapMinimNbLoci;
 
     // Other performance related things
-    int                 recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
+    //int                 recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
     bool                SwapInLifeCycle;
     //bool allowToCorrectRecomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
 
@@ -126,6 +126,7 @@ public:
 
     std::vector<std::vector<double>>                __growthK;
     std::vector<double>                             growthK; // It is a double to avoid recasting but values must be integers.
+    bool                                            stochasticGrowth;
     
     // Genetics and selection T1
     std::vector<std::vector<double>>                T1_Initial_AlleleFreqs;
@@ -289,8 +290,8 @@ public:
     ResetGeneticsEvent_B readResetGenetics_readEventB(InputReader& input, int& eventIndex);
     void readHabitats(InputReader& input);
     void readSelectionOn(InputReader& input);
-    void readGrowthK(InputReader& input);
-    void readResetTrackedT1Muts(InputReader& input);
+    void readPopGrowthModel(InputReader& input);
+    //void readResetTrackedT1Muts(InputReader& input);
     void readGameteDispersal(InputReader& input);
     void readpatchCapacity(InputReader& input);
     //void readT1_vcfOutput_sequence(InputReader& input);
@@ -303,6 +304,7 @@ public:
     void readInitialpatchSize(InputReader& input);
     void readCloningRate(InputReader& input);
     void readSelfingRate(InputReader& input);
+    void readStochasticGrowth(InputReader& input);
     void readDispWeightByFitness(InputReader& input);
     void readPloidy(InputReader& input);
     void readFitnessMapInfo(InputReader& input);

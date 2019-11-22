@@ -574,10 +574,6 @@ std::cout << "Enters in 'SetParameters'\n";
         abort();
     }*/
 
-    #ifdef DEBUG
-    std::cout << "Start GP->initializeAllSpeciesPatchSizes()\n" << std::endl;
-    #endif   
-    GP->initializeAllSpeciesPatchSizes();
 
     #ifdef DEBUG
     std::cout << "Start outputWriter.SetAllTimes()\n" << std::endl;
@@ -726,7 +722,7 @@ void AllParameters::Update(bool updatePopsToo)
         assert(GP == this->getGPaddress());
 
         // Update GP patchNumber
-        GP->UpdateParametersPatchNumber(generation_index);
+        GP->update(generation_index);
 
 
         for (int speciesIndex = 0 ; speciesIndex < this->GlobalP.nbSpecies ; speciesIndex++)
@@ -1061,7 +1057,16 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "DispWeightByFitness")
     {
         for (auto& SSPi : this->SSPs)
-            SSPi.DispWeightByFitness = false;
+        {
+            if (SSPi.fecundityForFitnessOfOne == -1)
+            {
+                SSPi.DispWeightByFitness = false;
+            } else
+            {
+                SSPi.DispWeightByFitness = true;
+            }
+                
+        }
     }
     else if (flag == "L")
     {
@@ -1098,11 +1103,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
             SSPi.FitnessMapCoefficient = -9.0; 
         }
     }
-    else if (flag == "resetTrackedT1Muts")
+    /*else if (flag == "resetTrackedT1Muts")
     {
         InputReader input("default","In default value for --resetTrackedT1Muts,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readResetTrackedT1Muts);  
-    }
+    }*/
     else if (flag == "fec")
     {
         for (auto& SSPi : this->SSPs)
@@ -1161,6 +1166,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 fertility"), "In Default value for --selectionOn,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readSelectionOn);
+    }
+    else if (flag == "stochasticGrowth")
+    {
+        InputReader input(std::string("f"), "In Default value for --stochasticGrowth,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readStochasticGrowth);
     }
     else if (flag == "T1_fit")
     {
@@ -1280,43 +1290,18 @@ void AllParameters::setOptionToDefault(std::string& flag)
     { 
         assert(this->GlobalP.nbSpecies > 0);
         assert(this->GlobalP.nbSpecies == this->SSPs.size());
-        
-        //std::cout << "this->GlobalP.nbSpecies = " << this->GlobalP.nbSpecies << "\n";
-        for (int speciesIndex_to = 0 ; speciesIndex_to < this->GlobalP.nbSpecies; speciesIndex_to++)
-        {
-            std::vector<double> fromOneSpecies_effect;
-            std::vector<char> fromOneSpecies_type;
-            fromOneSpecies_effect.resize(this->GlobalP.nbSpecies);
-            fromOneSpecies_type.resize(this->GlobalP.nbSpecies);
-            for (int speciesIndex_from = 0 ; speciesIndex_from < this->GlobalP.nbSpecies; speciesIndex_from++)
-            {
-                fromOneSpecies_type[speciesIndex_from]   = '0';
-                fromOneSpecies_effect[speciesIndex_from] = 0.0;
-            }
-            GP->speciesEcoRel_type.push_back(fromOneSpecies_type);
-            GP->speciesEcoRel_effect.push_back(fromOneSpecies_effect);
-        }
-        
-        /*
-        std::cout << "Default eco Types:\n";
-        for (auto& a : GP->speciesEcoRel_type)
-        {
-            std::cout << "\t";
-            for (auto& b : a)   
-            {
-                std::cout << "'" << b << "' ";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-        */
-    } else if (flag == "growthK")
-    {
-        assert(GP->speciesEcoRel_type.size() == this->GlobalP.nbSpecies);
-        assert(GP->speciesEcoRel_effect.size() == this->GlobalP.nbSpecies);
 
-        InputReader input("unif def", std::string("In '--") + flag + std::string("', "));
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readGrowthK);
+        InputReader input(std::string("interaction default competition default"), "In Default value for --eco,");
+        GP->readSpeciesEcologicalRelationships(input);
+    } else if (flag == "popGrowthModel")
+    {
+        assert(GP->speciesInteraction.size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesInteraction[0].size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesCompetition.size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesCompetition[0].size() == this->GlobalP.nbSpecies);
+        
+        InputReader input("unif logistic", std::string("In '--") + flag + std::string("', "));
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readPopGrowthModel);
     } else if (flag == "resetGenetics")
     {
         InputReader input("default", std::string("In '--") + flag + std::string("', "));
@@ -1720,11 +1705,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readFitnessMapInfo);
 
         
-    } else if (flag == "resetTrackedT1Muts")
+    } /*else if (flag == "resetTrackedT1Muts")
     {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readResetTrackedT1Muts);
         
-    }  else if (flag == "fecundityForFitnessOfOne" || flag == "fec")
+    } */ else if (flag == "fecundityForFitnessOfOne" || flag == "fec")
     {   
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readfecundityForFitnessOfOne);
         
@@ -1765,7 +1750,11 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "selectionOn")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readSelectionOn);
-    } else if (flag == "T1_FitnessEffects" || flag == "T1_fit")
+    }  else if (flag == "stochasticGrowth")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readStochasticGrowth);
+    } 
+    else if (flag == "T1_FitnessEffects" || flag == "T1_fit")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
         
@@ -1934,128 +1923,23 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             std::cout << "While reading --speciesNames, it appears that zero species names have been indicated. You need at least one species to simulate something.\n";
             abort();
         }
-        if (GP->nbSpecies > 1)
+        /*if (GP->nbSpecies > 1)
         {
             std::cout << "WARNING: The current version is not ready for released because the system of species interaction is currently being modified. Please either simulate a single species at a time or consider a previously released version (or wait a little bit that I finish making these changes). Thank you and sorry!\n";
             abort();   
-        }
-    }  else if (flag == "eco" || flag == "ecoRelation" || flag == "speciesEcologicalRelationships")
+        }*/
+    }  else if (flag == "eco")
     {   
+        GP->readSpeciesEcologicalRelationships(input);
         
-        bool isRandomGauss;
-        std::string randomGaussType;
-        double randomGaussMean;
-        double randomGaussSd;
-        if (input.PeakNextElementString() == "randomGauss")
-        {
-            input.skipElement();
-            isRandomGauss = true;
-            randomGaussType = input.GetNextElementString();
-            randomGaussMean = input.GetNextElementDouble();
-            randomGaussSd = input.GetNextElementDouble();
-            if (randomGaussSd < 0)
-            {
-                std::cout << "In --eco, received keyword 'randomGauss'. The keyword was followed by the type ("<<randomGaussType<<"), the mean ("<< randomGaussMean << ") and the SD ("<< randomGaussSd <<"). SD received is negative.\n";
-                abort();
-            }
-        } else
-        {
-            isRandomGauss = false;
-            randomGaussMean = 0.0;
-            randomGaussSd = 0.0;
-        }
-
-        std::vector<std::vector<char>> transposeOfspeciesEcoRel_type;
-        std::vector<std::vector<double>> transposeOfspeciesEcoRel_effect;
-        for (int speciesIndex_from = 0 ; speciesIndex_from < GP->nbSpecies; speciesIndex_from++)
-        {
-            std::vector<char> fromOneSpecies_type;
-            std::vector<double> fromOneSpecies_effect;
-            fromOneSpecies_type.resize(GP->nbSpecies);
-            fromOneSpecies_effect.resize(GP->nbSpecies);
-            
-            for (int speciesIndex_to = 0 ; speciesIndex_to < GP->nbSpecies; speciesIndex_to++)
-            {
-                if (speciesIndex_to == speciesIndex_from)
-                {
-                    fromOneSpecies_type[speciesIndex_from]   = '0';
-                    fromOneSpecies_effect[speciesIndex_from] = 0.0;
-                } else
-                {
-                    std::string type;
-                    double effect;
-                    if (isRandomGauss)
-                    {   
-                        type = randomGaussType;
-                        std::normal_distribution<double> dist(randomGaussMean, randomGaussSd);
-                        effect = dist(GP->mt);
-                    } else
-                    {
-                        type = input.GetNextElementString();
-                        effect = input.GetNextElementDouble();
-                    }
-
-                    if (type != "A" && type != "B" && type != "C" && type != "D" && type != "0")
-                    {
-                        std::cout << "In option --" << flag << ", the type received for the effect of species '" << this->SSPs[speciesIndex_from].speciesName << "' onto species '" << this->SSPs[speciesIndex_to].speciesName << " is '" << type << "'. Sorry only types are 'A', 'B', 'C' and '0' are recognized.\n\t- 'A' means 'effect is multiplied by the patchSize of the causal species'\n\t- 'B' means 'effect is multiplied by the patchSize of the causal species and divided by the patchSize of the recipient species'\n\t- 'C' means 'effect is divided by the patchSize of the recipient species'\n\t- 'D' means 'effect is multiplied by the patchSize of both the recipient species and the causal species'\n\t- '0' means no effect. It must therefore necessarily be followed by an effect (or magnitude) of 0.0.\n";
-                        abort();
-                    }
-                    assert(type.size() == 1);
-
-                    if (type == "0")
-                    {
-                        if (effect != 0.0)
-                        {
-                            std::cout << "In option --" << flag << ", the type received for the effect of species '" << this->SSPs[speciesIndex_from].speciesName << "' onto species '" << this->SSPs[speciesIndex_to].speciesName << " is '" << type << "'. For this type the effect (or magnitude) must be 0.0. Effect received = "<< effect <<"\n";
-                        }
-                    }
-                    if (effect == 0.0)
-                    {
-                        type = "0";
-                    }
-
-                    fromOneSpecies_type[speciesIndex_to] = type.at(0);
-                    fromOneSpecies_effect[speciesIndex_to] = effect;
-                }
-            }
-            transposeOfspeciesEcoRel_type.push_back(fromOneSpecies_type);
-            transposeOfspeciesEcoRel_effect.push_back(fromOneSpecies_effect);
-        }
-        GP->speciesEcoRel_type   = transposeSquareMatrix(transposeOfspeciesEcoRel_type);
-        GP->speciesEcoRel_effect = transposeSquareMatrix(transposeOfspeciesEcoRel_effect);
-
-        /*
-        std::cout << "eco Types:\n";
-        for (auto& a : GP->speciesEcoRel_type)
-        {
-            std::cout << "\t";
-            for (auto& b : a)   
-            {
-                std::cout << "'" << b << "' ";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-
-        std::cout << "eco Effects:\n";
-        for (auto& a : GP->speciesEcoRel_effect)
-        {
-            std::cout << "\t";
-            for (auto& b : a)   
-            {
-                std::cout << "'" << b << "' ";
-            }
-            std::cout << "\n";
-        }
-        std::cout << "\n";
-        */
-        
-        
-    } else if (flag == "growthK")
+    } else if (flag == "popGrowthModel")
     {
-        assert(GP->speciesEcoRel_type.size() == this->GlobalP.nbSpecies);
-        assert(GP->speciesEcoRel_effect.size() == this->GlobalP.nbSpecies);
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readGrowthK);
+        assert(GP->speciesInteraction.size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesInteraction[0].size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesCompetition.size() == this->GlobalP.nbSpecies);
+        assert(GP->speciesCompetition[0].size() == this->GlobalP.nbSpecies);
+
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readPopGrowthModel);
 
     } else if (flag == "resetGenetics")
     {

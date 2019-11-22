@@ -35,10 +35,15 @@ Note for Remi of things to do:
 
 class DispersalData
 {
+private:
+    std::vector<int> getNbOffspringProducedPerPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits);
+
 public:
     std::vector<std::vector<std::vector<double>>>   __FullFormForwardMigration;
 
     std::vector<std::vector<double>>                FullFormForwardMigration; //FullFormForwardMigration[from][to]
+
+    std::vector<int>                                nextGenerationPatchSizes;
 
     //std::vector<std::vector<double>>                BackwardMigrationOriginal;        // DispMatOriginal     [to][fake_from] returns backward migration
     //std::vector<std::vector<int>>                   BackwardMigrationIndexOriginal;   // DispMatIndexOriginal[to][fake_from] returns index
@@ -50,17 +55,8 @@ public:
 
     
 
-    std::vector<int> SetBackwardMigrationAndGetNextGenerationPatchSizes(
-        std::vector<std::vector<std::vector<double>>>& CumSumFits,
-        bool computingOriginal
-    );
-    double ComputeEffectOfSpeciesEcologicalInteractions(int patch_index);
-    double ComputeEffectiveNumberOfMigrants(
-        std::vector<std::vector<std::vector<double>>>& CumSumFits,
-        bool computingOriginal,
-        int patch_to,
-        int patch_from
-    );
+    const std::vector<int>& setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<double>>>& CumSumFits);
+    void setOriginalBackwardMigrationIfNeeded();
 
     void FromFullFormForwardSetReducedFormForward(std::vector<std::vector<double>> FullFormForwardMigration);
 

@@ -114,7 +114,7 @@ public:
     void WriteOutputs_T56_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file);
     template<typename ntrlIterator, typename selIterator>
-    void WriteOutputs_T56_LargeOutput_writeData(ntrlIterator& ntrlIt, selIterator& selIt, ntrlIterator& ntrlItEnd, selIterator& selItEnd, OutputFile& file, bool printNA);
+    void WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, selIterator selIt, ntrlIterator ntrlItEnd, selIterator selItEnd, OutputFile& file, bool printNA);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
     void WriteOutputs_T1_HybridIndex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);

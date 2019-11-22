@@ -500,7 +500,6 @@ void ResetGenetics::makeEventBHappen(ResetGeneticsEvent_B& event, Pop& pop)
             {
                 SSP->patchSize[patch_index] = SSP->patchCapacity[patch_index];   
             }
-            GP->allSpeciesPatchSizes[patch_index][SSP->speciesIndex] = SSP->patchSize[patch_index];
         }
             
         

@@ -375,3 +375,7 @@ SimBit_4.8.12
 	
 SimBit_4.8.14
 	Change default value for logfile
+
+SimBit_4.9.6
+	Improve flexibility of ecological relationship among species
+	

@@ -267,11 +267,19 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
         {
             break;
         }
-        if (input.PeakNextElementString() == "FromToBy" || input.PeakNextElementString() == "fromtoby" || input.PeakNextElementString() == "fromToBy")
+        if (input.PeakNextElementString() == "fromtoby" || input.PeakNextElementString() == "FromToBy" || input.PeakNextElementString() == "fromToBy")
         {
             input.skipElement();
             int from = input.GetNextElementInt();
-            int to = input.GetNextElementInt();
+            int to;
+            if (input.PeakNextElementString() == "end")
+            {
+                input.skipElement();
+                to = GP->nbGenerations;
+            } else
+            {
+                to = input.GetNextElementInt();
+            }                
             int by = input.GetNextElementInt();
 
 
@@ -281,7 +289,15 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             }
         } else
         {
-            v.push_back(input.GetNextElementInt());
+            if (input.PeakNextElementString() == "end")
+            {
+                input.skipElement();
+                v.push_back(GP->nbGenerations);
+            } else
+            {
+                v.push_back(input.GetNextElementInt());
+            }
+                
         }
     }
     this->setTimes(v);

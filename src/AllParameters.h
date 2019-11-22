@@ -36,12 +36,13 @@ Note for Remi of things to do:
 class AllParameters
 {
 private:
-    std::vector<SpeciesSpecificParameters> SSPs;
     GeneralParameters GlobalP;
 
     void quickScreenAtOptionL(std::vector<std::pair<std::string, std::string>>& UserEntries);
 
 public:
+    std::vector<SpeciesSpecificParameters> SSPs; // it is only public because dispersalData need to know the patch sizes of other species
+
     GeneralParameters* getGPaddress();
     SpeciesSpecificParameters* getSSPaddress(int speciesIndex);
 

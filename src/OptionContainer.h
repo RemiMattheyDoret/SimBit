@@ -19,7 +19,7 @@ public:
         {{"H", "Habitats"},                           	{"S","PN",}, false}, // not all species need to have same habitat distinction
     
         // T5_fit
-        {{"T5_approximationForNtrl"},                   {"H","S", "seed"}, false},
+        {{"T5_approximationForNtrl","T56_approximationForNtrl"},                   {"H","S", "seed"}, false},
         {{"T5_fit", "T5_FitnessEffects"},               {"H","S", "seed", "T5_approximationForNtrl"}, false}, // First quickScreenOfL, then read T5_fit and finally read --L. In --L the T56_FitnessEffects objects is reduced to remove what is not under selection.
         {{"T5_compressData", "T5_compress"},            {"H","S", "seed", "T5_fit"}, false},
         
@@ -81,7 +81,7 @@ public:
         {{"r","RecombinationRate"},                     {"S", "L"}, false},
         {{"recRateOnMismatch"},                         {"S", "L"}, false},
         {{"FitnessMapInfo"},           {"S", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
-        {{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
+        //{{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
         // Initializer
         {{"indTypes","individualTypes"},                {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
@@ -130,9 +130,10 @@ public:
         {{"outputSFSbinSize"},                      {"T4_SFS_file", "T1_SFS_file", "GP", "S", "startAtGeneration", "L"}, true},
 
         // Species interaction
-        {{"eco", "ecoRelation","SpeciesEcologicalRelationships"},	{"S","seed"}, false},
-        {{"growthK", "growthCarryingCapacity"},                     {"eco", "S", "PN", "N"}, false},
-        {{"swapInLifeCycle"},                                       {"S","r","L"}, false},
+        {{"eco","speciesEcologicalRelationships"},	{"S","seed"}, false},
+        {{"popGrowthModel"},                        {"eco", "S", "PN", "N", "fec"}, false},
+        {{"stochasticGrowth"},                        {"popGrowthModel"}, false},
+        {{"swapInLifeCycle"},                       {"S","r","L"}, false},
         
 
         // other technical parameters

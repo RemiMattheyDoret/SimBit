@@ -48,6 +48,7 @@ InputReader::InputReader(InputReader& fullInput, int from, int to)
     this->ErrorMessage = fullInput.ErrorMessage;
 }
 
+
 int InputReader::nextUntilPosition(std::vector<std::string> untils)
 {
     for (auto VIndex2 = VIndex ; VIndex2 < V.size() ; ++VIndex2)
@@ -170,7 +171,7 @@ bool InputReader::IsThereMoreToRead()
     if (VIndex > V.size())
     {
         std::cout << "Error in InputReader::IsThereMoreToRead. It is an internal error but you might want to check your input parameters anyway.\n";
-        std::cout << "input is " + this->print() + "\n";
+        std::cout << "input is '" + this->print() + "'\n";
         abort();
     }
     return VIndex != V.size();
