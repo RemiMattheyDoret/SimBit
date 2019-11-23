@@ -378,4 +378,8 @@ SimBit_4.8.14
 
 SimBit_4.9.6
 	Improve flexibility of ecological relationship among species
+
+SimBit_4.9.7
+	User can add comments on the input file.
+	
 	

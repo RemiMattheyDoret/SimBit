@@ -53,6 +53,7 @@ public:
     void Update(bool updatePopsToo);
     void wrapperOverSpecies(InputReader& fullInput, void (SpeciesSpecificParameters::*readFunction)(InputReader&));
     static std::string readNthLine(const std::string& filename, int N);
+    static std::string readInputFile(const std::string& filename, int N);
     //static void split_string(const std::string &s, std::vector<std::string>& elems);
     void setOptionToDefault(std::string& flag);
     void setOptionToUserInput(std::string& flag, InputReader input);

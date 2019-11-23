@@ -82,6 +82,37 @@ void AllParameters::PrintHelpToUser(OptionContainer optionContainer)
     optionContainer.listOptions();
 }
 
+std::string AllParameters::readInputFile(const std::string& filename, int N)
+{
+    if (N > 0)
+    {
+        return readNthLine(filename, N);
+    } else
+    {
+        assert(N == -1);
+        std::ifstream in(filename);
+        
+        std::string r;
+        std::string line;
+        while (std::getline(in, line)) // getline strip off the newline character
+        {
+            // Remove comment from line
+            auto posHashtag = line.find("#");
+            if (posHashtag != std::string::npos)
+            {
+                line.erase(posHashtag); // That will remove the ending newline
+            }
+
+            // Line contains string of length > 0 then save it in vector
+            if(line.size() > 0)
+                r += line;
+        }
+
+        return r;
+    }
+}
+
+
 std::string AllParameters::readNthLine(const std::string& filename, int N)
 {
     N--;
@@ -193,7 +224,7 @@ std::cout << "Enters in 'SetParameters'\n";
         #ifdef DEBUG            
         std::cout << "Reading options from file" << std::endl;
         #endif
-        if (argc < 4)
+        if (argc != 4)
         {
             std::cout << "received only " << argc << " options while trying to read from file. First option should be the executable, the second should be 'FILE' (or something similar), the third should be the line (counting based 1) from the file to consider.\n";
             PrintHelpToUser(optionContainer);
@@ -205,18 +236,19 @@ std::cout << "Enters in 'SetParameters'\n";
 
         // Get Line Number from which parameters must be read
         std::string s_LineNumber(argv[3]);
-        for (int char_index = 0 ; char_index < s_LineNumber.size() ; ++char_index)
-        {
-            if (!isdigit(s_LineNumber.at(char_index)))
-            {
-                std::cout << "When submitting parameters through a file, the option after the path must be an integer (indicates the line number from file, counting zero-based). (received " << s_LineNumber << ")\n";
-                abort();
-            }
-        }
+        
         int LineNumberToRead;
         {
             InputReader input(s_LineNumber, "When reading LineNumber of optionFile,");
-            LineNumberToRead = input.GetNextElementInt();
+            if (input.PeakNextElementString() == "A" || input.PeakNextElementString() == "a" || input.PeakNextElementString() == "All" || input.PeakNextElementString() == "all")
+            {
+                LineNumberToRead = -1;
+                input.skipElement();
+            } else
+            {
+                LineNumberToRead = input.GetNextElementInt();
+            }
+                
             input.workDone();
         }
 
@@ -224,13 +256,13 @@ std::cout << "Enters in 'SetParameters'\n";
         std::cout << "LineNumberToRead = " << LineNumberToRead << std::endl;
         #endif
 
-        if (LineNumberToRead <= 0)
+        if (LineNumberToRead <= 0 && LineNumberToRead != -1)
         {
-            std::cout << "When submitting parameters through a file, the option after the path must be an integer strictly greater than 0. LineNumber received is " << LineNumberToRead << "\n";
+            std::cout << "When submitting parameters through a file, the option after the path must be an integer strictly greater than 0 (or 'a', 'all' or '-1' which all mean to read the whole file). LineNumber received is " << LineNumberToRead << "\n";
             abort();
         }
 
-        AllInputInLongString = AllParameters::readNthLine(optionFilePath, LineNumberToRead);
+        AllInputInLongString = AllParameters::readInputFile(optionFilePath, LineNumberToRead);
 
         #ifdef DEBUG
         std::cout << "Line read = " << AllInputInLongString << std::endl;
