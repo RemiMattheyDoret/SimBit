@@ -98,6 +98,7 @@ public:
     bool getT1_Allele(const int char_index, const int bit_index);
     unsigned char getT2_Allele(const int char_index);
     char getT3_Allele(const int char_index);
+    //bool getT56_Allele(const int Locus);
     //bool getT5ntrl_Allele(const int Locus);
     //bool getT5sel_Allele(const int Locus);
     //int getT5ntrl_nthMutation(const int n);

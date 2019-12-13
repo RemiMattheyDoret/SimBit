@@ -32,6 +32,23 @@ Note for Remi of things to do:
 
  */
 
+class oneSpInteraction
+{
+public:
+    char type; 
+    // type == 'A': just magnitude
+    // type == 'B': magnitude multiplied by causal species patch size
+    // type == 'C': magnitude multiplied by recipient species patch size
+    // type == 'D': magnitude multiplied by both species patch size
+    double magnitude;
+
+    oneSpInteraction():type('A'), magnitude(0.0){}
+    oneSpInteraction(char t, double m):type(t), magnitude(m)
+    {
+        assert(type == '0' || type == 'A' || type == 'B' || type == 'C' || type == 'D');
+    }
+};
+
 
 class GeneralParameters // is a singleton
 {
@@ -67,10 +84,10 @@ public:
     // SpeciesStuff
     int                                             nbSpecies;
     //std::vector<char>                               __typeOfSpeciesInteraction;
-    std::vector<std::vector<std::vector<double>>>   __speciesInteraction;
+    std::vector<std::vector<std::vector<oneSpInteraction>>>   __speciesInteraction;
     std::vector<std::vector<std::vector<double>>>   __speciesCompetition;
     //char                                            typeOfSpeciesInteraction;
-    std::vector<std::vector<double>>                speciesInteraction; // speciesInteraction[toSpIndex][fromSpIndex]
+    std::vector<std::vector<oneSpInteraction>>                speciesInteraction; // speciesInteraction[toSpIndex][fromSpIndex]
     std::vector<std::vector<double>>                speciesCompetition; // speciesCompetition[toSpIndex][fromSpIndex]
 
     // nbPatches

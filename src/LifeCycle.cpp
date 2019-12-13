@@ -190,21 +190,6 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 }
             } // end of if else should I clone
 
-            //std::cout << "just before mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
-            //std::cout << "just before mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
-            Mutate(
-                Offspring_mHaplo,
-                SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
-            );
-
-            Mutate(
-                Offspring_fHaplo,
-                SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
-            );
-
-          //std::cout << "just after mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
-          //std::cout << "just after mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
-
 
             // Fitness for next generation. Set fitness to zero if the habitat has changed. Could do better here as not all of them will necessarily have habitat specific selection
             if (SSP->Habitats[patch_index] != SSP->Habitats[CD.mother.patch])
@@ -238,6 +223,21 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     Offspring_fHaplo.setAllW_T56(-1.0);
                 }
             }
+
+            //std::cout << "just before mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+            //std::cout << "just before mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
+            Mutate(
+                Offspring_mHaplo,
+                SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
+            );
+
+            Mutate(
+                Offspring_fHaplo,
+                SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
+            );
+
+            //std::cout << "just after mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
+            //std::cout << "just after mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
 
 
             // Set fitness for next generation
@@ -475,7 +475,9 @@ std::cout << "Enters in 'copyOver'\n";
 #endif
     if (breakpoints.size()==1)
     {
+        //if (GP->CurrentGeneration >= 50) std::cout << "parent.getHaplo(segregationIndex).getW_T1(0) = " << parent.getHaplo(segregationIndex).getW_T1(0) << "\n";
         TransmittedChrom = parent.getHaplo(segregationIndex);
+        //if (GP->CurrentGeneration >= 50) std::cout << "TransmittedChrom.getW_T1(0) = " << TransmittedChrom.getW_T1(0) << "\n";
         if (SSP->T4_nbBits > 0)
         {
             //std::cout <<"\tLIFECYCLE!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
@@ -630,15 +632,17 @@ std::cout << "Enters in 'copyOver'\n";
                         // Copy fitnesses that can be copied
                         for (int fitnessMapIndex = fitnessMapIndexFrom; fitnessMapIndex < fitnessMapIndexTo ; fitnessMapIndex++)
                         {
+                            //std::cout << "Assgning FMI "<<fitnessMapIndex<< " to ";
                             if (fitnessMapIndex != fitnessMapIndexToRecompute)
                             {
-                                //std::cout << "Assgning FMI = " << fitnessMapIndex << "\n";
+                                //std::cout << parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex) << "\n";
                                 TransmittedChrom.setW_T1(
                                     parent.getHaplo(haplo_index).getW_T1(fitnessMapIndex),
                                     fitnessMapIndex
                                 );
                             } else
                             {
+                                //std::cout << "-1.0" << "\n";
                                 TransmittedChrom.setW_T1(-1.0,fitnessMapIndexToRecompute);
                             }
                         }

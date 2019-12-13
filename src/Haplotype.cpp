@@ -26,6 +26,8 @@
 
  */
 
+
+
 bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
 {
     assert(SSP->T1_nbChars == T1_Alleles.size());
@@ -71,6 +73,7 @@ double Haplotype::getW_T2(int fitnessMapIndex)
 
 void Haplotype::setAllW_T1(double w)
 {
+    assert(W_T1.size() == SSP->NbElementsInFitnessMap);
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
     {
         this->setW_T1(w, fitnessMapIndex);
@@ -228,6 +231,7 @@ void Haplotype::mutateT1_Allele(int& MutPosition, int& Habitat)
     {
         int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
         double w = this->getW_T1(fitnessMapIndex);
+        //if (GP->CurrentGeneration >=50) std::cout << "w=" << w << " ";
         if (w != -1.0)
         {
             // Note that Toggle already happened. If it is mutant, it is because it just happened!
@@ -1095,6 +1099,7 @@ void Haplotype::setW_T56(double w, int fitnessMapIndex)
 
 void Haplotype::setAllW_T56(double w)
 {
+    assert(W_T56.size() == SSP->NbElementsInFitnessMap);
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
     {
         this->setW_T56(w, fitnessMapIndex);
@@ -2786,3 +2791,34 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
     assert(r>=0.0 && r <= 1.0);
     return r;
 }
+
+
+/*bool Haplotype::getT56_Allele(const int locus) // That's a slow function that should not be used too often!
+{
+    assert(locus < SSP->T56_nbBits);
+    auto T56ntrlLocus = FromLocusToTXLocus[locus].T56ntrl;
+    SSP->isT56neutral[]
+    if (SSP->FromT56LocusToT56genderLocus[locus].type == "T56ntrl")
+    {
+        auto T56ntrlLocus = SSP->FromT56LocusToT56genderLocus[locus].T56ntrl;
+        if (SSP->T56ntrl_compress)
+        {
+
+        } else
+        {
+
+        }
+    } else
+    {
+        assert(SSP->FromT56LocusToT56genderLocus[locus].type == "T56sel");
+        auto T56selLocus = SSP->FromT56LocusToT56genderLocus[locus].T56sel;
+        if (SSP->T56sel_compress)
+        {
+
+        } else
+        {
+
+        }
+
+    }
+}*/

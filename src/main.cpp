@@ -79,6 +79,7 @@ Note for Remi of things to do:
 #include "OutputFile.h"
 #include "TreeNode.h"
 #include "Tree.h"
+#include "KillOnDemand.h"
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
 #include "FromLocusToTXLocusElement.h"
@@ -114,6 +115,7 @@ Note for Remi of things to do:
 #include "OutputWriter.cpp"
 #include "Patch.cpp"
 //#include "SimulationTracker.cpp"
+#include "KillOnDemand.cpp"
 #include "SpeciesSpecificParameters.cpp"
 #include "TreeNode.cpp"
 #include "Tree.cpp"
@@ -137,7 +139,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.9.7");
+    std::string VERSION("version 4.9.11");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -433,6 +435,19 @@ int main(int argc, char *argv[])
             // Save population in binary file if you asked for it
             pop_Offspring.PrintBinaryFile();
 
+
+            // killOnDemand
+            if (SSP->killOnDemand.mustKill(pop_Offspring))
+            {
+                std::string forSpeciesText;
+                if (GP->nbSpecies > 1)
+                {
+                    forSpeciesText = " for species " + SSP->speciesName;
+                }
+                std::cout << "\n\n\t\tSimulation has been killed on demand"<< forSpeciesText << " at generation "<< GP->CurrentGeneration <<"!\n\n";
+                goto endOfSimulation;
+            }
+
         }
 
         // Security as we are outside a species specific context
@@ -441,7 +456,7 @@ int main(int argc, char *argv[])
         // Check the simulation is not doing something crazy stupidly slow with blcok T2
         if (nbT2LociCorrections > 0)
         {
-            std::cout << "\nThere was a need to correct T2 blocks for an excess of mutations on the block. Each correction is quite a slow process so you should attempt to keep the number of correction to the a low value (better just never reach 255 mutations per individual per block). You might want to adjust your parameters. There were " << nbT2LociCorrections << " corrections in total";
+            std::cout << "\n\t\tThere was a need to correct T2 blocks for an excess of mutations on the block. Each correction is quite a slow process so you should attempt to keep the number of correction to the a low value (better just never reach 255 mutations per individual per block). You might want to adjust your parameters. There were " << nbT2LociCorrections << " corrections in total";
             abort();
         }
     }
@@ -454,7 +469,8 @@ int main(int argc, char *argv[])
     ############## Finalization ##############
     ##########################################
     */
-        
+       
+    endOfSimulation: 
     //std::cout << "\n\n" << std::flush;
 
     // Time calculation

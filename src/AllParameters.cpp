@@ -226,7 +226,7 @@ std::cout << "Enters in 'SetParameters'\n";
         #endif
         if (argc != 4)
         {
-            std::cout << "received only " << argc << " options while trying to read from file. First option should be the executable, the second should be 'FILE' (or something similar), the third should be the line (counting based 1) from the file to consider.\n";
+            std::cout << "received only " << argc << " options while trying to read from file. First option should be the executable, the second should be 'FILE' (or something similar), the third should be the line (first line with index 1; or the keyword 'all' to read out the entire file) from the file to consider.\n";
             PrintHelpToUser(optionContainer);
             exit(1);
         }
@@ -296,7 +296,7 @@ std::cout << "Enters in 'SetParameters'\n";
                 break;
             } else
             {
-                std::cout << "The very first character (excl. white spaces) of the input (after the name of the executable) appears to be '" << AllInputInLongString.at(char_index) << "'. The first character should be '-' as the beginning of the first option (--optionName). In other words, the input does not start with a flag. It is possible that you are trying to indicate a file in which the arguments are found but have forgotten to write the keyword 'file' (or other equivalents such as 'f' or 'FILE') right after the name of the executable.\n";
+                std::cout << "The very first character (excl. white spaces) of the input (after the name of the executable) appears to be '" << AllInputInLongString.at(char_index) << "'. The first character should either be '-' (if you want to read options direclty from the command line) or 'f' (or 'F') if you want to read option from a file. It is plausible that you are trying to indicate a file in which the arguments are found but have forgotten to write the keyword 'file' (or other equivalents such as 'f', 'F' or 'FILE') right after the name of the executable.\n";
                 abort();
             }
         }
@@ -1104,6 +1104,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         std::cout << "--L (--Loci) is missing" << std::endl;
         abort();
+    } else if (flag == "killOnDemand")
+    {
+        // Nothing to do   
     }
     else if (flag == "ploidy")
     {
@@ -1720,6 +1723,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readLoci);
 
+    }  else if (flag == "killOnDemand")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readKillOnDemand);        
     }  else if (flag == "ploidy")
     {     
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readPloidy);

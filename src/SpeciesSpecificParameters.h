@@ -108,7 +108,7 @@ public:
 
     // Other performance related things
     //int                 recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
-    bool                SwapInLifeCycle;
+    bool                                            SwapInLifeCycle;
     //bool allowToCorrectRecomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations;
 
     // Genetics and selection Both T1, T2, T3, T4 and T5
@@ -251,6 +251,10 @@ public:
     // Other
     int                                              centralT1LocusForExtraGeneticInfo;
     std::vector<double>                              outputSFSbinSizes;
+    KillOnDemand                                     killOnDemand;
+    std::string                                      killOnDemand_FunctionName;
+    std::string                                      KillOnDemand_homemade_parameters;
+    std::string                                      ifFixedKillOnDemand_loci;
     
     std::vector<std::vector<int>>                    subsetT1LociForfitnessSubsetLoci_file;
     std::vector<std::vector<int>>                    subsetT2LociForfitnessSubsetLoci_file;
@@ -260,6 +264,7 @@ public:
     
     // methods
     void readLoci(InputReader& input);
+    void readKillOnDemand(InputReader& input);
     void readT1_Initial_AlleleFreqs(InputReader& input);
     void readT56_Initial_AlleleFreqs(InputReader& input);
     void readnbSubGenerations(InputReader& input);

@@ -833,7 +833,7 @@ void SpeciesSpecificParameters::resetT56_freqThresholToDefault()
 {
     T56ntrl_frequencyThresholdForFlippingMeaning = 1.0;
     T56sel_frequencyThresholdForFlippingMeaning = 1.0;
-
+/*
     if (TotalpatchCapacity > 50)
     {
         T56ntrl_frequencyThresholdForFlippingMeaning = 0.95;
@@ -862,7 +862,7 @@ void SpeciesSpecificParameters::resetT56_freqThresholToDefault()
     {
         T56ntrl_frequencyThresholdForFlippingMeaning = 0.6;
         T56sel_frequencyThresholdForFlippingMeaning = 0.6;
-    }
+    }*/
     //std::cout << "T56ntrl_frequencyThresholdForFlippingMeaning = " << T56ntrl_frequencyThresholdForFlippingMeaning << "\n";
     //std::cout << "T56sel_frequencyThresholdForFlippingMeaning = " << T56sel_frequencyThresholdForFlippingMeaning << "\n";
 }
@@ -1696,7 +1696,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
     std::vector<char> T3_info;
     std::vector<unsigned int> T56_info;
 
-    while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "haplo" && input.PeakNextElementString().substr(0,5) != "patch" && input.PeakNextElementString() != "ind")
+    while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "haplo" && input.PeakNextElementString() != "ind")
     {
         auto TT = input.GetNextElementString();
         if (TT == "T1" || TT == "t1")
@@ -1805,7 +1805,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
             abort();
         } else
         {
-            std::cout << "In --indTypes, received unknown type of locus (" << TT << "). Please if you want to indicate locus of type 1, write either T1 or t1. Same logic apply to other type of loci. Maybe you tried to write 'haplo1' but wrote 'Haplo1 or something like that!'\n";
+            std::cout << "In --indTypes, received unknown type of locus (" << TT << "). Please if you want to indicate locus of type 1, write either T1 or t1. Same logic apply to other type of loci.\nMaybe you tried to write 'haplo1' but wrote 'Haplo1' or something like that!\nMaybe, did inputted the correct number of values for a given type of loci (give the number of loci for this type at option --Loci (--L))\n";
             abort(); 
         }
     }
@@ -2770,31 +2770,21 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
     {
         //std::cout << "this->MaxEverHabitat = "<<this->MaxEverHabitat << std::endl ;
         assert(this->MaxEverHabitat >= 0);
+        std::string firstMode;
         for (int habitat = 0; habitat <= this->MaxEverHabitat ; habitat++)
         {
             (void) input.GetNextHabitatMarker(habitat);
             std::string Mode = input.GetNextElementString();
-            std::string firstMode;
             if (habitat == 0)
             {
                 firstMode = Mode;
             } else
             {
-                if  (
-                        (
-                            (firstMode.compare("A")==0 || firstMode.compare("unif")==0 || firstMode.compare("cstHgamma")==0)
-                            &&
-                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || Mode.compare("MultiplicityUnif")==0)
-                        )
-                        ||
-                        (
-                            (Mode.compare("A")==0 || Mode.compare("unif")==0 || firstMode.compare("cstHgamma")==0)
-                            &&
-                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
-                        )
-                    )
+                bool wasFirstMultFit = !(Mode == "MultiplicityA" || Mode == "MultiplicityGamma" || Mode == "MultiplicityUnif" || Mode == "multfitA" || Mode == "multfitGamma" || Mode == "multfitUnif");
+                bool isCurrentMultFit = !(firstMode == "MultiplicityA" || firstMode == "MultiplicityGamma" || firstMode == "MultiplicityUnif" || firstMode == "multfitA" || firstMode == "multfitGamma" || firstMode == "multfitUnif");
+                if  (wasFirstMultFit != isCurrentMultFit)
                 {
-                    std::cout << "The Mode received for the zeroth habitat is '" << firstMode << "'. The Mode received for the " << habitat << "th habitat is '" << Mode << "'. In the current version, if one patch make the assumption of 'multiplicity', then all patches must make this assumption.\n";
+                    std::cout << "For --T5_fit, the Mode received for the zeroth habitat is '" << firstMode << "'. The Mode received for the " << habitat << "th habitat is '" << Mode << "'. In the current version, if one patch make the assumption of 'multfit', then all patches must make this assumption.\n";
                     abort();
                 }
             }
@@ -2936,7 +2926,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects', habitat "  << habitat << ", Mode 'cstH' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityA")==0)
+            } else if (Mode.compare("MultiplicityA")==0 || Mode.compare("multfitA")==0)
             {
                 this->T56_isMultiplicitySelection = true;
                 ForASingleHabitat.reserve(this->quickScreenAtL_T56_nbBits);
@@ -2945,7 +2935,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     double fit01 = input.GetNextElementDouble();
                     if (fit01 < 0 || fit01 > 1 )
                     {
-                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA', one 'fit01' value is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
                         abort();
                     }
                     ForASingleHabitat.push_back(fit01);
@@ -2953,7 +2943,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
                 if (ForASingleHabitat.size() != this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitA' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected\n";
                     abort();
                 }
             } else if (Mode.compare("unif")==0)
@@ -2980,7 +2970,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'unif' " << ForASingleHabitat.size() << " have been received while " << 2 * (this->quickScreenAtL_T56_nbBits) << " were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityUnif")==0)
+            } else if (Mode.compare("MultiplicityUnif")==0 || Mode.compare("multfitUnif")==0)
             {
                 this->T56_isMultiplicitySelection = true;
                 
@@ -2988,7 +2978,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 double fit01 = input.GetNextElementDouble();
                 if (fit01<0 || fit01>1)
                 {
-                    std::cout << "In option '--T5_FitnessEffects' Mode 'MultiplicityUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
+                    std::cout << "In option '--T5_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
                     abort();
                 }
                 for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbBits ; locus++)
@@ -2997,10 +2987,10 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
                 if (ForASingleHabitat.size() != this->quickScreenAtL_T56_nbBits)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected (likely an internal error)\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbBits << "  were expected (likely an internal error)\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityGamma")==0)
+            } else if (Mode.compare("multfitGamma")==0)
             {
                 this->T56_isMultiplicitySelection = true;
                 double alpha = input.GetNextElementDouble();
@@ -3023,7 +3013,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 assert(ForASingleHabitat.size() == this->quickScreenAtL_T56_nbBits);
             } else
             {
-                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', 'cstHgamma', MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T5_fit (--T56_FitnessEffects)', only Modes 'A', 'unif', 'cstHgamma', 'multfitA' (aka. 'MultiplicityA'), 'multfitUnif' (aka. 'MultiplicityUnif') and 'multfitGamma' (aka. 'MultiplicityGamma') are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T56_FitnessEffects.push_back(ForASingleHabitat);
@@ -3107,31 +3097,21 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
         input.skipElement();
     } else
     {
+        std::string firstMode;
         for (int habitat = 0; habitat <= this->MaxEverHabitat ; habitat++)
         {
             (void) input.GetNextHabitatMarker(habitat);
             std::string Mode = input.GetNextElementString();
-            std::string firstMode;
             if (habitat == 0)
             {
                 firstMode = Mode;
             } else
             {
-                if  (
-                        (
-                            (firstMode.compare("A")==0 || firstMode.compare("unif")==0)
-                            &&
-                            (Mode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || Mode.compare("MultiplicityUnif")==0)
-                        )
-                        ||
-                        (
-                            (Mode.compare("A")==0 || Mode.compare("unif")==0)
-                            &&
-                            (firstMode.compare("MultiplicityA")==0 || Mode.compare("MultiplicityGamma")==0 || firstMode.compare("MultiplicityUnif")==0  )
-                        )
-                    )
+                bool wasFirstMultFit = !(Mode == "MultiplicityA" || Mode == "MultiplicityGamma" || Mode == "MultiplicityUnif" || Mode == "multfitA" || Mode == "multfitGamma" || Mode == "multfitUnif");
+                bool isCurrentMultFit = !(firstMode == "MultiplicityA" || firstMode == "MultiplicityGamma" || firstMode == "MultiplicityUnif" || firstMode == "multfitA" || firstMode == "multfitGamma" || firstMode == "multfitUnif");
+                if  (wasFirstMultFit != isCurrentMultFit)
                 {
-                    std::cout << "The Mode received for the zeroth habitat is '" << firstMode << "'. The Mode received for the " << habitat << "th habitat is '" << Mode << "'. In the current version, if one patch make the assumption of 'multiplicity', then all patches must make this assumption.\n";
+                    std::cout << "For --T1_fit, the Mode received for the zeroth habitat is '" << firstMode << "'. The Mode received for the " << habitat << "th habitat is '" << Mode << "'. In the current version, if one patch make the assumption of 'multfit', then all patches must make this assumption.\n";
                     abort();
                 }
             }
@@ -3308,7 +3288,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T1_FitnessEffects', habitat "  << habitat << ", Mode 'A' " << ForASingleHabitat.size() << " have been received while " << THREE * (this->T1_nbBits) << " (= 3 * 8 * ( " << this->T1_nbChars << "))  were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityA")==0)
+            } else if (Mode.compare("MultiplicityA")==0 || Mode.compare("multfitA")==0)
             {
                 this->T1_isMultiplicitySelection = true;
                 for (int entry_index = 0 ; entry_index < this->T1_nbBits ; )    
@@ -3319,7 +3299,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                         int nbRepeats = input.GetNextElementInt();
                         if (fit01 < 0 || fit01 > 1 )
                         {
-                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA', one 'fit01' value (coming after keyword 'R') is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value (coming after keyword 'R') is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
                             abort();
                         }
                         for (int i = 0 ; i < nbRepeats; i++)
@@ -3328,7 +3308,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                             entry_index++;
                             if (entry_index > this->T1_nbBits)
                             {
-                                std::cout << "In 'T1_FitnessEffects', mode 'MultiplicityA', when reading after keyword 'R', you asked to repeat the value " << fit01 << " for " << nbRepeats << " times. This (on top with previous entries) results of a number of entry greater than " << this->T1_nbBits << " as requested given the mode here (MultiplicityA) and the arguments given to the option '--Loci'\n";
+                                std::cout << "In 'T1_FitnessEffects', mode 'multfitA', when reading after keyword 'R', you asked to repeat the value " << fit01 << " for " << nbRepeats << " times. This (on top with previous entries) results of a number of entry greater than " << this->T1_nbBits << " as requested given the mode here (multfitA) and the arguments given to the option '--Loci'\n";
                                 abort();
                             }
                         }
@@ -3346,7 +3326,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 }
                 if (ForASingleHabitat.size() != this->T1_nbBits)
                 {
-                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA' " << ForASingleHabitat.size() << " have been received while " << this->T1_nbBits << " (= 8 * ( " << this->T1_nbChars << "))  were expected\n";
+                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'multfitA' " << ForASingleHabitat.size() << " have been received while " << this->T1_nbBits << " (= 8 * ( " << this->T1_nbChars << "))  were expected\n";
                     abort();
                 }
             } else if (Mode.compare("unif")==0)
@@ -3373,14 +3353,14 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'unif' " << ForASingleHabitat.size() << " have been received while " << THREE * (this->T1_nbBits) << " (= 3 * 8 * ( " << this->T1_nbChars << "))  were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityUnif")==0)
+            } else if (Mode.compare("MultiplicityUnif")==0 || Mode.compare("multfitUnif")==0)
             {
                 this->T1_isMultiplicitySelection = true;
                 
                 double fit01 = input.GetNextElementDouble();
                 if (fit01<0 || fit01>1)
                 {
-                    std::cout << "In option '--T1_FitnessEffects' Mode 'MultiplicityUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
+                    std::cout << "In option '--T1_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
                     abort();
                 }
                 for (int locus = 0 ; locus < this->T1_nbBits ; locus++)
@@ -3389,10 +3369,10 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 }
                 if (ForASingleHabitat.size() != this->T1_nbBits)
                 {
-                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityUnif' " << ForASingleHabitat.size() << " have been received while " << this->T1_nbBits << " (= 8 * ( " << this->T1_nbChars << "))  were expected\n";
+                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'multfitUnif' " << ForASingleHabitat.size() << " have been received while " << this->T1_nbBits << " (= 8 * ( " << this->T1_nbChars << "))  were expected\n";
                     abort();
                 }
-            } else if (Mode.compare("MultiplicityGamma")==0)
+            } else if (Mode.compare("MultiplicityGamma")==0 || Mode.compare("multfitGamma")==0)
             {
                 double alpha = input.GetNextElementDouble();
                 double beta = input.GetNextElementDouble();
@@ -3411,7 +3391,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 }
             } else
             {
-                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), MultiplicityA', 'MultiplicityUnif' and 'MultiplicityGamma' are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), 'multfitA' (aka. 'MultiplicityA'), 'multfitUnif' (aka. 'MultiplicityUnif') and 'multfitGamma' (aka. 'MultiplicityGamma') are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T1_FitnessEffects.push_back(ForASingleHabitat);
@@ -4581,6 +4561,11 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
     
 
 }*/
+
+void SpeciesSpecificParameters::readKillOnDemand(InputReader& input)
+{
+    killOnDemand.readUserInput(input);
+}
 
 
 void SpeciesSpecificParameters::IsThereSelection()

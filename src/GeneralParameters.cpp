@@ -123,7 +123,7 @@ void GeneralParameters::readT1_FST_info(InputReader& input)
 
 void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
 {
-    // Allocate memory fitst
+    // Allocate memory first
     assert(GP->nbSpecies > 0);
     speciesInteraction.resize(GP->nbSpecies);
     speciesCompetition.resize(GP->nbSpecies);
@@ -184,7 +184,7 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
             {
                 for (int speciesIndexTo = 0 ; speciesIndexTo < GP->nbSpecies ; ++speciesIndexTo)
                 {
-                    speciesInteraction[speciesIndexTo][speciesIndexFrom] = 0.0;
+                    speciesInteraction[speciesIndexTo][speciesIndexFrom] = {'A',0.0};
                 }
             }
         } else
@@ -195,17 +195,39 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
                 {
                     if (speciesIndexFrom == speciesIndexTo)
                     {
-                        if (input.GetNextElementDouble() != 0.0)
+                        if (input.GetNextElementString() != "self")
                         {
-                            std::cout << "For option --eco, received a value different from 0.0 for the interaction matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
+                            std::cout << "For option --eco, received something else than 'self' for the interaction matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
                             abort();
                         }
-                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = 0.0; 
+                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = {'A',0.0}; 
                         
                     } else
                     {
-                        double x = input.GetNextElementDouble();
-                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = x;
+                        std::string stype = input.GetNextElementString(); // I don't direclty cast to avoid problems with string that has more than one character
+                        char type;
+                        double magnitude = input.GetNextElementDouble();
+                        if (stype == "A")
+                        {
+                            type = 'A';
+                        } else if (stype == "B")
+                        {
+                            type = 'B';
+                        } else if (stype == "C")
+                        {
+                            type = 'C';
+                        } else if (stype == "D")
+                        {
+                            type = 'D';
+                        } else if (stype == "0")
+                        {
+                            type = '0';
+                        } else
+                        {
+                            std::cout << "For option --eco, for the interaction matrix, received the type " << stype <<" for the effect of species index "<<speciesIndexFrom << " on species index "<<speciesIndexTo << ". Sorry only types 'A', 'B', 'C' and 'D' are recognized.\n";
+                            abort();
+                        }
+                        speciesInteraction[speciesIndexTo][speciesIndexFrom] = {type,magnitude};
                     }
                 }
             }
@@ -251,21 +273,21 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
                 {
                     if (speciesIndexFrom == speciesIndexTo)
                     {
-                        if (input.GetNextElementDouble() != 1.0)
+                        if (input.GetNextElementString() != "self")
                         {
-                            std::cout << "For option --eco, received a value different from 1.0 for the competition matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
+                            std::cout << "For option --eco, received something else than 'self' for the competition matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
                             abort();
                         }
                         speciesCompetition[speciesIndexTo][speciesIndexFrom] = 1.0;
                     } else
                     {
-                        double x = input.GetNextElementDouble();
-                        if (x < 0.0)
+                        double magnitude = input.GetNextElementDouble();
+                        if (magnitude < 0.0)
                         {
-                            std::cout << "For option --eco, received a negative value (received "<<x<< ") for the competition matrix for the effect of species index " << speciesIndexFrom << " onto species index "<<speciesIndexTo << ".\n";
+                            std::cout << "For option --eco, received a negative value for the magnitude (received "<<magnitude<< ") for the competition matrix for the effect of species index " << speciesIndexFrom << " onto species index "<<speciesIndexTo << ".\n";
                             abort();
                         }
-                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = x;
+                        speciesCompetition[speciesIndexTo][speciesIndexFrom] = magnitude;
                     }
                 }
             }

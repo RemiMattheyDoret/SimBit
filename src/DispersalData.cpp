@@ -125,9 +125,33 @@ std::vector<int> DispersalData::getNbOffspringProducedPerPatch(std::vector<std::
             double sumOfAlphasProd_competition = 0.0; // Only used if logistic growth. Will compute itself
             for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; ++speciesIndex)
             {
+                //// Competition
                 // if there are no competition, then just the self should be computed here (all other will have a speciesComputation of 0)
-                sumOfAlphasProd_competition += GP->speciesCompetition[SSP->speciesIndex][speciesIndex] * GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];   
-                sumOfAlphasProd_interaction += GP->speciesInteraction[SSP->speciesIndex][speciesIndex] * GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
+                sumOfAlphasProd_competition += GP->speciesCompetition[SSP->speciesIndex][speciesIndex] * GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
+
+
+                // Interaction
+                auto interaction = GP->speciesInteraction[SSP->speciesIndex][speciesIndex];
+                if (interaction.type == '0')
+                {
+                    // nothing to do
+                } else if (interaction.type == 'A')
+                {
+                    sumOfAlphasProd_interaction += interaction.magnitude;
+                } else if (interaction.type == 'B')
+                {
+                    auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
+                    sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS;
+                } else if (interaction.type == 'C')
+                {
+                    auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][SSP->speciesIndex];
+                    sumOfAlphasProd_interaction += interaction.magnitude * recipientSpPS;
+                } else if (interaction.type == 'D') 
+                {
+                    auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
+                    auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][SSP->speciesIndex];
+                    sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS * recipientSpPS;
+                }
             }
 
 

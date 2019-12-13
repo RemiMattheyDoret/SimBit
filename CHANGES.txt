@@ -377,9 +377,14 @@ SimBit_4.8.14
 	Change default value for logfile
 
 SimBit_4.9.6
-	Improve flexibility of ecological relationship among species
+	Improve flexibility of ecological relationships among species
 
 SimBit_4.9.7
 	User can add comments on the input file.
 	
+SimBit_4.9.8
+	change multiplicity keyword into multfit (but still allow the old one for backward compatbility)
 	
+SimBit_4.9.11
+	Finally, an updated manual! Woohoo
+	Yet, more improvement on ecological relationships among species.

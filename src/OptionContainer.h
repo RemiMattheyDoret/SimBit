@@ -140,7 +140,8 @@ public:
         {{"Overwrite"},                   		            {}, false},
         {{"readPopFromBinary"},           		            {"S"}, false},
         {{"DryRun"},                         		        {}, false},
-        {{"centralT1LocusForExtraGeneticInfo"},             {}, false}
+        {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
+        {{"killOnDemand"},                                  {}, false}
     };
 
     //void received(std::string& optionNameReceived);

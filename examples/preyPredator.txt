@@ -1,0 +1,64 @@
+##### This is an example of how to build a Lotka-Volterra like model
+##### Because this input file spend over several lines, it will need to be called with 'bin/SimBit f examples/LotkaVolterra.txt all'
+
+
+### Set seed for replicability
+--seed 1234
+
+### Name species. Two species wolves and rabbit
+--S fox rabbit
+
+### Set number of generations
+--nbGens 220
+
+### Set number of patch. Just one patch
+### Both species must have to occupy the same number of patches. However, the carrying capacity (with option --N) can be set to zero for a given species at some patches.
+--PN 1
+
+### Set carrynig capacity
+### Note that the species specific markers (@S) must come in order of the species listed above.
+--N @Sfox unif 2e3 @Srabbit unif 1e5
+
+
+### Initialize patch size to half the carrying capacity.
+--InitialpatchSize @Sfox unif 290 @Srabbit unif 2e4 
+
+
+### Loci
+### SimBit is fundamentally a population genetic simulator, not a simulation platform for ecologist. For this reason, I decided to force the user to specify at least one locus! If really, you don't want any loci, just do '--L T5 1 --T5_mu unif 0' and then no genetic variation will be simulated. 
+--L T5 1 --T5_mu unif 0
+
+
+### Fecundity for individuals with a fitness of one
+### By default SimBit uses hermaphrodites and a fecundity of 1.0 is the minimal fecundity possible to allow persistence (assuming fitness is always 1.0 as it is the case here because there is no selection)
+### If you specify that you want males and females ('--matingSystem mf <sexRatio>') and not hermaphrodites ('--matingSystem h'), then the patch size is set by the female fitness only and therefore the minimal fecundity to allow for persistence is 1/(1-r), where 'r' is the sex ratio.
+--fec @Sfox 0 @Srabbit 1.05
+
+
+### Ecological interactions
+### Following the Lotka-Volterra model we will not simulate any competition over ressources but only the interaction
+--eco interaction self D -0.0001665 D 0.00005 self competition default 
+
+
+### Growth model. The default growth model is logistic so to make a perfect Lotka-Volterra model we will change that to exponential growth
+### The growth model must be set for each patch independlty, hence the use of the 'unif' keyword here
+### '--popGrowthModel @Sfox unif logistic @Srabbit unif logistic' would be perfectly equivalent
+--popGrowthModel unif exponential
+
+
+### Output patch size for each species every 5 generations
+### both 'fromToBy' and 'end' are keywords that can only be used for options asking for outputs. 'fromToBy' works just like 'seqInt' (but accepts the 'end' keyword) and 'end' refers to the number of generations in the simulations (50000 in this example)
+--patchSize_file test fromToBy 0 end 1
+
+
+
+
+########################
+### Graphing outputs ###
+########################
+
+### Outputs can be graphed with the following R script
+#foxes = read.table("test_fox.patchSize", header=TRUE)
+#rabbits = read.table("test_rabbit.patchSize", header=TRUE)
+#plot(y=foxes$P0, x=rabbits$P0, type='p', pch=16, cex=c(rep(0.3,50),rep(0.5,171)), ylab="Foxes", xlab="Rabbits")
+
