@@ -51,7 +51,7 @@ void LifeCycle::ParentsData::resizeCloneInfo(const std::vector<int>& patchSizeNe
 
 LifeCycle::ParentsData::ParentsData(){}
 
-LifeCycle::ParentsData::ParentsData(const std::vector<int> patchSizeNextGeneration)
+LifeCycle::ParentsData::ParentsData(const std::vector<int>& patchSizeNextGeneration)
 :cloneInfo(GP->PatchNumber), couples(GP->PatchNumber), lastOffspring(2)
 {
     lastOffspring[0].resize(GP->PatchNumber);

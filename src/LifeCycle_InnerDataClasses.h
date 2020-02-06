@@ -35,7 +35,7 @@ public:
     std::vector<std::vector<std::vector<HaplotypeData>>> lastOffspring;
     
 
-    ParentsData(const std::vector<int> patchSizeNextGeneration);
+    ParentsData(const std::vector<int>& patchSizeNextGeneration);
     ParentsData(); // Does nothing
 
     void resizeCloneInfo(const std::vector<int>& patchSizeNextGeneration);

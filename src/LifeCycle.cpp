@@ -51,10 +51,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     const std::vector<int>& patchSizeNextGeneration = SSP->dispersalData.setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(Parent_pop.CumSumFits);
     assert(patchSizeNextGeneration.size() == GP->PatchNumber);
-    
 
-    // Prepare Next Generation CumSumFits and Index First Male. For Index First Male, it needs to know the patch size in the next generation, the line must therefore come after dispersalData.SetBackwardMigrationAndGetNextGenerationPatchSizes
-    Offspring_pop.prepareNextGenerationAndIndexFirstMale();
 
     // 4.5 Genealogy
     if (SSP->genealogy.isTime())
@@ -77,6 +74,8 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         SSP->TotalpatchSize += patchSizeNextGeneration[patch_index];
+        // Prepare Next Generation CumSumFits and Index First Male.
+        Offspring_pop.prepareNextGenerationAndIndexFirstMale(patch_index, patchSizeNextGeneration);
 
 
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
@@ -1072,7 +1071,7 @@ std::cout << "Enters in 'Mutate_T56'\n";
 }
 
 
-LifeCycle::ParentsData LifeCycle::findAllParents(Pop& pop, std::vector<int> patchSizeNextGeneration)
+LifeCycle::ParentsData LifeCycle::findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration)
 {
     ParentsData PD(patchSizeNextGeneration);
 

@@ -391,7 +391,7 @@ std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
 std::cout << "SSP->T3_nbChars = " << SSP->T3_nbChars << "\n";
 assert(SSP->T3_nbChars == T3_Alleles.size());    
 assert(char_index < T3_Alleles.size());
-assert(char_index > 0);
+assert(char_index >= 0);
 #endif
     if (GP->random_0or1(GP->mt))
     {

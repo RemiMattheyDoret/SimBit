@@ -55,7 +55,7 @@ public:
     int SelectionParent(int patch_from, int sex);
     void CalculateFitnesses();
     double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
-    void prepareNextGenerationAndIndexFirstMale();
+    void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
     int SelectionOriginPatch(size_t patch_to);
     int patchSizeNextGeneration(int patch_index);
     void toggleT56MutationsIfNeeded();

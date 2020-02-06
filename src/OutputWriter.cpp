@@ -370,7 +370,8 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 
                 
                 // Dispersal
-                this->ExtendStringForAdvancedLogFile(s, SSP->dispersalData.__FullFormForwardMigration,"dispersalData.__FullFormForwardMigration");
+                this->ExtendStringForAdvancedLogFile(s, SSP->dispersalData.__forwardMigration,"dispersalData.__forwardMigration");
+                this->ExtendStringForAdvancedLogFile(s, SSP->dispersalData.__forwardMigrationIndex,"dispersalData.__forwardMigrationIndex");
                 
                 // Genetic Map
                 this->ExtendStringForAdvancedLogFile(s, SSP->NbElementsInFitnessMap,"NbElementsInFitnessMap");

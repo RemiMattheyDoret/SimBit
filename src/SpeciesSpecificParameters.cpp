@@ -3389,9 +3389,69 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     if (fit > 1.0) fit = 1.0;
                     ForASingleHabitat.push_back(fit);
                 }
+            } else if (Mode.compare("cstHgamma") == 0)
+            {
+                this->T1_isMultiplicitySelection = false;
+                double h = input.GetNextElementDouble();
+                bool isHomoFollows;
+                {
+                    std::string s = input.GetNextElementString();
+                    if (s == "homo" || s == "Homo" || s == "HOMO")
+                    {
+                        isHomoFollows = true;
+                    } else if (s == "hetero" || s == "Hetero" || s == "HETERO")
+                    {
+                        if (h == 0.0)
+                        {
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'cstHgamma', receive an h value of 0.0, which means that heterozygotes have a fitness of 1.0. But the values are being specified for the heterozygotes (as indicated by keyword "<<s<<").\n";
+                            abort();
+                        }
+                        isHomoFollows = false;
+                    } else
+                    {
+                        std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'cstHgamma', after the 'h' value, expected either keywor 'homo' or keyword 'hetero' but got '" << s << "' instead.\n";
+                        abort();
+                    }
+                }
+
+                double alpha = input.GetNextElementDouble();
+                double beta = input.GetNextElementDouble();
+                if (alpha <= 0 || beta <= 0)
+                {
+                    std::cout << "Either alpha ("<<alpha<<") or beta ("<<beta<<") have non-positive values.\n";
+                    abort();
+                }
+                std::gamma_distribution<double> dist(alpha, beta);
+
+                for (int entry_index = 0 ; entry_index < this->T1_nbBits ; entry_index++)    
+                {
+                    double fitHomo;
+                    double fitHetero;
+                    if (isHomoFollows)
+                    {
+                        fitHomo = dist(GP->mt);
+                        fitHetero = 1 - h * (1 - fitHomo);
+                    } else 
+                    {
+                        fitHetero = dist(GP->mt);
+                        fitHomo   = 1 - (1-fitHetero)/h;
+                    }
+                    if (fitHomo > 1.0) fitHomo = 1.0;
+                    if (fitHomo < 0.0) fitHomo = 0.0;
+                    if (fitHetero > 1.0) fitHetero = 1.0;
+                    if (fitHetero < 0.0) fitHetero = 0.0;
+
+                    
+                    ForASingleHabitat.push_back(1.0);
+                    ForASingleHabitat.push_back(fitHetero);
+                    ForASingleHabitat.push_back(fitHomo);
+                }
+                assert(ForASingleHabitat.size() == 3 * this->T1_nbBits);
+
+
             } else
             {
-                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), 'multfitA' (aka. 'MultiplicityA'), 'multfitUnif' (aka. 'MultiplicityUnif') and 'multfitGamma' (aka. 'MultiplicityGamma') are implemented for the moment (received Mode " << Mode << ")" << std::endl;
+                std::cout << "Sorry, for option '--T1_fit (--T1_fitnessEffects)', only Modes 'A', 'unif', 'domA' (or 'DomA'), 'multfitA' (aka. 'MultiplicityA'), 'multfitUnif' (aka. 'MultiplicityUnif'), cstHgamma and 'multfitGamma' (aka. 'MultiplicityGamma') are implemented for the moment (received Mode " << Mode << ")" << std::endl;
                 abort();
             } // end of ifelse Mode
             this->T1_FitnessEffects.push_back(ForASingleHabitat);
@@ -5029,19 +5089,32 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     assert(this->Habitats.size() == GP->PatchNumber);
 
      // Change DispMat
-    this->dispersalData.nextGenerationPatchSizes.resize(GP->PatchNumber);
-    this->dispersalData.FullFormForwardMigration = this->dispersalData.__FullFormForwardMigration[generation_index];
+    this->dispersalData.nextGenerationPatchSizes = SSP->patchCapacity;
+    assert(this->dispersalData.__forwardMigration.size() > generation_index);
+    assert(this->dispersalData.__forwardMigrationIndex.size() > generation_index);
+    this->dispersalData.forwardMigration = this->dispersalData.__forwardMigration[generation_index];
+    this->dispersalData.forwardMigrationIndex = this->dispersalData.__forwardMigrationIndex[generation_index];
     this->dispersalData.BackwardMigration.resize(GP->PatchNumber);
     this->dispersalData.BackwardMigrationIndex.resize(GP->PatchNumber);
-    for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+
+    std::vector<unsigned> howManySendToMe(GP->PatchNumber, 0); //howManySendToMe[patch_to] returns number of patch sending migrants to "patch_to"
+    for (int patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
     {
-        this->dispersalData.BackwardMigration[patch_index].resize(GP->PatchNumber);
-        this->dispersalData.BackwardMigrationIndex[patch_index].resize(GP->PatchNumber);
+        for (auto& patch_to : dispersalData.forwardMigrationIndex[patch_from])
+        {
+            howManySendToMe[patch_to]++;
+        }
+    }
+
+    for (int patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+    {
+        this->dispersalData.BackwardMigration[patch_to].resize(howManySendToMe[patch_to]);
+        this->dispersalData.BackwardMigrationIndex[patch_to].resize(howManySendToMe[patch_to]);
     }
     
     (void) this->dispersalData.setOriginalBackwardMigrationIfNeeded();
 
-    assert(this->dispersalData.FullFormForwardMigration.size() == GP->PatchNumber);
+    assert(this->dispersalData.forwardMigration.size() == GP->PatchNumber);
 
     return previousPatchSizes; // This return value will be used to know what individuals to duplicate
 }

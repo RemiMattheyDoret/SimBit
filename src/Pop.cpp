@@ -212,40 +212,31 @@ Patch& Pop::getPatch(const int& patch_index)
 }
 
 
-void Pop::prepareNextGenerationAndIndexFirstMale()
+void Pop::prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration)
 {
     // Used in CalculateFitnessForNextGeneration
     maleCurrentSum   = 0.0; 
     femaleCurrentSum = 0.0; 
 
-    // resize
-    CumSumFits.resize(GP->PatchNumber); // This should be true as nothing has change recently
-    if (SSP->malesAndFemales) indexFirstMale.resize(GP->PatchNumber);
-
-
-    // More resizing + indexFirstMale
-    for ( int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index )
+    // CumSumFitsNextGeneration
+    if (SSP->malesAndFemales)
     {
-        // CumSumFitsNextGeneration
-        if (SSP->malesAndFemales)
-        {
-            CumSumFits[patch_index].resize(2);
-            CumSumFits[patch_index][0].resize(0);
-            CumSumFits[patch_index][1].resize(0);
-        } else
-        {
-            CumSumFits[patch_index].resize(1);
-            CumSumFits[patch_index][0].resize(0);
-            CumSumFits[patch_index][0].reserve(SSP->TotalpatchSize);
-        }
+        CumSumFits[patch_index].resize(2);
+        CumSumFits[patch_index][0].resize(0);
+        CumSumFits[patch_index][1].resize(0);
+    } else
+    {
+        CumSumFits[patch_index].resize(1);
+        CumSumFits[patch_index][0].resize(0);
+        CumSumFits[patch_index][0].reserve(SSP->TotalpatchSize);
+    }
 
 
-        // indexFirstMale
-        if (SSP->malesAndFemales)
-        {
-            indexFirstMale[patch_index] = (int) (SSP->sexRatio * (double) SSP->patchSize[patch_index] + 0.5);
-            assert(indexFirstMale[patch_index] >= 0 && indexFirstMale[patch_index] <= SSP->patchSize[patch_index]);
-        }
+    // indexFirstMale
+    if (SSP->malesAndFemales)
+    {
+        indexFirstMale[patch_index] = (int) (SSP->sexRatio * (double) patchSizeNextGeneration[patch_index] + 0.5);
+        assert(indexFirstMale[patch_index] >= 0 && indexFirstMale[patch_index] <= patchSizeNextGeneration[patch_index]);
     }
 }
 
@@ -268,6 +259,7 @@ double Pop::CalculateFitnessForNextGeneration(Individual& Offspring, int patch_i
         femaleCurrentSum += w;
         CumSumFits[patch_index][0].push_back(femaleCurrentSum);
     }
+
 
     return w;
 }
@@ -308,6 +300,12 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
             abort();
         }
     }
+
+    if (CumSumFits[patch_index][0].size() && SSP->isAnySelection && (CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) > 1.0)
+    {
+        std::cout << "The average fitness of hermaphrodites in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". This makes no sense and it must be caused by an internal bug!" << std::endl;
+        abort();
+    }
 }  
 
 
@@ -316,6 +314,7 @@ void Pop::CalculateFitnesses()
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::CalculateFitnesses\n";
 #endif      
+
 
     ///////////////////////////////////////////////////
     ///// Exit if nothing needs to be calculated ////// // Should be a common case
@@ -331,6 +330,12 @@ void Pop::CalculateFitnesses()
     std::cout << " std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end() = " <<  bFind << "\n";
     std::cout << " hasCrazyResettingHappened = " <<  hasCrazyResettingHappened << "\n";
     */
+
+
+    // resize
+    if (SSP->malesAndFemales) indexFirstMale.resize(GP->PatchNumber);
+
+
     if (!SSP->malesAndFemales) // no males index to set
     {
         if (GP->startAtGeneration != GP->CurrentGeneration && (GP->__GenerationChange.size() == 1 || std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end())) // no recent updates in population
@@ -368,7 +373,7 @@ void Pop::CalculateFitnesses()
         {
             CumSumFits[patch_index].resize(1);
             CumSumFits[patch_index][0].resize(0);
-            CumSumFits[patch_index][0].reserve(SSP->TotalpatchSize);
+            CumSumFits[patch_index][0].reserve(SSP->patchSize[patch_index]);
         }
 
 
@@ -481,11 +486,13 @@ int Pop::SelectionOriginPatch(size_t patch_to)
 #endif    
     if (GP->PatchNumber == 1)
     {
+        //std::cout << "from patch " << 0 << " to patch " << patch_to << " because only one patch\n";
         return 0;
     }
 
     if (SSP->dispersalData.BackwardMigration[patch_to][0] == 1.0) // if deterministic
     {
+        //std::cout << "from patch " << SSP->dispersalData.BackwardMigrationIndex[patch_to][0] << " to patch " << patch_to << " (because deterministic)\n";
         return SSP->dispersalData.BackwardMigrationIndex[patch_to][0];
     }
 
@@ -493,10 +500,17 @@ int Pop::SelectionOriginPatch(size_t patch_to)
     int patch_from = -1;
     
     double rnd = GP->random_0and1(GP->mt); // random between 0 and 1
+    /*std::cout << "SSP->dispersalData.BackwardMigration[patch_to].size() = " << SSP->dispersalData.BackwardMigration[patch_to].size() << "\n";
+    for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
+     std::cout << SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from] << " ";
+     std::cout << "\n";   
+    */
+     
 
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
     {
         double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
+        //if (patch_to > 1e3) std::cout << "from " << SSP->dispersalData.BackwardMigrationIndex[patch_to][fake_patch_from] << " to " << patch_to << ": " << probability << "\n";
         
         if (rnd < probability)
         {
@@ -506,9 +520,9 @@ int Pop::SelectionOriginPatch(size_t patch_to)
         rnd -= probability;
     }   
  
-    
+    //if (patch_to > 1e3) std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
     assert(patch_from >= 0 && patch_from < GP->PatchNumber);
-    //std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
+    
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Exits in Pop::SelectionOriginPatch\n";
 #endif  

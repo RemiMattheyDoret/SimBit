@@ -33,21 +33,152 @@ Note for Remi of things to do:
  */
 
 
-std::vector<int> DispersalData::getNbOffspringProducedPerPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits)
+double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r)
 {
-    // This function is only called when setting the backward migration rate if fec != -1.0
+    
+    
+            
+    
 
-    assert(SSP->fecundityForFitnessOfOne != -1.0);
+    
+    double nbOffs = 0.0;
+    
+    //std::cout << "SSP->growthK["<<patch_index<<"] = " << SSP->growthK[patch_index] << "\n";
 
+    if (GP->nbSpecies == 1)
+    {
+        if (SSP->growthK[patch_from] == -1.0) // Simple exponential growth
+        {
+            nbOffs = rn_t;
+        }
+        else if (SSP->growthK[patch_from] == -2.0) // -2 means always at true carrying capacity
+        {
+            if (r <= 1) // if decline
+            {
+                nbOffs = rn_t;
+            } else
+            {
+                nbOffs = n_t + (r-1) * n_t * (1 - n_t / SSP->patchCapacity[patch_from]);
+            }
+        } else
+        {
+            if (r <= 1) // if decline
+            {
+                nbOffs = rn_t;
+            } else // if growth
+            {
+                nbOffs = n_t + (r-1) * n_t * (1 - n_t / SSP->growthK[patch_from]);
+            }
+        }
+
+    } else // if several species
+    {
+        // Compute the species competition and interaction
+        double sumOfAlphasProd_interaction = 0.0;
+        double sumOfAlphasProd_competition = 0.0; // Only used if logistic growth. Will compute itself
+        for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; ++speciesIndex)
+        {
+            //// Competition
+            // if there are no competition, then just the self should be computed here (all other will have a speciesComputation of 0)
+            sumOfAlphasProd_competition += GP->speciesCompetition[SSP->speciesIndex][speciesIndex] * GP->allSpeciesPatchSizePreviousGeneration[patch_from][speciesIndex];
+
+
+            // Interaction
+            auto interaction = GP->speciesInteraction[SSP->speciesIndex][speciesIndex];
+            if (interaction.type == '0')
+            {
+                // nothing to do
+            } else if (interaction.type == 'A')
+            {
+                sumOfAlphasProd_interaction += interaction.magnitude;
+            } else if (interaction.type == 'B')
+            {
+                auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][speciesIndex];
+                sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS;
+            } else if (interaction.type == 'C')
+            {
+                auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][SSP->speciesIndex];
+                sumOfAlphasProd_interaction += interaction.magnitude * recipientSpPS;
+            } else if (interaction.type == 'D') 
+            {
+                auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][speciesIndex];
+                auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][SSP->speciesIndex];
+                sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS * recipientSpPS;
+            }
+        }
+
+
+        // Competition
+        if (SSP->growthK[patch_from] == -1.0) // exponential growth
+        {
+            nbOffs = rn_t;   // No competition possible when exponential growth
+        } else if (SSP->growthK[patch_from] == -2) // -2 means always at true carrying capacity
+        {
+            if (r <= 1) // if decline
+            {
+                nbOffs = rn_t;
+            } else // if growth
+            {
+                nbOffs = n_t + (r-1) * n_t * (1 - sumOfAlphasProd_competition / SSP->patchCapacity[patch_from]);
+            }
+        } else
+        {
+            if (r <= 1) // if decline
+            {
+                nbOffs = rn_t;
+            } else // if growth
+            {
+                nbOffs = n_t + (r-1) * n_t * (1 - sumOfAlphasProd_competition / SSP->growthK[patch_from]);
+            }
+        }
+        
+        // Adjust for interaction
+        //std::cout << "sumOfAlphasProd_interaction = " << sumOfAlphasProd_interaction << "\n";
+        nbOffs += sumOfAlphasProd_interaction;
+    }
+
+    // Correct if it went below zero
+    if (nbOffs < 0.0) nbOffs = 0.0; // if r is very large, then behaviour is chaotic and it can lead to lower than zero values. Species interaction can also lead to lower than zero values
+
+    if (SSP->stochasticGrowth)
+    {
+        std::poisson_distribution<> d(nbOffs);
+        nbOffs = d(GP->mt);
+    }
+
+    /*if (patch_from == 1003)
+    {
+        std::cout << "\n";
+        std::cout << "patch_from = " << patch_from << "\n";
+        std::cout << "r = " << r << "\n";
+        std::cout << "rn_t = " << rn_t << "\n";
+        std::cout << "n_t = " << n_t << "\n";
+        std::cout << "nbOffs = " << nbOffs << "\n";
+    }*/
+
+    return nbOffs;
+}
+
+void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
+{
     
     //////////////////////////////////////
     /// Offspring production per patch ///
     //////////////////////////////////////
 
     // compute production of offspring of each patch
-    std::vector<int> nbOffspringProduced(GP->PatchNumber);
-    for (int patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    migrationEventsForEachDestinationPatch.resize(GP->PatchNumber);
+    for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
     {
+        /////////////////////////
+        /// If noone in patch ///
+        /////////////////////////
+        if (SSP->patchSize[patch_from] == 0) // Of course, that can onnly be true if fec != -1
+        {
+            continue;
+        }
+
+
         //////////////////////////////////
         /// Get mean and total fitness ///
         //////////////////////////////////
@@ -57,165 +188,82 @@ std::vector<int> DispersalData::getNbOffspringProducedPerPatch(std::vector<std::
         {
             if (SSP->malesAndFemales)
             {
-                assert(SSP->patchSize[patch_index] == CumSumFits[patch_index][0].size() + CumSumFits[patch_index][1].size());
+                assert(SSP->patchSize[patch_from] == CumSumFits[patch_from][0].size() + CumSumFits[patch_from][1].size());
             } else
             {
-                assert(SSP->patchSize[patch_index] == CumSumFits[patch_index][0].size());
+                assert(SSP->patchSize[patch_from] == CumSumFits[patch_from][0].size());
             }
 
-            totalFitness = CumSumFits[patch_index][0].back();
-            meanFitness = totalFitness / SSP->patchSize[patch_index];
+            /*if (patch_from == 1003)
+            {
+                std::cout << "CumSumFits[patch_from][0].back() = " << CumSumFits[patch_from][0].back() << "\n";
+                for (unsigned ind = 0 ; ind < CumSumFits[patch_from][0].size() ; ++ind)
+                {
+                    std::cout << "CumSumFits["<<patch_from<<"]["<<ind<<"].back() = " << CumSumFits[patch_from][0].back() << "\n";    
+                }
+                
+                std::cout << "SSP->patchSize[patch_from] = " << SSP->patchSize[patch_from] << "\n";
+            }*/
+
+            totalFitness = CumSumFits[patch_from][0].back();
+            meanFitness = totalFitness / SSP->patchSize[patch_from];
         } else
         {
-            totalFitness = SSP->patchSize[patch_index];
+            totalFitness = SSP->patchSize[patch_from];
             meanFitness = 1.0;
         }
+            
 
             
 
         ////////////////////////////
         /// Compute nbOffsprings ///
         ////////////////////////////
-        double n_t  = SSP->patchSize[patch_index];
-        double rn_t = totalFitness * SSP->fecundityForFitnessOfOne;
-        double r    = meanFitness * SSP->fecundityForFitnessOfOne;
-        
-        /*
-        std::cout << "\n";
-        std::cout << "r = " << r << "\n";
-        std::cout << "rn_t = " << rn_t << "\n";
-        std::cout << "n_t = " << n_t << "\n";
-        */
-        
-
-        
-        double nbOffs = 0.0;
-        
-
-        if (GP->nbSpecies == 1)
+        double nbOffs; // nbOffs will be used even if fec == -1 but it will then just be a total fitness then. Hence the usage of a double.
+        if (SSP->fecundityForFitnessOfOne != -1)
         {
-            if (SSP->growthK[patch_index] == -1.0) // Simple exponential growth
+            double n_t  = SSP->patchSize[patch_from];
+            double rn_t = totalFitness * SSP->fecundityForFitnessOfOne;
+            double r    = meanFitness * SSP->fecundityForFitnessOfOne;
+            /*if (patch_from == 1003)
             {
-                nbOffs = rn_t;
-            }
-            else if (SSP->growthK[patch_index] == -2.0) // -2 means always at true carrying capacity
-            {
-                if (r <= 1) // if decline
-                {
-                    nbOffs = rn_t;
-                } else
-                {
-                    nbOffs = n_t + (r-1) * n_t * (1 - n_t / SSP->patchCapacity[patch_index]);
-                }
-            } else
-            {
-                if (r <= 1) // if decline
-                {
-                    nbOffs = rn_t;
-                } else // if growth
-                {
-                    nbOffs = n_t + (r-1) * n_t * (1 - n_t / SSP->growthK[patch_index]);
-                }
-            }
+                std::cout << "meanFitness = " << meanFitness << "\n";
+                std::cout << "totalFitness = " << totalFitness << "\n";
+            }*/
 
-        } else // if several species
-        {
-            // Compute the species competition and interaction
-            double sumOfAlphasProd_interaction = 0.0;
-            double sumOfAlphasProd_competition = 0.0; // Only used if logistic growth. Will compute itself
-            for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies ; ++speciesIndex)
-            {
-                //// Competition
-                // if there are no competition, then just the self should be computed here (all other will have a speciesComputation of 0)
-                sumOfAlphasProd_competition += GP->speciesCompetition[SSP->speciesIndex][speciesIndex] * GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
-
-
-                // Interaction
-                auto interaction = GP->speciesInteraction[SSP->speciesIndex][speciesIndex];
-                if (interaction.type == '0')
-                {
-                    // nothing to do
-                } else if (interaction.type == 'A')
-                {
-                    sumOfAlphasProd_interaction += interaction.magnitude;
-                } else if (interaction.type == 'B')
-                {
-                    auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
-                    sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS;
-                } else if (interaction.type == 'C')
-                {
-                    auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][SSP->speciesIndex];
-                    sumOfAlphasProd_interaction += interaction.magnitude * recipientSpPS;
-                } else if (interaction.type == 'D') 
-                {
-                    auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][speciesIndex];
-                    auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_index][SSP->speciesIndex];
-                    sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS * recipientSpPS;
-                }
-            }
-
-
-            // Competition
-            if (SSP->growthK[patch_index] == -1.0) // exponential growth
-            {
-                nbOffs = rn_t;   // No competition possible when exponential growth
-            } else if (SSP->growthK[patch_index] == -2) // -2 means always at true carrying capacity
-            {
-                if (r <= 1) // if decline
-                {
-                    nbOffs = rn_t;
-                } else // if growth
-                {
-                    nbOffs = n_t + (r-1) * n_t * (1 - sumOfAlphasProd_competition / SSP->patchCapacity[patch_index]);
-                }
-            } else
-            {
-                if (r <= 1) // if decline
-                {
-                    nbOffs = rn_t;
-                } else // if growth
-                {
-                    nbOffs = n_t + (r-1) * n_t * (1 - sumOfAlphasProd_competition / SSP->growthK[patch_index]);
-                }
-            }
-            
-            // Adjust for interaction
-            //std::cout << "sumOfAlphasProd_interaction = " << sumOfAlphasProd_interaction << "\n";
-            nbOffs += sumOfAlphasProd_interaction;
-
-            // Correct if it went below zero
-            if (nbOffs < 0.0) nbOffs = 0.0; // if r is very large, then behaviour is chaotic and it can lead to lower than zero values. Species interaction can also lead to lower than zero values
-        }
-
-        assert(nbOffs >= 0.0);
-
-        if (SSP->stochasticGrowth)
-        {
-            std::poisson_distribution<int> d(nbOffs);
-            nbOffspringProduced[patch_index] = d(GP->mt);
+            nbOffs = computeNbOffspringsProducedInPatch(patch_from, n_t, rn_t, r); // returns a double for performance reasons (among other reasons)
         } else
         {
-            nbOffspringProduced[patch_index] = nbOffs;
+            nbOffs = totalFitness;
+        }
+            
+        
+        
+
+        //if (patch_from == 1003) std::cout << "nbOffs of patch "<< patch_from << " = " << nbOffs << ":\n";
+
+        assert(forwardMigration.size() == forwardMigrationIndex.size());
+        assert(forwardMigration.size() > patch_from);
+        for (unsigned FMpatchToFakeIndex = 0 ; FMpatchToFakeIndex < forwardMigration[patch_from].size() ; ++FMpatchToFakeIndex)
+        {
+            auto patch_to = forwardMigrationIndex[patch_from][FMpatchToFakeIndex];
+            assert(patch_to >= 0 && patch_to < GP->PatchNumber);
+            double forwardMigrationRate = (double) forwardMigration[patch_from][FMpatchToFakeIndex];
+            assert(forwardMigrationRate >= 0.0);
+            //if (patch_from == 1003) std::cout << "\t" << forwardMigrationRate * nbOffs << " of them go to " << patch_to << "\n";
+            migrationEventsForEachDestinationPatch[patch_to].addMigrationEvent(forwardMigrationRate * nbOffs, patch_from); // Will only be considered if greater than 0 migrants
         }
     }
 
-    assert(nbOffspringProduced.size() == GP->PatchNumber);
-    return nbOffspringProduced;
+    assert(migrationEventsForEachDestinationPatch.size() == GP->PatchNumber);
 }
 
 void DispersalData::setOriginalBackwardMigrationIfNeeded()
 {
     // memory
-    assert(FullFormForwardMigration.size() == GP->PatchNumber);
+    assert(forwardMigration.size() == GP->PatchNumber);
     BackwardMigration.resize(GP->PatchNumber);
     BackwardMigrationIndex.resize(GP->PatchNumber);
-
-    for (int patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
-    {
-        BackwardMigration[patch_to].resize(GP->PatchNumber);
-        BackwardMigrationIndex[patch_to].resize(GP->PatchNumber);
-    }
-
 
 
 
@@ -226,35 +274,24 @@ void DispersalData::setOriginalBackwardMigrationIfNeeded()
     {
         assert(SSP->fecundityForFitnessOfOne == -1);
 
+        std::vector<ListMigrationEvents> migrationEventsForEachDestinationPatch(GP->PatchNumber);
+
 
         // Set backward migration rates
-        for (int patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
-        {   
-            // assert 
-            assert(this->FullFormForwardMigration[patch_to].size() == GP->PatchNumber); // Here patch_to is used as patch_from but just for an assertion
+        for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
+        {
+            assert(forwardMigrationIndex.size() > patch_from);
 
-                    
-            // Construct sumOfRatesOfMigrant
-            double sumOfImmigrationRates = 0.0;
-            for (int patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
-            {   
-                sumOfImmigrationRates += this->FullFormForwardMigration[patch_from][patch_to];
-            }
-
-
-            // Compute fraction of migrants from patch_from and backward migration rate
-            for (int patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
+            for (unsigned FMpatchToFakeIndex = 0 ; FMpatchToFakeIndex < forwardMigration[patch_from].size() ; ++FMpatchToFakeIndex)
             {
-                BackwardMigration[patch_to][patch_from] = this->FullFormForwardMigration[patch_from][patch_to] / sumOfImmigrationRates;
-                BackwardMigrationIndex[patch_to][patch_from] = patch_from;
+                auto patch_to = forwardMigrationIndex[patch_from][FMpatchToFakeIndex];
+                assert(patch_to >= 0 && patch_to < GP->PatchNumber);
+                double forwardMigrationRate = (double) forwardMigration[patch_from][patch_to];
+                migrationEventsForEachDestinationPatch[patch_to].addMigrationEvent(forwardMigrationRate, patch_from); // Will only be considered if rate is greater than 0
             }
-
-
-            // Reorder
-            auto idx = reverse_sort_indexes(BackwardMigration[patch_to]);
-            reorder(BackwardMigration[patch_to], idx);
-            reorder(BackwardMigrationIndex[patch_to], idx);
         }
+
+        computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(migrationEventsForEachDestinationPatch);
     }
 }
 
@@ -291,9 +328,10 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
     //////////////////
 
     assert(this->nextGenerationPatchSizes.size() == GP->PatchNumber);
-    assert(this->FullFormForwardMigration.size() == GP->PatchNumber);
-    assert(BackwardMigration.size() == GP->PatchNumber);
-    assert(BackwardMigrationIndex.size() == GP->PatchNumber);
+    assert(this->forwardMigration.size() == GP->PatchNumber);
+    assert(this->forwardMigrationIndex.size() == GP->PatchNumber);
+    assert(this->BackwardMigration.size() == GP->PatchNumber);
+    assert(this->BackwardMigrationIndex.size() == GP->PatchNumber);
     if (SSP->isAnySelection)
     {
         assert(CumSumFits.size() == GP->PatchNumber);
@@ -308,58 +346,74 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
     }
 
 
-    ////////////////////////////////////
-    /// Compute offspring production ///
-    ////////////////////////////////////
+    ////////////////////////////////////////////////////
+    /// Compute offspring production and destination ///
+    ////////////////////////////////////////////////////
 
-    std::vector<int> nbOffspringProduced;
+    std::vector<ListMigrationEvents> migrationEventsForEachDestinationPatch; // migrationEventsForEachDestinationPatch[patch_to]
+    getMigrationEventsForEachDestinationPatch(CumSumFits, migrationEventsForEachDestinationPatch);
+    computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(migrationEventsForEachDestinationPatch); // will set nextGenerationPatchSizes if fec != -1
+
     if (SSP->fecundityForFitnessOfOne != -1.0)
     {
-        nbOffspringProduced = getNbOffspringProducedPerPatch(CumSumFits);
+        return nextGenerationPatchSizes;
     } else
     {
-        nbOffspringProduced.resize(GP->PatchNumber, 1.0); // They must all be set to any non-zero value so that they don't affect what comes below
+        return SSP->patchCapacity;
     }
+}
 
-
-    ////////////////////////////////////////////////
-    /// Figure out where all these offsprings go ///
-    ////////////////////////////////////////////////
-    
+void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
+{
     // Loop through each patch_to
-    for (int patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
+    assert(nextGenerationPatchSizes.size() == GP->PatchNumber);
+    for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
     {   
-        // assert 
-        assert(this->FullFormForwardMigration[patch_to].size() == GP->PatchNumber); // Here patch_to is used as patch_from but just for an assertion
-
-        
-        // Construct numberOfMigrantsConstr and Sum of migrants
-        // numberOfMigrantsConstr uses rate when fecunditry is infinite
-        double sumOfNumberOfMigrants = 0.0;
-        std::vector<double> numberOfMigrantsConstr(GP->PatchNumber); // Here individual coming from the same patch are also called "migrants" which is confusing
-        for (int patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
-        {   
-            //std::cout << "nbOffspringProduced["<<patch_from<<"] = " << nbOffspringProduced[patch_from] << "\n";
-            numberOfMigrantsConstr[patch_from] = this->FullFormForwardMigration[patch_from][patch_to] * nbOffspringProduced[patch_from];
-            sumOfNumberOfMigrants += numberOfMigrantsConstr[patch_from];
-        }
-
-
-        // Compute fraction of migrants from patch_from and backward migration rate
-        nextGenerationPatchSizes[patch_to] = 0;
-        for (int patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
+        // sum number of migrants to patch_to
+        double sumOfIncomingMigrants = migrationEventsForEachDestinationPatch[patch_to].getSumOfIncomingMigrants();
+        /*if (patch_to == 0 || (patch_to > 1e3 && patch_to < 1e3+5))
         {
-            if (SSP->fecundityForFitnessOfOne != -1)
+            std::cout << sumOfIncomingMigrants << " incoming migrants in patch " << patch_to << "\n";   
+        }*/
+
+        // Set next generation patch size
+        if (SSP->fecundityForFitnessOfOne != -1.0)
+        {
+            if (sumOfIncomingMigrants < SSP->patchCapacity[patch_to])
             {
-                nextGenerationPatchSizes[patch_to] += (int)(numberOfMigrantsConstr[patch_from] + 0.5);
-                if (nextGenerationPatchSizes[patch_to] > SSP->patchCapacity[patch_to])
+                long intPart = (long)sumOfIncomingMigrants;
+                double fracPart = sumOfIncomingMigrants - intPart;
+                if (GP->random_0and1(GP->mt) < fracPart)
                 {
-                    nextGenerationPatchSizes[patch_to] = SSP->patchCapacity[patch_to];
+                    nextGenerationPatchSizes[patch_to] = intPart+1;
+                } else
+                {
+                    nextGenerationPatchSizes[patch_to] = intPart;
                 }
+                    
+            } else
+            {
+                nextGenerationPatchSizes[patch_to] = SSP->patchCapacity[patch_to];
             }
-                
-            BackwardMigration[patch_to][patch_from] = numberOfMigrantsConstr[patch_from] / sumOfNumberOfMigrants;
-            BackwardMigrationIndex[patch_to][patch_from] = patch_from;
+        }
+            
+
+        // Reset to zero
+        BackwardMigration[patch_to].resize(migrationEventsForEachDestinationPatch[patch_to].size());
+        BackwardMigrationIndex[patch_to].resize(migrationEventsForEachDestinationPatch[patch_to].size());
+
+        // Set backward migration rates
+        //if (patch_to == 0)
+            //std::cout << sumOfIncomingMigrants << " migrants incoming to " << patch_to << "\n";
+        for (unsigned migrantEventIndex = 0 ; migrantEventIndex < migrationEventsForEachDestinationPatch[patch_to].size() ; ++migrantEventIndex)
+        {
+            MigrationEvent& migrationEvent = migrationEventsForEachDestinationPatch[patch_to].getMigrationEvent(migrantEventIndex);
+
+            //if (patch_to == 0)
+            //    std::cout << "\t" << migrationEvent.nbInds << " migrants incoming from " << migrationEvent.comingFrom << " ("<<(double)migrationEvent.nbInds / (double)sumOfIncomingMigrants<<")\n";
+
+            BackwardMigration[patch_to][migrantEventIndex] =  migrationEvent.nbInds / sumOfIncomingMigrants;
+            BackwardMigrationIndex[patch_to][migrantEventIndex] = migrationEvent.comingFrom;
         }
             
 
@@ -371,21 +425,6 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
 
     // Security
     assert(BackwardMigration.size() == GP->PatchNumber);
-
-    
-    #ifdef DEBUG
-        std::cout << "Exiting DispersalData::SetBackwardMigrationAndGetNextGenerationPatchSizes\n";
-    #endif      
-
-    if (SSP->fecundityForFitnessOfOne == -1)
-    {
-        return SSP->patchCapacity;
-    } else
-    {
-        //std::cout << "nextGenerationPatchSizes[0] = " << nextGenerationPatchSizes[0] << "\n";
-        return nextGenerationPatchSizes;
-    }
-        
 }
 
 
@@ -395,6 +434,9 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
                                        int CurrentPatchNumber
                                        )
 {
+    std::vector<std::vector<double>> FullFormForwardMigration;
+
+
     // security
     if (probs.size() <= center)
     {
@@ -704,7 +746,7 @@ void DispersalData::readDispMat(InputReader& input)
         }
 
         // Set this->__ForwardMigration
-        __FullFormForwardMigration.push_back(FFFM);
+        this->pushBack__ForwardMigrationRate(FFFM);
     }
 #ifdef DEBUG
     std::cout << "readDispMat is finished" << std::endl;
@@ -712,46 +754,40 @@ void DispersalData::readDispMat(InputReader& input)
 }
 
 
-/*void DispersalData::FromFullFormForwardSetReducedFormForward(std::vector<std::vector<double>> FullFormForwardMigration)
+void DispersalData::pushBack__ForwardMigrationRate(std::vector<std::vector<double>>& FFFM)
 {
-    std::vector<std::vector<double>> ToSetForwardMigration;
-    std::vector<std::vector<int>> ToSetForwardMigrationIndex;
-
-    for (int patch_to = 0 ; patch_to < FullFormForwardMigration.size() ; patch_to++)
+    forwardMigration.resize(GP->PatchNumber);
+    forwardMigrationIndex.resize(GP->PatchNumber);
+    for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
     {
-        assert(FullFormForwardMigration.size() == FullFormForwardMigration[patch_to].size());
-        std::vector<double> ForwardMigrationTmp;
-        std::vector<int> ForwardMigrationIndexTmp;
-        for (int patch_from = 0 ; patch_from < FullFormForwardMigration.size() ; patch_from++)
+        forwardMigration[patch_from].resize(0);
+        forwardMigrationIndex[patch_from].resize(0);
+        for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
         {
-            if (FullFormForwardMigration[patch_from][patch_to] != 0.0)
+            auto& rate = FFFM[patch_from][patch_to];
+            assert(rate >= 0.0 && rate <= 1.0);
+            if (rate > 0.0)
             {
-                assert(FullFormForwardMigration[patch_from][patch_to] > 0.0 && FullFormForwardMigration[patch_from][patch_to] <= 1.0);
-                ForwardMigrationTmp.push_back(FullFormForwardMigration[patch_from][patch_to]);
-                ForwardMigrationIndexTmp.push_back(patch_from);
+                forwardMigration[patch_from].push_back(rate); // No need to order from highest to lowest probability unlike backward migration rate
+                forwardMigrationIndex[patch_from].push_back(patch_to);
             }
         }
-        ToSetForwardMigration.push_back(ForwardMigrationTmp);
-        ToSetForwardMigrationIndex.push_back(ForwardMigrationIndexTmp);
+        assert(forwardMigration[patch_from].size() > 0);
+        assert(forwardMigration[patch_from].size() == forwardMigrationIndex[patch_from].size());
     }
 
-    // Security
-    assert(ToSetForwardMigration.size() == FullFormForwardMigration.size());
-    for (int patch_to = 0 ; patch_to < FullFormForwardMigration.size() ; patch_to++)
-    {
-        double sumOfProb = 0.0;
-        for (int fake_patch_from = 0 ; fake_patch_from < ToSetForwardMigration[patch_to].size() ; fake_patch_from++)
-        {
-            sumOfProb += ToSetForwardMigration[patch_to][fake_patch_from];
-        }
-        if (std::abs(sumOfProb - 1.0) > 0.00001)
-        {
-            std::cout << "Internal error! In DispersalData::FromFullFormForwardSetReducedFormForward(), the sum of probabilities for patch_to = " << patch_to << " is " << sumOfProb << " while it should be one.\n";
-            abort(); 
-        }
-    }
 
-    // set value
-    this->__ForwardMigration.push_back(ToSetForwardMigration);
-    this->__ForwardMigrationIndex.push_back(ToSetForwardMigrationIndex);
-}*/
+    __forwardMigration.push_back(forwardMigration);
+    __forwardMigrationIndex.push_back(forwardMigrationIndex);
+
+    assert(__forwardMigration.size() == __forwardMigrationIndex.size());
+
+    // below what is commented out is not needed as SSP update should do it before the first generation
+    //if (__forwardMigration.size() > 1)
+    //{
+    //    forwardMigration = __forwardMigration[0];
+    //    forwardMigrationIndex = __forwardMigrationIndex[0];
+    //}
+}
+
+

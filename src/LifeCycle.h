@@ -54,7 +54,7 @@ private:
     static void Mutate_T3(Haplotype& TransmittedChrom);
     static void Mutate_T56(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate(Haplotype& TransmittedChrom, int Habitat);
-    static ParentsData findAllParents(Pop& pop, std::vector<int> patchSizeNextGeneration);
+    static ParentsData findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration);
     static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD);
 
 

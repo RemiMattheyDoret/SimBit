@@ -33,15 +33,66 @@ Note for Remi of things to do:
  */
 
 
+class MigrationEvent
+{
+public:
+    double nbInds; // must be a double to avoid rounding issues
+    unsigned comingFrom;
+
+    //MigrationEvent(unsigned a, unsigned b):nbInds(a), comingFrom(b){}
+    MigrationEvent(double& a, unsigned& b):nbInds(a), comingFrom(b){}
+    //MigrationEvent(unsigned&& a, unsigned&& b):nbInds(a), comingFrom(b){}
+};
+
+
+
+class ListMigrationEvents
+{
+private:
+    std::vector<MigrationEvent> migrantEvents;
+    double sumOfIncomingMigrants = 0;
+    
+public:
+    void addMigrationEvent(double nbMigrants, unsigned patch_from)
+    {
+        if (nbMigrants > 0.0)
+        {
+            migrantEvents.push_back({nbMigrants, patch_from});
+            sumOfIncomingMigrants += nbMigrants;
+        }
+    }
+
+    MigrationEvent& getMigrationEvent(unsigned& migrantEventIndex)
+    {
+        return migrantEvents[migrantEventIndex];
+    }
+
+    unsigned size()
+    {
+        return migrantEvents.size();
+    }
+
+    double getSumOfIncomingMigrants()
+    {
+        return sumOfIncomingMigrants;
+    }
+};
+
+
+
 class DispersalData
 {
 private:
-    std::vector<int> getNbOffspringProducedPerPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits);
+    void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
+    double computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r);
+    void computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
 
 public:
-    std::vector<std::vector<std::vector<double>>>   __FullFormForwardMigration;
+    std::vector<std::vector<std::vector<double>>>   __forwardMigration;
+    std::vector<std::vector<std::vector<unsigned>>> __forwardMigrationIndex;
 
-    std::vector<std::vector<double>>                FullFormForwardMigration; //FullFormForwardMigration[from][to]
+    std::vector<std::vector<double>>                forwardMigration;       // FullFormForwardMigration[from][fake_to] returns forward migration rate
+    std::vector<std::vector<unsigned>>              forwardMigrationIndex;  // FullFormForwardMigration[from][fake_to] returns index to
 
     std::vector<int>                                nextGenerationPatchSizes;
 
@@ -54,16 +105,17 @@ public:
     bool                                            DispWeightByFitness;
 
     
-
     const std::vector<int>& setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<double>>>& CumSumFits);
     void setOriginalBackwardMigrationIfNeeded();
 
-    void FromFullFormForwardSetReducedFormForward(std::vector<std::vector<double>> FullFormForwardMigration);
+    //void FromFullFormForwardSetReducedFormForward(std::vector<std::vector<double>> FullFormForwardMigration);
 
     std::vector<std::vector<double>> FromProbaLineToFullFormForwardMigration(std::vector<double>& probs,int center,int CurrentPatchNumber);
     void readDispMat(InputReader& input);
+    void pushBack__ForwardMigrationRate(std::vector<std::vector<double>>& FFFM);
     void updateDispersalData();
 
     
 };
+
 
