@@ -139,7 +139,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.9.12");
+    std::string VERSION("version 4.9.13");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -392,10 +392,6 @@ int main(int argc, char *argv[])
                     Pop& pop_Offspring  = isGenerationOdd ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
                     Pop& pop_Parent     = isGenerationOdd ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
 
-                    assert(pop_Offspring.CumSumFits.size() == GP->PatchNumber);
-                    assert(pop_Offspring.CumSumFits[0].size() > 0);
-                    assert(pop_Parent.CumSumFits.size() == GP->PatchNumber);
-                    assert(pop_Parent.CumSumFits[0].size() > 0);
 
                     // Do selection dispersal, selection and breeding
                     LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring, pop_Parent);

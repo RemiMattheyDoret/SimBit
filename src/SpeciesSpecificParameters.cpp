@@ -117,7 +117,7 @@ void SpeciesSpecificParameters::readSwapInLifeCycle(InputReader& input)
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
-        if (selectionOn == 0 && TotalRecombinationRate < 10.0 && TotalNbLoci > 100)
+        if (selectionOn == 0 && ((TotalRecombinationRate < 10.0 && TotalNbLoci > 100) || (TotalRecombinationRate == 0.0)))
         {
             SwapInLifeCycle = true;
         } else
@@ -5098,16 +5098,20 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     this->dispersalData.BackwardMigrationIndex.resize(GP->PatchNumber);
 
     std::vector<unsigned> howManySendToMe(GP->PatchNumber, 0); //howManySendToMe[patch_to] returns number of patch sending migrants to "patch_to"
+    assert(howManySendToMe.size() == GP->PatchNumber);
+    assert(dispersalData.forwardMigrationIndex.size() == GP->PatchNumber);
+    assert(dispersalData.forwardMigrationIndex.size() == dispersalData.forwardMigration.size());
     for (int patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
     {
         for (auto& patch_to : dispersalData.forwardMigrationIndex[patch_from])
         {
+            assert(patch_to < GP->PatchNumber);
             howManySendToMe[patch_to]++;
         }
     }
-
     for (int patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
     {
+        //std::cout << "howManySendToMe["<<patch_to<<"] = " << howManySendToMe[patch_to] << "\n";
         this->dispersalData.BackwardMigration[patch_to].resize(howManySendToMe[patch_to]);
         this->dispersalData.BackwardMigrationIndex[patch_to].resize(howManySendToMe[patch_to]);
     }

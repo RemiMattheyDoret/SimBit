@@ -112,7 +112,7 @@ public:
 
     std::vector<std::vector<double>> FromProbaLineToFullFormForwardMigration(std::vector<double>& probs,int center,int CurrentPatchNumber);
     void readDispMat(InputReader& input);
-    void pushBack__ForwardMigrationRate(std::vector<std::vector<double>>& FFFM);
+    void pushBack__ForwardMigrationRate(const std::vector<std::vector<double>>& FFFM, const int& CurrentPatchNumber);
     void updateDispersalData();
 
     

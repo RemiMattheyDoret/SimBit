@@ -75,7 +75,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     {
         SSP->TotalpatchSize += patchSizeNextGeneration[patch_index];
         // Prepare Next Generation CumSumFits and Index First Male.
-        Offspring_pop.prepareNextGenerationAndIndexFirstMale(patch_index, patchSizeNextGeneration);
+        //Offspring_pop.prepareNextGenerationAndIndexFirstMale(patch_index, patchSizeNextGeneration);
 
 
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
@@ -237,14 +237,12 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
             //std::cout << "just after mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
             //std::cout << "just after mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
-
-
-            // Set fitness for next generation
-            double fitness = Offspring_pop.CalculateFitnessForNextGeneration(Offspring, patch_index, offspring_index); // The output 'fitness' is only used if 'SSP->selectionOn != 0' is true. But the commmand sets the fitness for the next generation
+            
 
             // Selection on viability
-            if (SSP->selectionOn != 0) // essentially compute fitness twice but heh... that's not too awful if Multiplicity. Otherwise, it is a bit bad. Could be improved but be careful when used with sex.
+            if (SSP->selectionOn != 0)
             {
+                double fitness = Offspring_pop.getPatch(patch_index).getInd(offspring_index).CalculateFitness(patch_index);
                 std::uniform_real_distribution<double> dist(0.0,1.0);
                 if (dist(GP->mt) > fitness)
                 {
@@ -252,8 +250,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                     if (SSP->SwapInLifeCycle)
                     {
                         PD.couples[patch_index][offspring_index] = CD;
-                    }
-                        
+                    } 
                     
                     goto redoOffspring;
                 }

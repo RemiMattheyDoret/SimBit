@@ -577,7 +577,7 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
             isB = isEventBGeneration();
         }
         
-        pop.hasCrazyResettingHappened = true;
+        //pop.hasCrazyResettingHappened = true;
     }
 }
 

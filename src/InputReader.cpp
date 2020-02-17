@@ -606,7 +606,12 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
             std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
             abort();
         }
-        r = (int) std::stod(s);
+        if (d > std::numeric_limits<int>::max() || d < std::numeric_limits<int>::min())
+        {
+            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " received the entry "<< s << " when it was expecting an integer value. Sadly "<< s <<" is outside of the range of value that SimBit represents when reading input (this is a security against overflow). It might mean that SimBit should be able to deal with these numbers and then, the current code should be edited. Please let Remi know about it." <<std::endl;
+            abort();
+        }
+        r = (int) std::stod(s);;
     }
     catch(...)
     {

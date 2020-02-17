@@ -36,11 +36,6 @@ Note for Remi of things to do:
 double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r)
 {
     
-    
-            
-    
-
-    
     double nbOffs = 0.0;
     
     //std::cout << "SSP->growthK["<<patch_index<<"] = " << SSP->growthK[patch_index] << "\n";
@@ -619,20 +614,41 @@ void DispersalData::readDispMat(InputReader& input)
         } else if (Mode.compare("Island") == 0 || Mode.compare("island") == 0) // Simple island model. Take one value, the probability of migrating anywhere
         {
 
-            double Migration = input.GetNextElementDouble();
-            if (Migration < 0.0 || Migration > 1.0)
+            double totalMigration = input.GetNextElementDouble();
+            if (totalMigration < 0.0 || totalMigration > 1.0)
             {
-                std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other patch is " << Migration << ". Sorry, a probability must be bourned between 0 and 1.\n";
+                std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other patch is " << totalMigration << ". Sorry, a probability must be bourned between 0 and 1.\n";
                 abort();   
             }
 
-            double noMigration = 1 - (Migration * (CurrentPatchNumber - 1));
+            double noMigration = 1 - totalMigration;
+            double Migration = totalMigration / (CurrentPatchNumber - 1);
+
+
+            if (CurrentPatchNumber==1)
+            {
+                if (noMigration != 1.0)
+                {
+                    std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other patch is " << totalMigration << " but there is only one patch in the simulation from generation " << generation << ". The probability of dispersing can only be 0. If there is only one patch, instead of using --m island 0, better use --m OnePatch though.\n";
+                    abort();
+                }
+            } else
+            {
+                if (fabs((noMigration + Migration * (CurrentPatchNumber-1)) - 1.0) > 0.00000001)
+                {
+                    std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other patch is " << totalMigration << ". From that SimBit computed, from generation "<< generation <<", the probability of migrating from any patch to any other specific patch as " << Migration << " because there are " << CurrentPatchNumber << " patches. But SimBit computed a resulting probability of not migrating of "<<noMigration<<" leading to 'noMigration + Migration * (CurrentPatchNumber-1)' to not equal one. Sounds like an internal error but you might want to check your parameters anyway.\n";
+                    abort();
+                }
+            }
 
             if (noMigration < 0.0 || noMigration > 1.0)
             {
-                std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other patch is " << Migration << ". Given that there are "<< CurrentPatchNumber <<" from generation " << generation << ", this means that the probability of not dispersing is " << noMigration << " ( 'noMigration = 1 - (Migration * (CurrentPatchNumber - 1))' ). Sorry, a probability must be bourned between 0 and 1.\n";
+                std::cout << "In '--DispMat', mode 'island' the received probability of dispersing from one patch to any other specific patch is " << Migration << ". Given that there are "<< CurrentPatchNumber <<" from generation " << generation << ", this means that the probability of not dispersing is " << noMigration << " ( 'noMigration = 1 - (Migration * (CurrentPatchNumber - 1))' ). Sorry, a probability must be bourned between 0 and 1.\n";
+                std::cout << "That might an internal error because this mistake should have been caught earlier. But please check your input parameters.\n";
                 abort();
             }
+
+
             
 
             for ( int patch_from = 0 ; patch_from < CurrentPatchNumber ; ++patch_from )
@@ -746,7 +762,7 @@ void DispersalData::readDispMat(InputReader& input)
         }
 
         // Set this->__ForwardMigration
-        this->pushBack__ForwardMigrationRate(FFFM);
+        this->pushBack__ForwardMigrationRate(FFFM, CurrentPatchNumber);
     }
 #ifdef DEBUG
     std::cout << "readDispMat is finished" << std::endl;
@@ -754,15 +770,17 @@ void DispersalData::readDispMat(InputReader& input)
 }
 
 
-void DispersalData::pushBack__ForwardMigrationRate(std::vector<std::vector<double>>& FFFM)
+void DispersalData::pushBack__ForwardMigrationRate(const std::vector<std::vector<double>>& FFFM, const int& CurrentPatchNumber)
 {
-    forwardMigration.resize(GP->PatchNumber);
-    forwardMigrationIndex.resize(GP->PatchNumber);
-    for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+    assert(FFFM.size() == CurrentPatchNumber);
+    forwardMigration.resize(CurrentPatchNumber);
+    forwardMigrationIndex.resize(CurrentPatchNumber);
+    for (unsigned patch_from = 0 ; patch_from < CurrentPatchNumber ; ++patch_from)
     {
+        assert(FFFM[patch_from].size() == CurrentPatchNumber);
         forwardMigration[patch_from].resize(0);
         forwardMigrationIndex[patch_from].resize(0);
-        for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+        for (unsigned patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
             auto& rate = FFFM[patch_from][patch_to];
             assert(rate >= 0.0 && rate <= 1.0);

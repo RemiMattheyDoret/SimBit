@@ -33,8 +33,8 @@ Pop Pop::operator=(Pop&& p)
     patches = std::move(p.patches);
     T2LociToCorrect = p.T2LociToCorrect;
     indexFirstMale = p.indexFirstMale;
-    maleCurrentSum = p.maleCurrentSum;
-    femaleCurrentSum = p.femaleCurrentSum;
+    //maleCurrentSum = p.maleCurrentSum;
+    //femaleCurrentSum = p.femaleCurrentSum;
     CumSumFits = p.CumSumFits;
     return *this;
 }
@@ -45,8 +45,8 @@ Pop::Pop(Pop&& p)
     patches = std::move(p.patches);
     T2LociToCorrect = p.T2LociToCorrect;
     indexFirstMale = p.indexFirstMale;
-    maleCurrentSum = p.maleCurrentSum;
-    femaleCurrentSum = p.femaleCurrentSum;
+    //maleCurrentSum = p.maleCurrentSum;
+    //femaleCurrentSum = p.femaleCurrentSum;
     CumSumFits = p.CumSumFits;
 }
 
@@ -56,8 +56,8 @@ Pop::Pop(const Pop& p)
     patches = std::move(p.patches);
     T2LociToCorrect = p.T2LociToCorrect;
     indexFirstMale = p.indexFirstMale;
-    maleCurrentSum = p.maleCurrentSum;
-    femaleCurrentSum = p.femaleCurrentSum;
+    //maleCurrentSum = p.maleCurrentSum;
+    //femaleCurrentSum = p.femaleCurrentSum;
     CumSumFits = p.CumSumFits;
 }
 
@@ -67,8 +67,8 @@ Pop Pop::operator=(const Pop& p)
     patches = p.patches;
     T2LociToCorrect = p.T2LociToCorrect;
     indexFirstMale = p.indexFirstMale;
-    maleCurrentSum = p.maleCurrentSum;
-    femaleCurrentSum = p.femaleCurrentSum;
+    //maleCurrentSum = p.maleCurrentSum;
+    //femaleCurrentSum = p.femaleCurrentSum;
     CumSumFits = p.CumSumFits;
     return *this;
 }
@@ -212,11 +212,13 @@ Patch& Pop::getPatch(const int& patch_index)
 }
 
 
-void Pop::prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration)
+/*void Pop::prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration)
 {
     // Used in CalculateFitnessForNextGeneration
     maleCurrentSum   = 0.0; 
     femaleCurrentSum = 0.0; 
+
+    CumSumFits.resize(GP->PatchNumber);
 
     // CumSumFitsNextGeneration
     if (SSP->malesAndFemales)
@@ -235,15 +237,16 @@ void Pop::prepareNextGenerationAndIndexFirstMale(const int patch_index, const st
     // indexFirstMale
     if (SSP->malesAndFemales)
     {
+        indexFirstMale.resize(GP->PatchNumber);
         indexFirstMale[patch_index] = (int) (SSP->sexRatio * (double) patchSizeNextGeneration[patch_index] + 0.5);
         assert(indexFirstMale[patch_index] >= 0 && indexFirstMale[patch_index] <= patchSizeNextGeneration[patch_index]);
     }
-}
+}*/
 
 
 
 
-double Pop::CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index)
+/*double Pop::CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index)
 {
     assert(CumSumFits.size() > patch_index);
     assert(CumSumFits[0].size() > 0);
@@ -262,7 +265,7 @@ double Pop::CalculateFitnessForNextGeneration(Individual& Offspring, int patch_i
 
 
     return w;
-}
+}*/
 
 
 void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
@@ -314,13 +317,6 @@ void Pop::CalculateFitnesses()
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::CalculateFitnesses\n";
 #endif      
-
-
-    ///////////////////////////////////////////////////
-    ///// Exit if nothing needs to be calculated ////// // Should be a common case
-    ///////////////////////////////////////////////////
-
-    // Start with common special case where we know for sure that all fitnesses are already correct and that there is no need 
     /*
     std::cout << "SSP->malesAndFemales = " << SSP->malesAndFemales << "\n";
     std::cout << " GP->CurrentGeneration = " <<  GP->CurrentGeneration << "\n";
@@ -332,34 +328,16 @@ void Pop::CalculateFitnesses()
     */
 
 
-    // resize
-    if (SSP->malesAndFemales) indexFirstMale.resize(GP->PatchNumber);
-
-
-    if (!SSP->malesAndFemales) // no males index to set
-    {
-        if (GP->startAtGeneration != GP->CurrentGeneration && (GP->__GenerationChange.size() == 1 || std::find(GP->__GenerationChange.begin(), GP->__GenerationChange.end(), GP->CurrentGeneration) != GP->__GenerationChange.end())) // no recent updates in population
-        {
-            if (!this->hasCrazyResettingHappened) // No recent weird genetic change
-            {
-                // No need to compute fitness as we should already know them all!
-                // CumSumFitsNextGeneration must get ready to get news values
-                
-                assert(CumSumFits.size() == GP->PatchNumber); // security
-                for ( int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index ) checkIfCumSumFitsIsNotTooSmall(patch_index); // To avoid round off errors
-                return;
-            }
-        }
-    }
-    //std::cout << "recomputing fitnesses\n";
-    this->hasCrazyResettingHappened = false;
+    // resize index first male
+    if (SSP->malesAndFemales && indexFirstMale.size() != GP->PatchNumber ) indexFirstMale.resize(GP->PatchNumber);
     
 
 
     //////////////////////////////////////////////////////////
-    ///// Compute CumSumFits for the current generation ////// // Should be a rare case
+    ///// Compute CumSumFits for the current generation //////
     //////////////////////////////////////////////////////////
-    CumSumFits.resize(GP->PatchNumber);
+    if (CumSumFits.size() != GP->PatchNumber) CumSumFits.resize(GP->PatchNumber);
+    //std::cout << "CumSumFits has been resized to " << GP->PatchNumber << "\n";
     
     for ( int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index )
     {
@@ -377,9 +355,13 @@ void Pop::CalculateFitnesses()
         }
 
 
+        // index first male
+        if (SSP->malesAndFemales) indexFirstMale[patch_index] = (int) (SSP->sexRatio * (double) SSP->patchSize[patch_index] + 0.5);
+
+
         // Compute fitnesses
-        femaleCurrentSum = 0.0; // hermaphrodite are also called females here
-        maleCurrentSum = 0.0;
+        double femaleCurrentSum = 0.0; // hermaphrodite are also called females here
+        double maleCurrentSum = 0.0;
         Patch& patch = this->getPatch(patch_index);
         for ( int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index )
         {
@@ -397,12 +379,10 @@ void Pop::CalculateFitnesses()
             }
         }
 
-        // Set them back to zero (I don't think it is needed though)
-        femaleCurrentSum = 0.0;
-        maleCurrentSum = 0.0;
-
         // Security to avoid round off error in extreme parameter sets
         checkIfCumSumFitsIsNotTooSmall(patch_index);
+
+        assert(CumSumFits.size() == GP->PatchNumber);
 
     }
     
@@ -532,8 +512,8 @@ int Pop::SelectionOriginPatch(size_t patch_to)
 
 void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes)
 {
-    pop1.hasCrazyResettingHappened = true;
-    pop2.hasCrazyResettingHappened = true;
+    //pop1.hasCrazyResettingHappened = true;
+    //pop2.hasCrazyResettingHappened = true;
 
     //std::cout << "Enters in Pop::updatePops\n";
     // Change number of patches

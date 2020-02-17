@@ -388,3 +388,7 @@ SimBit_4.9.8
 SimBit_4.9.11
 	Finally, an updated manual! Woohoo
 	Yet, more improvement on ecological relationships among species.
+
+SimBit_4.9.13
+	Remove compute fitness of rnext generation. It improves maintanability and actually make the code faster.
+

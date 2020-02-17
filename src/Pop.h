@@ -34,8 +34,6 @@ private:
     std::vector<Patch> patches;
     static std::vector<int>  T2LociToCorrect;
     std::vector<int>         indexFirstMale;
-    double maleCurrentSum;
-    double femaleCurrentSum;
 
 
     std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<unsigned int>& flipped, const int& nbLoci,  const double freqThreshold);
@@ -44,9 +42,7 @@ private:
 
     
 public:
-    bool hasCrazyResettingHappened = true; // is used to know if it has to recompute CumSumFits because resetGenetics messed things around oor because pops have been updated
-
-    std::vector<std::vector<std::vector<double>>> CumSumFits; // each patch, each gender, each individual fitness
+    std::vector<std::vector<std::vector<double>>> CumSumFits; // each patch, each gender, each individual fitness (cumulated)
 
     Patch& getPatch(const int& patch_index);
     int getNbPatches();
@@ -54,8 +50,8 @@ public:
     void RemoveLastPatch();
     int SelectionParent(int patch_from, int sex);
     void CalculateFitnesses();
-    double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
-    void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
+    //double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
+    //void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
     int SelectionOriginPatch(size_t patch_to);
     int patchSizeNextGeneration(int patch_index);
     void toggleT56MutationsIfNeeded();
