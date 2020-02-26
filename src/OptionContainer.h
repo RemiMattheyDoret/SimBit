@@ -141,7 +141,9 @@ public:
         {{"readPopFromBinary"},           		            {"S"}, false},
         {{"DryRun"},                         		        {}, false},
         {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
-        {{"killOnDemand"},                                  {}, false}
+        {{"killOnDemand"},                                  {}, false},
+        {{"geneticSampling_withWalker"},                    {}, false},
+        {{"individualSampling_withWalker"},                 {}, false}
     };
 
     //void received(std::string& optionNameReceived);

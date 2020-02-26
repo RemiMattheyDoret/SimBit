@@ -10,6 +10,7 @@ LifeCycle::HaplotypeData::HaplotypeData(int a ,int b, int c, int d )
 :patch(a), ind(b), segregationIndex(c), nbRecs(d)
 {}
 
+
 bool operator==(LifeCycle::HaplotypeData& lhs, LifeCycle::HaplotypeData& rhs)
 {
     return lhs.ind == rhs.ind && lhs.patch == rhs.patch && lhs.segregationIndex == rhs.segregationIndex;
@@ -26,7 +27,12 @@ bool operator!=(LifeCycle::HaplotypeData& lhs, LifeCycle::HaplotypeData& rhs)
 //////////////////
         
 LifeCycle::CoupleData::CoupleData(){}
-LifeCycle::CoupleData::CoupleData(HaplotypeData a, HaplotypeData b)
+LifeCycle::CoupleData::CoupleData(HaplotypeData& a, HaplotypeData& b)
+{
+    mother = a;
+    father = b;
+}
+LifeCycle::CoupleData::CoupleData(HaplotypeData&& a, HaplotypeData&& b)
 {
     mother = a;
     father = b;
@@ -51,9 +57,11 @@ void LifeCycle::ParentsData::resizeCloneInfo(const std::vector<int>& patchSizeNe
 
 LifeCycle::ParentsData::ParentsData(){}
 
-LifeCycle::ParentsData::ParentsData(const std::vector<int>& patchSizeNextGeneration)
-:cloneInfo(GP->PatchNumber), couples(GP->PatchNumber), lastOffspring(2)
+void LifeCycle::ParentsData::resizeForNewGeneration(const std::vector<int>& patchSizeNextGeneration)
 {
+    cloneInfo.resize(GP->PatchNumber);
+    couples.resize(GP->PatchNumber);
+    lastOffspring.resize(2);
     lastOffspring[0].resize(GP->PatchNumber);
     lastOffspring[1].resize(GP->PatchNumber);
     for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)

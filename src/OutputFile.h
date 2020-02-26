@@ -99,7 +99,7 @@ public:
     void openWithoutGenerationDespiteBeingGenerationSpecific();
     bool isOpen();
     void write(const std::string& s);
-    void writeBinary(const std::mt19937 x);
+    void writeBinary(const RNG_type x);
     void writeBinary(const int x);
     void writeBinary(const char* first, int second);
     //template<typename T> void writeBinary(const T* first, int second);

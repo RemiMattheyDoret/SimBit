@@ -32,13 +32,14 @@ private:
     // Individuals are necessarily diploid for the moment
     Haplotype haplo0;
     Haplotype haplo1;
+    static std::vector<double> fitnessComponents;
     
 public:
     static std::vector<double> T3_IndPhenotype; // This variable beeing a static would cause trouble for multithreaded version of SimBit
 
     Haplotype& getHaplo(const int& haplo_index);
 
-    std::vector<double> CalculateFitnessComponents(const int& Habitat);
+    const std::vector<double>& CalculateFitnessComponents(const int& Habitat);
     
     double CalculateFitness(const int& patch_index);
     double CalculateT1FitnessNoMultiplicity(const int& Habitat);

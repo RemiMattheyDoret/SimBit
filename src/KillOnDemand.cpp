@@ -87,9 +87,9 @@ void KillOnDemand::readUserInput(InputReader& input)
     if (functionToCall == "isT1LocusFixedAfterGeneration")
     {
         isT1LocusFixedAfterGeneration_T1locus = input.GetNextElementInt();
-        if (isT1LocusFixedAfterGeneration_T1locus >= SSP->T1_nbBits)
+        if (isT1LocusFixedAfterGeneration_T1locus >= SSP->T1_nbLoci)
         {
-            std::cout << "In option --killOnDemand, with function " << functionToCall << ", T1 locus received ("<< isT1LocusFixedAfterGeneration_T1locus <<" is larger or equal to the total number of T1 loci ("<<SSP->T1_nbBits<<")\n";
+            std::cout << "In option --killOnDemand, with function " << functionToCall << ", T1 locus received ("<< isT1LocusFixedAfterGeneration_T1locus <<" is larger or equal to the total number of T1 loci ("<<SSP->T1_nbLoci<<")\n";
             abort();       
         }
         isT1LocusFixedAfterGeneration_generation = input.GetNextElementInt();

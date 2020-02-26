@@ -138,7 +138,7 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
     if (SSP->stochasticGrowth)
     {
         std::poisson_distribution<> d(nbOffs);
-        nbOffs = d(GP->mt);
+        nbOffs = d(GP->rngw.getRNG());
     }
 
     /*if (patch_from == 1003)
@@ -378,7 +378,7 @@ void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDes
             {
                 long intPart = (long)sumOfIncomingMigrants;
                 double fracPart = sumOfIncomingMigrants - intPart;
-                if (GP->random_0and1(GP->mt) < fracPart)
+                if (GP->rngw.uniform_real_distribution(1.0) < fracPart)
                 {
                     nextGenerationPatchSizes[patch_to] = intPart+1;
                 } else

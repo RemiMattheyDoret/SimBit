@@ -304,7 +304,7 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
         file.write(getSimBitVersionLogo());
 
         // write seed
-        file.write(std::string("Random seed:\n\t") + std::to_string(GP->random_seed) + std::string("\n\n")); 
+        file.write(std::string("Initial Random seed:\n\t") + std::to_string(GP->rngw.getInitialSeed()) + std::string("\n\n")); 
 
         // Write User Input
         file.write(std::string("User Input:\n\t") + AllInputInLongString + std::string("\n\n"));
@@ -397,7 +397,7 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Initial_AlleleFreqs,"T1_Initial_AlleleFreqs");
                 
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbChars,"T1_nbChars");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBits,"T1_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbLoci,"T1_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_FitnessEffects,"T1_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_isSelection,"T1_isSelection");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_isEpistasis,"T1_isEpistasis");
@@ -409,11 +409,11 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_LociIndices,"T1_Epistasis_LociIndices");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBitsLastByte,"T1_nbBitsLastByte");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbLociLastByte,"T1_nbLociLastByte");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
 
                 // Genetics and selection T2
-                this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbChars,"T2_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbLoci,"T2_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_FitnessEffects,"T2_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_isSelection,"T2_isSelection");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_MutationRate,"T2_MutationRate");
@@ -421,7 +421,7 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 
 
                 // Genetics and selection T3
-                this->ExtendStringForAdvancedLogFile(s, SSP->T3_nbChars,"T3_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_nbLoci,"T3_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_PhenotypicEffects,"T3_PhenotypicEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeOptimum,"T3_fitnessLandscapeOptimum");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeLinearGradient,"T3_fitnessLandscapeLinearGradient");
@@ -438,15 +438,15 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 
 
                 // Genetics T5
-                this->ExtendStringForAdvancedLogFile(s, SSP->T5_nbBits,"T5_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T5ntrl_nbBits,"T5ntrl_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T5sel_nbBits,"T5sel_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T6_nbBits,"T6_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T6ntrl_nbBits,"T6ntrl_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T6sel_nbBits,"T6sel_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T56_nbBits,"T56_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T56ntrl_nbBits,"T56ntrl_nbBits");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T56sel_nbBits,"T56sel_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5_nbLoci,"T5_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5ntrl_nbLoci,"T5ntrl_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T5sel_nbLoci,"T5sel_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T6_nbLoci,"T6_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T6ntrl_nbLoci,"T6ntrl_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T6sel_nbLoci,"T6sel_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T56_nbLoci,"T56_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T56ntrl_nbLoci,"T56ntrl_nbLoci");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T56sel_nbLoci,"T56sel_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T56_FitnessEffects,"T56_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T56_MutationRate,"T56_MutationRate");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T56_isSelection,"T56_isSelection");
@@ -511,7 +511,7 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_isMultiplicitySelection,"T1_isMultiplicitySelection");
                 
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbChars,"T1_nbChars");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBits,"T1_nbBits");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbLoci,"T1_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_FitnessEffects,"T1_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_isSelection,"T1_isSelection");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_isEpistasis,"T1_isEpistasis");
@@ -521,17 +521,17 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
 
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_LociIndices,"T1_Epistasis_LociIndices");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
-                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbBitsLastByte,"T1_nbBitsLastByte");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T1_nbLociLastByte,"T1_nbLociLastByte");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T1_Epistasis_FitnessEffects,"T1_Epistasis_FitnessEffects");
 
                 // Genetics and selection T2
-                this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbChars,"T2_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T2_nbLoci,"T2_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_FitnessEffects,"T2_FitnessEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T2_isSelection,"T2_isSelection");
 
 
                 // Genetics and selection T3
-                this->ExtendStringForAdvancedLogFile(s, SSP->T3_nbChars,"T3_nbChars");
+                this->ExtendStringForAdvancedLogFile(s, SSP->T3_nbLoci,"T3_nbLoci");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_PhenotypicEffects,"T3_PhenotypicEffects");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeOptimum,"T3_fitnessLandscapeOptimum");
                 this->ExtendStringForAdvancedLogFile(s, SSP->T3_fitnessLandscapeLinearGradient,"T3_fitnessLandscapeLinearGradient");
@@ -757,7 +757,7 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
 
 
     std::vector<double> T1MR; // non cumulative mutation rate
-    if (SSP->T1_nbBits > 0)
+    if (SSP->T1_nbLoci > 0)
     {
         T1MR.resize(SSP->T1_MutationRate.size());
         T1MR[0] = SSP->T1_MutationRate[0];
@@ -772,12 +772,12 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
             }*/
         }
     }
-    assert(T1MR.size() == SSP->T1_nbBits);
-    assert(SSP->FromLocusToTXLocus.back().T1 == SSP->T1_nbBits);
+    assert(T1MR.size() == SSP->T1_nbLoci);
+    assert(SSP->FromLocusToTXLocus.back().T1 == SSP->T1_nbLoci);
 
 
     std::vector<double> T2MR; // non cumulative mutation rate
-    if (SSP->T2_nbChars > 0)
+    if (SSP->T2_nbLoci > 0)
     {
         T2MR.resize(SSP->T2_MutationRate.size());
         T2MR[0] = SSP->T2_MutationRate[0];
@@ -792,11 +792,11 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
             }*/
         }
     }
-    assert(T2MR.size() == SSP->T2_nbChars);
-    assert(SSP->FromLocusToTXLocus.back().T2 == SSP->T2_nbChars );
+    assert(T2MR.size() == SSP->T2_nbLoci);
+    assert(SSP->FromLocusToTXLocus.back().T2 == SSP->T2_nbLoci );
 
     std::vector<double> T3MR; // non cumulative mutation rate
-    if (SSP->T3_nbChars > 0)
+    if (SSP->T3_nbLoci > 0)
     {
         T3MR.resize(SSP->T3_MutationRate.size());
         T3MR[0] = SSP->T3_MutationRate[0];
@@ -811,8 +811,8 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
             }*/
         }
     }
-    assert(T3MR.size() == SSP->T3_nbChars);
-    assert(SSP->FromLocusToTXLocus.back().T3 == SSP->T3_nbChars);
+    assert(T3MR.size() == SSP->T3_nbLoci);
+    assert(SSP->FromLocusToTXLocus.back().T3 == SSP->T3_nbLoci);
      /*   
     std::cout << "T1MR[" << 0 << "] = " << T1MR[0] << "\n";
     std::cout << "T1MR[" << 1 << "] = " << T1MR[1] << "\n";
@@ -1005,7 +1005,7 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
     */
 
     double averageMuOverSubsetToConsider;
-    if (SSP->T1_nbBits > 0)
+    if (SSP->T1_nbLoci > 0)
     {
         averageMuOverSubsetToConsider = SSP->T1_MutationRate[file.getSubsetToConsider(SSP->speciesIndex)[file.getSubsetToConsider(SSP->speciesIndex).size()-2].locus] - SSP->T1_MutationRate[file.getSubsetToConsider(SSP->speciesIndex)[0].locus];
         averageMuOverSubsetToConsider /= file.getSubsetToConsider(SSP->speciesIndex).size()-2;
@@ -1481,15 +1481,15 @@ void OutputWriter::WriteOutputs_T1_AlleleFreq_header(OutputFile& file)
 void OutputWriter::WriteOutputs_T56_AlleleFreq_header(OutputFile& file)
 {
     file.open();
-    assert(SSP->T5_nbBits == SSP->T5sel_nbBits + SSP->T5ntrl_nbBits);
-    assert(SSP->T6_nbBits == SSP->T6sel_nbBits + SSP->T6ntrl_nbBits);
+    assert(SSP->T5_nbLoci == SSP->T5sel_nbLoci + SSP->T5ntrl_nbLoci);
+    assert(SSP->T6_nbLoci == SSP->T6sel_nbLoci + SSP->T6ntrl_nbLoci);
 
     std::string s;
     
     s += std::string("Generation");
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
-        for (size_t T5_locus = 0 ; T5_locus < SSP->T56_nbBits ; T5_locus++)
+        for (size_t T5_locus = 0 ; T5_locus < SSP->T56_nbLoci ; T5_locus++)
         {
             s += std::string("\tP") + std::to_string(patch_index) + std::string("_L") + std::to_string(T5_locus);
         }
@@ -1550,7 +1550,7 @@ void OutputWriter::WriteOutputs_T56_AlleleFreq(Pop& pop, OutputFile& file)
     
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
-        for (int locus = 0 ; locus < SSP->T56_nbBits ; locus++)
+        for (int locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
         {
             std::string s("\t");
             if (shouldNABePrinted(patch_index))
@@ -1570,9 +1570,9 @@ void OutputWriter::WriteOutputs_T56_AlleleFreq(Pop& pop, OutputFile& file)
 
 void OutputWriter::WriteOutputs_T1_MeanLD_header(OutputFile& file)
 {
-    if (SSP->T1_nbBits > 100)
+    if (SSP->T1_nbLoci > 100)
     {
-        std::cout <<  "Warning, you are asking for meanLD outputs with " << SSP->T1_nbBits << " loci. This represent a lot of computation! It might take a lot of time to compute (the computational time will also depends greatly on the total population size)." << std::endl;
+        std::cout <<  "Warning, you are asking for meanLD outputs with " << SSP->T1_nbLoci << " loci. This represent a lot of computation! It might take a lot of time to compute (the computational time will also depends greatly on the total population size)." << std::endl;
     }
 
     int nbChroms = SSP->ChromosomeBoundaries.size() + 1;
@@ -1621,8 +1621,8 @@ void OutputWriter::WriteOutputs_T1_MeanLD(Pop& pop, OutputFile& file)
     {
         T1_AlleleChromBoundaries.push_back( SSP->FromLocusToTXLocus[b].T1 );
     }
-    assert(T1_AlleleChromBoundaries.back() < SSP->T1_nbBits);
-    T1_AlleleChromBoundaries.push_back(SSP->T1_nbBits);
+    assert(T1_AlleleChromBoundaries.back() < SSP->T1_nbLoci);
+    T1_AlleleChromBoundaries.push_back(SSP->T1_nbLoci);
     assert((T1_AlleleChromBoundaries.size()-2) == SSP->ChromosomeBoundaries.size()); // nbChroms = SSP->ChromosomeBoundaries.size()
 
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
@@ -2013,12 +2013,12 @@ void OutputWriter::WriteOutputs_T2_LargeOutput_header(OutputFile& file)
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
         std::string s;
-        s.reserve(16 * SSP->patchCapacity[patch_index] * SSP->T2_nbChars);
+        s.reserve(16 * SSP->patchCapacity[patch_index] * SSP->T2_nbLoci);
         for (int ind_index = 0 ; ind_index < SSP->maxEverpatchCapacity[patch_index] ; ind_index++)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; ++haplo_index)
             {
-                for (int T2_char_index = 0 ; T2_char_index < SSP->T2_nbChars ; ++T2_char_index)
+                for (int T2_char_index = 0 ; T2_char_index < SSP->T2_nbLoci ; ++T2_char_index)
                 {
                     s += s_tabP + std::to_string(patch_index) + s__I + std::to_string(ind_index) + s__H + std::to_string(haplo_index) + s__L + std::to_string(T2_char_index);
                 }
@@ -2036,7 +2036,7 @@ void OutputWriter::WriteOutputs_T2_LargeOutput(Pop& pop, OutputFile& file)
     
     const std::string s_tab = "\t";
     std::string s;
-    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbBits * 2.5);
+    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbLoci * 2.5);
     
     s += std::to_string( GP->CurrentGeneration);
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
@@ -2046,7 +2046,7 @@ void OutputWriter::WriteOutputs_T2_LargeOutput(Pop& pop, OutputFile& file)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
             {
-                for (int T2_char_index = 0 ; T2_char_index < SSP->T2_nbChars ; T2_char_index++)
+                for (int T2_char_index = 0 ; T2_char_index < SSP->T2_nbLoci ; T2_char_index++)
                 {
                     if (shouldNABePrinted(patch_index,ind_index))
                     {
@@ -2076,7 +2076,7 @@ void OutputWriter::WriteOutputs_T56_LargeOutput_header(OutputFile& file)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
             {
-                for (int locus = 0 ; locus < SSP->T56_nbBits ; locus++)
+                for (int locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
                 {
                     s += std::string("\tP") + std::to_string(patch_index) + std::string("_I") + std::to_string(ind_index) + std::string("_H") + std::to_string(haplo_index) + std::string("_L") + std::to_string(locus);
                 }
@@ -2093,7 +2093,7 @@ void OutputWriter::WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, s
 {
     std::string s;
     const std::string s_tab = "\t";
-    for (int T5locus = 0 ; T5locus < SSP->T56_nbBits ; T5locus++) // not the most clever solution
+    for (int T5locus = 0 ; T5locus < SSP->T56_nbLoci ; T5locus++) // not the most clever solution
     {
         if (printNA)
         {
@@ -2139,7 +2139,7 @@ void OutputWriter::WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, s
 void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
 {
     std::string s;
-    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbBits * 3);
+    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbLoci * 3);
     
     file.open();
     file.write(std::to_string( GP->CurrentGeneration));
@@ -2166,13 +2166,13 @@ void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
                         CompressedSortedDeque::iterator selIt;
                         CompressedSortedDeque::iterator selItEnd;
 
-                        if (SSP->T6ntrl_nbBits)
+                        if (SSP->T6ntrl_nbLoci)
                         {
                             ntrlIt = haplo.T6ntrl_AllelesBegin();;
                             ntrlItEnd = haplo.T6ntrl_AllelesEnd();;
                         }
 
-                        if (SSP->T6sel_nbBits)
+                        if (SSP->T6sel_nbLoci)
                         {
                             selIt = haplo.T6sel_AllelesBegin();;
                             selItEnd = haplo.T6sel_AllelesEnd();;
@@ -2187,13 +2187,13 @@ void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
                         std::vector<unsigned int>::iterator selIt;
                         std::vector<unsigned int>::iterator selItEnd;
 
-                        if (SSP->T6ntrl_nbBits)
+                        if (SSP->T6ntrl_nbLoci)
                         {
                             ntrlIt = haplo.T6ntrl_AllelesBegin();;
                             ntrlItEnd = haplo.T6ntrl_AllelesEnd();;
                         }
 
-                        if (SSP->T5sel_nbBits)
+                        if (SSP->T5sel_nbLoci)
                         {
                             selIt = haplo.T5sel_AllelesBegin();;
                             selItEnd = haplo.T5sel_AllelesEnd();;
@@ -2212,13 +2212,13 @@ void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
                         CompressedSortedDeque::iterator selIt;
                         CompressedSortedDeque::iterator selItEnd;
 
-                        if (SSP->T5ntrl_nbBits)
+                        if (SSP->T5ntrl_nbLoci)
                         {
                             ntrlIt = haplo.T5ntrl_AllelesBegin();;
                             ntrlItEnd = haplo.T5ntrl_AllelesEnd();;
                         }
 
-                        if (SSP->T6sel_nbBits)
+                        if (SSP->T6sel_nbLoci)
                         {
                             selIt = haplo.T6sel_AllelesBegin();;
                             selItEnd = haplo.T6sel_AllelesEnd();;
@@ -2232,13 +2232,13 @@ void OutputWriter::WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file)
                         std::vector<unsigned int>::iterator selIt;
                         std::vector<unsigned int>::iterator selItEnd;
 
-                        if (SSP->T5ntrl_nbBits)
+                        if (SSP->T5ntrl_nbLoci)
                         {
                             ntrlIt = haplo.T5ntrl_AllelesBegin();;
                             ntrlItEnd = haplo.T5ntrl_AllelesEnd();;
                         }
 
-                        if (SSP->T5sel_nbBits)
+                        if (SSP->T5sel_nbLoci)
                         {
                             selIt = haplo.T5sel_AllelesBegin();;
                             selItEnd = haplo.T5sel_AllelesEnd();;
@@ -2285,7 +2285,7 @@ void OutputWriter::WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file)
 {
     std::string s;
     const std::string s_tab = "\t";
-    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbBits * 3);
+    s.reserve(SSP->TotalpatchCapacity * SSP->T1_nbLoci * 3);
     
     s += std::to_string( GP->CurrentGeneration);
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
@@ -2520,15 +2520,15 @@ void OutputWriter::WriteOutputs_T1_vcf(Pop& pop, OutputFile& file)
 
     }
            
-    if (polymorphicLoci.size() > SSP->T1_nbBits)
+    if (polymorphicLoci.size() > SSP->T1_nbLoci)
     {
-        std::cout << "Internal bug: OutputWriter line 1929 polymorphicLoci.size() = "<<polymorphicLoci.size()<<"  SSP->T1_nbBits = "<<SSP->T1_nbBits<<"\n";
+        std::cout << "Internal bug: OutputWriter line 1929 polymorphicLoci.size() = "<<polymorphicLoci.size()<<"  SSP->T1_nbLoci = "<<SSP->T1_nbLoci<<"\n";
         for (int i = 0 ; i < polymorphicLoci.size(); i++)
         {
             std::cout << i << ": " << polymorphicLoci[i].locus << " ";
         }
         std::cout << "\n";
-        assert(polymorphicLoci.size() <= SSP->T1_nbBits);
+        assert(polymorphicLoci.size() <= SSP->T1_nbLoci);
         abort();
     }
 
@@ -2821,7 +2821,7 @@ void OutputWriter::WriteOutputs_T56_vcf_writeData(Pop& pop, std::vector<unsigned
 {       
     // Estimate Memory Used
     double memoryUsed = 0.0; // per ind, in "quadriBytes"
-    for (size_t locus = 0 ; locus < SSP->T56_nbBits ; ++locus)
+    for (size_t locus = 0 ; locus < SSP->T56_nbLoci ; ++locus)
     {
         double relFreq = (double) obsFreqs[locus] / (2.0 * SSP->TotalpatchSize);
         memoryUsed += relFreq; // Assuming not compressed
@@ -2835,7 +2835,7 @@ void OutputWriter::WriteOutputs_T56_vcf_writeData(Pop& pop, std::vector<unsigned
     std::vector<size_t> groupOfLoci;
     std::vector<double> relFreqsForGroupOfLoci;
     //size_t nbBlocks= 0;
-    for (int locus = 0 ; locus < SSP->T56_nbBits ; ++locus)
+    for (int locus = 0 ; locus < SSP->T56_nbLoci ; ++locus)
     {
         //std::cout << "locus = "<< locus << "\n";
         double relFreq = (double) obsFreqs[locus] / (2.0 * SSP->TotalpatchSize);
@@ -2850,7 +2850,7 @@ void OutputWriter::WriteOutputs_T56_vcf_writeData(Pop& pop, std::vector<unsigned
             memoryForBlockOfLoci += relFreq; // Neglecting the memory for the start of the line
         }
 
-        if (locus == SSP->T56_nbBits - 1 || memoryForBlockOfLoci > fractionOfRAMincrease * memoryUsed)
+        if (locus == SSP->T56_nbLoci - 1 || memoryForBlockOfLoci > fractionOfRAMincrease * memoryUsed)
         {
             /*std::cout << "group of loci:";
             for (auto& locus : groupOfLoci)
@@ -2975,7 +2975,7 @@ void OutputWriter::WriteOutputs_T3_LargeOutput_header(OutputFile& file)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
             {
-                for (int T3_locus = 0 ; T3_locus < SSP->T3_nbChars; T3_locus++)
+                for (int T3_locus = 0 ; T3_locus < SSP->T3_nbLoci; T3_locus++)
                 {
                     s += std::string("\tP") + std::to_string(patch_index) + std::string("_I" ) + std::to_string(ind_index) + std::string("_H" ) + std::to_string(haplo_index) + std::string("_L" ) + std::to_string(T3_locus);
                 }
@@ -2994,7 +2994,7 @@ void OutputWriter::WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file)
 {
     const std::string s_tab("\t");
     std::string s;
-    s.reserve(SSP->TotalpatchCapacity * SSP->T3_nbChars * 8 );
+    s.reserve(SSP->TotalpatchCapacity * SSP->T3_nbLoci * 8 );
 
     s += std::to_string(GP->CurrentGeneration);
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
@@ -3003,7 +3003,7 @@ void OutputWriter::WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; haplo_index++)
             {
-                for (int T3_locus = 0 ; T3_locus < SSP->T3_nbChars; T3_locus++)
+                for (int T3_locus = 0 ; T3_locus < SSP->T3_nbLoci; T3_locus++)
                 {
                     if (shouldNABePrinted(patch_index, ind_index))
                     {
@@ -3275,12 +3275,12 @@ void OutputWriter::WriteOutputs_T1SFS(Pop& pop, OutputFile& file)
     for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
         // count
-        obsFreqs[patch_index].resize(SSP->T1_nbBits, 0.0);
+        obsFreqs[patch_index].resize(SSP->T1_nbLoci, 0.0);
         for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
         {
             for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
             {
-                for (size_t locus = 0 ; locus < SSP->T1_nbBits ; locus++)
+                for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; locus++)
                 {
                     if (pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index).getT1_Allele(locus / 8, locus % 8))
                         obsFreqs[patch_index][locus]++;
@@ -3290,7 +3290,7 @@ void OutputWriter::WriteOutputs_T1SFS(Pop& pop, OutputFile& file)
         }
 
         // divide
-        for (size_t locus = 0 ; locus < SSP->T1_nbBits ; locus++)
+        for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; locus++)
         {
             obsFreqs[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
             assert(obsFreqs[patch_index][locus] >= 0.0 && obsFreqs[patch_index][locus] <= 1.0);
@@ -3311,8 +3311,8 @@ void OutputWriter::WriteOutputs_T56SFS(Pop& pop, OutputFile& file)
     // divide
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
-        obsRelFreqs[patch_index].resize(SSP->T56_nbBits,0.0);
-        for (size_t locus = 0 ; locus < SSP->T56_nbBits ; locus++)
+        obsRelFreqs[patch_index].resize(SSP->T56_nbLoci,0.0);
+        for (size_t locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
         {
             obsRelFreqs[patch_index][locus] = (double) obsFreqs[patch_index][locus] / (2.0 * SSP->patchSize[patch_index]);
             assert(obsRelFreqs[patch_index][locus] >= 0.0 && obsRelFreqs[patch_index][locus] <= 1.0);
@@ -3350,7 +3350,7 @@ void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& ob
         // build s
         for (double binSize : SSP->outputSFSbinSizes)
         {
-            size_t totalNbLociFound = 0; // For security
+            size_t TotalNbLociFound = 0; // For security
 
             size_t nbBins = (size_t) std::ceil(1 / binSize);
             double from = 0.0;
@@ -3366,14 +3366,14 @@ void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& ob
                 auto itTo   = std::lower_bound(itFrom, obsFreqs[patch_index].end(), to);
 
                 size_t nbLociFound = itTo - itFrom;
-                totalNbLociFound += nbLociFound;
+                TotalNbLociFound += nbLociFound;
                 double freqInBin = (double)nbLociFound / (double)nbLoci;
                     
                 s += "\t" + std::to_string(freqInBin);
 
                 from = to;
             }
-            assert(totalNbLociFound == nbLoci);
+            assert(TotalNbLociFound == nbLoci);
         }
     }
 
@@ -3395,7 +3395,7 @@ void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& ob
     // For the whole population
     for (double binSize : SSP->outputSFSbinSizes)
     {
-        size_t totalNbLociFound = 0; // For security
+        size_t TotalNbLociFound = 0; // For security
 
         size_t nbBins = (size_t) std::ceil(1 / binSize);
         double from = 0.0;
@@ -3411,14 +3411,14 @@ void OutputWriter::WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& ob
             auto itTo   = std::lower_bound(itFrom, obsRelFreqsPop.end(), to);
 
             size_t nbLociFound = itTo - itFrom;
-            totalNbLociFound += nbLociFound;
+            TotalNbLociFound += nbLociFound;
             double freqInBin = (double)nbLociFound / (double)nbLoci;
                 
             s += "\t" + std::to_string(freqInBin);
 
             from = to;
         }
-        assert(totalNbLociFound == nbLoci);
+        assert(TotalNbLociFound == nbLoci);
     }
 
     s += "\t" + std::to_string(nbSNPs) + "\n";
@@ -3454,20 +3454,74 @@ void OutputWriter::imitateSequencingError(Haplotype& TransmittedChrom)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'OutputWriter::imitateSequencingError'\n";
 #endif
-    std::poisson_distribution<int> dist(GP->sequencingErrorRate);     
-    int nbMuts = dist(GP->mt);
-    //std::cout << "nbSequencingError = " << nbMuts << "\n";
-    
-    for (int i = 0 ; i < nbMuts ; i++)
+    int Habitat = 0;
+
+    // T1
+    if (SSP->T1_nbLoci)
     {
-        // Find Position
-        int MutPosition = SSP->T1_runiform_int_ForMutPos(GP->mt);
-        
-        // Make the mutation
-        int byte_index = MutPosition / 8;
-        int bit_index  = MutPosition % 8;
-        TransmittedChrom.toggleT1_Allele(byte_index, bit_index);         // toggle bit
-        // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one
+        TransmittedChrom.setAllW_T1(-1);
+        std::poisson_distribution<size_t> d_nbMuts(GP->sequencingErrorRate * SSP->T1_nbLoci);
+        auto nbMuts = d_nbMuts(GP->rngw.getRNG());
+
+        std::uniform_int_distribution<size_t> d_mutPos(0, SSP->T1_nbLoci);
+        for (size_t i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = d_mutPos(GP->rngw.getRNG());
+            TransmittedChrom.mutateT1_Allele(MutPosition, Habitat);
+        }    
+    }
+
+    // T2
+    if (SSP->T2_nbLoci)
+    {
+        TransmittedChrom.setAllW_T2(-1);
+        std::poisson_distribution<size_t> d_nbMuts(GP->sequencingErrorRate * SSP->T2_nbLoci);
+        auto nbMuts = d_nbMuts(GP->rngw.getRNG());
+
+        std::uniform_int_distribution<size_t> d_mutPos(0, SSP->T2_nbLoci);
+        for (size_t i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = d_mutPos(GP->rngw.getRNG());
+            TransmittedChrom.AddMutT2_Allele(MutPosition, Habitat);
+        }    
+    }
+
+    // T3
+    if (SSP->T3_nbLoci)
+    {
+        std::poisson_distribution<size_t> d_nbMuts(GP->sequencingErrorRate * SSP->T3_nbLoci);
+        auto nbMuts = d_nbMuts(GP->rngw.getRNG());
+
+        std::uniform_int_distribution<size_t> d_mutPos(0, SSP->T3_nbLoci);
+        for (size_t i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = d_mutPos(GP->rngw.getRNG());
+            TransmittedChrom.AddMutT3_Allele(MutPosition);
+        }    
+    }
+
+    // T4 Sorry can't do it
+
+    // T56
+    if (SSP->T56_nbLoci)
+    {
+        std::poisson_distribution<size_t> d_nbMuts(GP->sequencingErrorRate * SSP->T56_nbLoci);
+        auto nbMuts = d_nbMuts(GP->rngw.getRNG());
+
+        std::uniform_int_distribution<size_t> d_mutPos(0, SSP->T56_nbLoci);
+        for (size_t i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = d_mutPos(GP->rngw.getRNG());
+
+            auto& locusGender = SSP->FromT56LocusToT56genderLocus[MutPosition];
+            if (locusGender.first)
+            {
+                TransmittedChrom.mutateT56ntrl_Allele(locusGender.second);
+            } else
+            {
+                TransmittedChrom.mutateT56sel_Allele(locusGender.second, Habitat);
+            }
+        }    
     }
 }
 
@@ -3634,7 +3688,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2756\n";
     if (this->isFile(T1_AlleleFreqFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T1_AlleleFreqFile);
             for (auto& file : files)
@@ -3663,7 +3717,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2756\n";
     if (this->isFile(T56_AlleleFreqFile))
     {
-        if (SSP->T56_nbBits)
+        if (SSP->T56_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T56_AlleleFreqFile);
             for (auto& file : files)
@@ -3691,7 +3745,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2786\n";
     if (this->isFile(MeanLDFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(MeanLDFile);
             for (auto& file : files)
@@ -3720,7 +3774,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2814\n";
     if (this->isFile(LongestRunFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(LongestRunFile);
             for (auto& file : files)
@@ -3748,7 +3802,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2842\n";
     if (this->isFile(T2_LargeOutputFile))
     {
-        if (SSP->T2_nbChars)
+        if (SSP->T2_nbLoci)
         {
             OutputFile& file = this->get_OutputFiles(T2_LargeOutputFile)[0];
             if ( GP->CurrentGeneration == GP->startAtGeneration)
@@ -3773,7 +3827,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2767\n";
     if (this->isFile(T1_LargeOutputFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T1_LargeOutputFile);
             for (auto& file : files)
@@ -3800,7 +3854,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      */
     if (this->isFile(T56_LargeOutputFile))
     {
-        if (SSP->T56_nbBits)
+        if (SSP->T56_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T56_LargeOutputFile);
             for (auto& file : files)
@@ -3857,7 +3911,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2925\n";
     if (this->isFile(HybridIndexFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(HybridIndexFile);
             for (auto& file : files)
@@ -3885,7 +3939,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2952\n";
     if (this->isFile(ExpectiMinRecFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(ExpectiMinRecFile);
             for (auto& file : files)
@@ -3913,7 +3967,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2981\n";
     if (this->isFile(T1_vcfFile))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T1_vcfFile);
             for (auto& file : files)
@@ -3962,7 +4016,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 2981\n";
     if (this->isFile(T56_vcfFile))
     {
-        if (SSP->T56_nbBits)
+        if (SSP->T56_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T56_vcfFile);
             for (auto& file : files)
@@ -3987,7 +4041,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 3032\n";
     if (this->isFile(T3_LargeOutputFile))
     {
-        if (SSP->T3_nbChars)
+        if (SSP->T3_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T3_LargeOutputFile);
             for (auto& file : files)
@@ -4015,7 +4069,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 3036\n";
     if (this->isFile(T3_MeanVarFile))
     {
-        if (SSP->T3_nbChars)
+        if (SSP->T3_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T3_MeanVarFile);
             for (auto& file : files)
@@ -4069,7 +4123,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 3114\n";
     if (this->isFile(T1_FST))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T1_FST);
             for (auto& file : files)
@@ -4097,9 +4151,9 @@ std::cout << "Enters in 'WriteOutputs'\n";
     //std::cout << "line 3142\n";
     if (SSP->speciesIndex == 0 && this->isFile(extraGeneticInfo))
     {
-        if (SSP->T1_nbBits || SSP->T2_nbChars)
+        if (SSP->T1_nbLoci || SSP->T2_nbLoci)
         {
-            if (SSP->T3_nbChars) std::cout << "WARNING: extraGeneticInfo will be computed ignoring loci of type 3!\n";
+            if (SSP->T3_nbLoci) std::cout << "WARNING: extraGeneticInfo will be computed ignoring loci of type 3!\n";
             std::vector<OutputFile>& files = this->get_OutputFiles(extraGeneticInfo);
             for (auto& file : files)
             {
@@ -4124,7 +4178,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      */
     if (this->isFile(T1_SFS_file))
     {
-        if (SSP->T1_nbBits)
+        if (SSP->T1_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T1_SFS_file);
             for (auto& file : files)
@@ -4205,7 +4259,7 @@ std::cout << "Enters in 'WriteOutputs'\n";
      */
     if (this->isFile(T56_SFS_file))
     {
-        if (SSP->T56_nbBits)
+        if (SSP->T56_nbLoci)
         {
             std::vector<OutputFile>& files = this->get_OutputFiles(T56_SFS_file);
             for (auto& file : files)

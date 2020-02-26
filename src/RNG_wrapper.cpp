@@ -1,0 +1,203 @@
+
+
+
+RNG_wrapper::RNG_wrapper(int seed)
+:
+initial_seed(seed),
+rng(seed),
+nbDrawsLeft1b(0),
+nbDrawsLeft8b(0),
+nbDrawsLeft16b(0),
+nbDrawsLeft32b(0)
+{
+	assert(RNG_type::max() == maxValue_64b);
+	assert(RNG_type::min() == 0);
+}
+
+
+RNG_wrapper::RNG_wrapper()
+{
+	assert(RNG_type::max() == maxValue_64b);
+	assert(RNG_type::min() == 0);
+};
+
+RNG_type& RNG_wrapper::getRNG()
+{
+	return rng;
+}
+
+void RNG_wrapper::setRNG(RNG_type& in)
+{
+	rng = in;
+}
+
+std::uint32_t RNG_wrapper::operator()()
+{
+	return get_32b();
+};
+
+
+RNG_wrapper RNG_wrapper::operator=(const RNG_wrapper other)
+{
+	this->initial_seed = other.initial_seed;
+	this->rng = other.rng;
+	this->randomValue1b = other.randomValue1b;
+	this->randomValue8b = other.randomValue8b;
+	this->randomValue16b = other.randomValue16b;
+	this->randomValue32b = other.randomValue32b;
+	this->nbDrawsLeft1b = other.nbDrawsLeft1b;
+	this->nbDrawsLeft8b = other.nbDrawsLeft8b;
+	this->nbDrawsLeft16b = other.nbDrawsLeft16b;
+	this->nbDrawsLeft32b = other.nbDrawsLeft32b;
+	return *this;
+}
+
+
+
+int RNG_wrapper::getInitialSeed() const
+{
+	return initial_seed;
+}
+
+
+RNG_type RNG_wrapper::getRNGState() const
+{
+	return rng;
+}
+
+
+void RNG_wrapper::set_seed(int seed)
+{
+	initial_seed = seed;
+	rng = RNG_type(seed);
+}
+
+
+void RNG_wrapper::set_seed(std::ifstream& file)
+{
+	file >> rng;
+    initial_seed = std::numeric_limits<int>::quiet_NaN();
+}
+
+	
+
+
+bool RNG_wrapper::get_1b()
+{
+	if (nbDrawsLeft1b == 0)
+	{
+		randomValue1b = rng();
+		nbDrawsLeft1b = 64;
+	}
+	bool r = randomValue1b & 1;
+	randomValue1b >>= 1;
+	nbDrawsLeft1b--;
+	return r;
+}
+
+
+
+std::uint8_t RNG_wrapper::get_8b()
+{
+	if (nbDrawsLeft8b == 0)
+	{
+		randomValue8b = rng();
+		nbDrawsLeft8b = 8;
+	}
+	std::uint8_t r = randomValue8b & 255;
+	randomValue8b >>= 8;
+	nbDrawsLeft8b--;
+	return r;
+}
+
+
+std::uint16_t RNG_wrapper::get_16b()
+{
+	if (nbDrawsLeft16b == 0)
+	{
+		randomValue16b = rng();
+		nbDrawsLeft16b = 4;
+	}
+	std::uint16_t r = randomValue16b & 65535;
+	randomValue16b >>= 16;
+	nbDrawsLeft16b--;
+	return r;
+}
+
+std::uint32_t RNG_wrapper::get_32b()
+{
+	if (nbDrawsLeft32b == 0)
+	{
+		randomValue32b = rng();
+		nbDrawsLeft32b = 2;
+	}
+	std::uint16_t r = randomValue32b & 4294967295;
+	randomValue32b >>= 32;
+	nbDrawsLeft32b--;
+	return r;
+}
+
+
+std::uint64_t RNG_wrapper::get_64b()
+{
+	return rng();
+}
+
+template<class int_type>
+int_type RNG_wrapper::uniform_int_distribution(int_type diff)
+{
+	if (diff == 0)
+	{
+		return 0;
+	} else if (diff == 1)
+	{
+		return get_1b();
+	} else if (diff <= maxValue_8b)
+	{
+		if (diff == maxValue_8b)
+		{
+			return get_8b();
+		} else
+		{
+			return get_8b() % (diff + 1);
+		}
+	} else if (diff <= maxValue_16b)
+	{
+		if (diff == maxValue_16b)
+		{
+			return get_16b();
+		} else
+		{
+			return get_16b() % (diff + 1);
+		}
+	} else if (diff <= maxValue_32b)
+	{
+		return get_32b() % (diff + 1);
+	} else
+	{
+		return get_64b() % (diff + 1);
+	}
+	//return (int_type) (uniform_real_distribution((double) to) + 0.5);
+}
+
+double RNG_wrapper::uniform_real_distribution(double diff)
+{
+	return (double) get_32b() / (maxValue_32b+0.1) * diff;
+}
+
+template<class int_type>
+int_type RNG_wrapper::uniform_int_distribution(int_type from, int_type to)
+{
+	return from + uniform_int_distribution(to - from);
+}
+
+double RNG_wrapper::uniform_real_distribution(double from, double to)
+{
+	assert(to > from);
+	return from + uniform_real_distribution(to - from);
+}
+
+
+
+
+

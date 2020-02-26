@@ -57,7 +57,7 @@ double Individual::CalculateT1FitnessNoMultiplicity(const int& Habitat)
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
 #endif   
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbBits * THREE);
+    assert(fits.size() == SSP->T1_nbLoci * THREE);
 
 
     double W_T1_WholeIndividual = 1.0;
@@ -80,7 +80,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
 
     // Last byte
     auto lastByte = SSP->T1_nbChars - 1;
-    for (auto bit = 0 ; bit < SSP->T1_nbBitsLastByte ; ++bit)       
+    for (auto bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit)       
     {
         /*
         assert(fitPosStart == (lastByte * 8 + bit) * 3);
@@ -96,7 +96,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
             ];
         fitPosStart += 3;
     }
-    assert(fitPosStart == SSP->T1_nbBits * 3);
+    assert(fitPosStart == SSP->T1_nbLoci * 3);
 
     /*for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessNoMultiplicityCalculation)
     {
@@ -174,13 +174,13 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
     }
 
     // Calculate phenotype
-    for (int byte_index = 0 ; byte_index < SSP->T3_nbChars; byte_index++)
+    for (int byte_index = 0 ; byte_index < SSP->T3_nbLoci; byte_index++)
     {
         double allele = (double) haplo0.getT3_Allele(byte_index);
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
             std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
-            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][byte_index * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->mt);
+            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][byte_index * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->rngw.getRNG());
         }
     }
 }
@@ -219,20 +219,26 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
 }
 
 
-std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
+const std::vector<double>& Individual::CalculateFitnessComponents(const int& Habitat)
 {
     //std::cout << "Enters in Individual::CalculateFitnessComponents\n";
 
     if (!SSP->isAnySelection)
     {
-        return {1.0, 1.0, 1.0, 1.0, 1.0};
+        return fitnessComponents; // Should be {1,1,1,1} by default
     }
 
-    double rT1 = 1.0;
-    double rT2 = 1.0;
-    double rT1epistasis = 1.0;
-    double rT3 = 1.0;
-    double rT56 = 1.0;
+    double& rT1 = fitnessComponents[0];
+    double& rT2 = fitnessComponents[1];
+    double& rT1epistasis = fitnessComponents[2];
+    double& rT3 = fitnessComponents[3];
+    double& rT56 = fitnessComponents[4];
+
+    rT1 = 1.0;
+    rT2 = 1.0;
+    rT1epistasis = 1.0;
+    rT3 = 1.0;
+    rT56 = 1.0;
       
     // Trait 1 (excludes epistasis)
     if (SSP->T1_isSelection)
@@ -278,13 +284,13 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
             rT56 *= haplo1.CalculateT56FitnessMultiplicity(Habitat);
         } else
         {
-            if (SSP->T5sel_nbBits)
+            if (SSP->T5sel_nbLoci)
             {
                 //std::cout << "haplo0.T5sel_Alleles.size() = " << haplo0.T5sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T5sel_Alleles.size() = " << haplo1.T5sel_Alleles.size() << "\n";
                 rT56 = this->CalculateT56FitnessNoMultiplicity(Habitat, haplo0.T5sel_AllelesBegin(), haplo1.T5sel_AllelesBegin(), haplo0.T5sel_AllelesEnd(), haplo1.T5sel_AllelesEnd());
             }
-            else if (SSP->T6sel_nbBits)
+            else if (SSP->T6sel_nbLoci)
             {
                 //std::cout << "haplo0.T6sel_Alleles.size() = " << haplo0.T6sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T6sel_Alleles.size() = " << haplo1.T6sel_Alleles.size() << "\n";
@@ -300,7 +306,7 @@ std::vector<double> Individual::CalculateFitnessComponents(const int& Habitat)
     //std::cout << "has " << haplo0.T5_howManyMutations() + haplo1.T5_howManyMutations() << " mutations\n";
     //std::cout << "rT56 = " <<rT56 << "\n";
     //std::cout << "Exits in Individual::CalculateFitnessComponents\n";
-    return {rT1, rT2, rT1epistasis, rT3, rT56};
+    return fitnessComponents;
 }
 
 double Individual::CalculateFitness(const int& patch_index)
@@ -313,7 +319,7 @@ std::cout << "Enters in 'CalculateFitness'\n";
     const int& Habitat = SSP->Habitats[patch_index];
 
     // Get fitness components
-    auto fitnessComponents = CalculateFitnessComponents(Habitat);
+    (void) CalculateFitnessComponents(Habitat); // will set the static fitnessComponents
 
     // Get total fitness
     double r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4];
@@ -435,7 +441,7 @@ double Individual::CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Hab
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
 #endif   
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbBits * THREE);
+    assert(fits.size() == SSP->T1_nbLoci * THREE);
 
 
     double W_T1_WholeIndividual = 1.0;
@@ -445,7 +451,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
         int byte_index = locus / 8;
         int bit_index = locus % 8;
         //std::cout << "locus = " << locus << "\n";
-        assert(locus >= 0 && locus < SSP->T1_nbBits);
+        assert(locus >= 0 && locus < SSP->T1_nbLoci);
 
         W_T1_WholeIndividual *= 
             fits[
@@ -567,7 +573,7 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
             std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
-            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][locus * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->mt);
+            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][locus * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->rngw.getRNG());
         }
     }
 }
@@ -580,7 +586,7 @@ double Individual::CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterato
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
 #endif   
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56sel_nbBits * 2);
+    assert(fits.size() == SSP->T56sel_nbLoci * 2);
 
     double w = 1.0;
 
@@ -696,13 +702,13 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
             rT56 *= haplo1.CalculateT56FitnessMultiplicityOnSubsetOfLoci(Habitat, lociSet);
         } else
         {
-            if (SSP->T5sel_nbBits)
+            if (SSP->T5sel_nbLoci)
             {
                 //std::cout << "haplo0.T5sel_Alleles.size() = " << haplo0.T5sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T5sel_Alleles.size() = " << haplo1.T5sel_Alleles.size() << "\n";
                 rT56 = this->CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(Habitat, lociSet, haplo0.T5sel_AllelesBegin(), haplo1.T5sel_AllelesBegin(), haplo0.T5sel_AllelesEnd(), haplo1.T5sel_AllelesEnd());
             }
-            else if (SSP->T6sel_nbBits)
+            else if (SSP->T6sel_nbLoci)
             {
                 //std::cout << "haplo0.T6sel_Alleles.size() = " << haplo0.T6sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T6sel_Alleles.size() = " << haplo1.T6sel_Alleles.size() << "\n";
@@ -729,13 +735,13 @@ double Individual::CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Ha
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
 #endif   
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56_nbBits * 2);
+    assert(fits.size() == SSP->T56_nbLoci * 2);
 
     double r = 1.0;
 
     for (auto& locus : LociSet)
     {
-        unsigned int impossibleValue = SSP->T56_nbBits;
+        unsigned int impossibleValue = SSP->T56_nbLoci;
         assert(locus < impossibleValue);
         unsigned int ValueFromH0It = impossibleValue;
         size_t value = *itHaplo0;

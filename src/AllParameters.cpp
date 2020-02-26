@@ -1256,7 +1256,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
         {
-            if (SSPi.T2_nbChars)
+            if (SSPi.T2_nbLoci)
             {
                 std::cout << "You asked for T2 loci for species "<< SSPi.speciesName <<" but option '--T2_MutationRate' is missing!\n";
                 abort();
@@ -1275,7 +1275,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
         {
-            if (SSPi.T3_nbChars)
+            if (SSPi.T3_nbLoci)
             {
                 std::cout << "You asked for T3 loci for species "<<SSPi.speciesName<<"but option '--T3_MutationRate' is missing!\n";
                 abort();
@@ -1289,7 +1289,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {   
         for (auto& SSPi : this->SSPs)
         {
-            if (SSPi.T3_nbChars)
+            if (SSPi.T3_nbLoci)
             {
                 std::cout << "You asked for T3 loci for species "<<SSPi.speciesName<<" but option '--T3_PhenotypicEffects' is missing!\n";
                 abort();
@@ -1359,6 +1359,14 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
             SSPi.centralT1LocusForExtraGeneticInfo = -1;
+    } else if (flag == "individualSampling_withWalker")
+    {
+        InputReader input(std::string("f"), "In Default value for --individualSampling_withWalker,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualSampling_withWalker);
+    } else if (flag == "geneticSampling_withWalker")
+    {
+        InputReader input(std::string("f"), "In Default value for --geneticSampling_withWalker,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readGeneticSampling_withWalker);
     } else
     {
         std::cout << "Internal error in AllParameters::setOptionToDefault. flag " << flag << " could not be found.\n";
@@ -1641,6 +1649,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             std::cout << "In --" << flag << ", received a negative error rate (received "<<GP->sequencingErrorRate<<").";
             abort();
         }
+        if (GP->sequencingErrorRate > 0.0 && SSP->T4_nbBits)
+        {
+            std::cout << "WARNING: The current version cannot simulate sequencing error on T4 loci. Sorry.\n";
+        }
     } else if (flag == "nbGens" || flag == "nbGenerations")
     {
         
@@ -1898,7 +1910,13 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input,&SpeciesSpecificParameters::readCentralT1LocusForExtraGeneticInfo);
     
-    }  else if (flag == "S" || flag == "species" || flag == "SNames" || flag == "SpeciesNames")
+    }  else if (flag == "individualSampling_withWalker")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualSampling_withWalker);
+    }  else if (flag == "geneticSampling_withWalker")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readGeneticSampling_withWalker);
+    } else if (flag == "S" || flag == "species" || flag == "SNames" || flag == "SpeciesNames")
     {
         
         if (SSPs.size() != 0)

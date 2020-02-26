@@ -61,6 +61,11 @@ Note for Remi of things to do:
 #include "ForwardClassDeclarations.h"
 #include "GlobalVariables.h"
 
+// RNG
+#include "RNG_wrapper.h"
+#include "RNG_wrapper.cpp"
+
+
 #include "T1_locusDescription.h"
 #include "T1_locusDescription.cpp"
 
@@ -73,6 +78,8 @@ Note for Remi of things to do:
 #include "Option.h"
 #include "OptionContainer.h"
 #include "GeneralParameters.h"
+#include "Walker.h"
+#include "GeneticSampler.h"
 //#include "SimulationTracker.h"
 #include "DispersalData.h" 
 #include "ResetGenetics.h"
@@ -104,6 +111,8 @@ Note for Remi of things to do:
 #include "ResetGenetics.cpp"
 #include "FromLocusToTXLocusElement.cpp"
 #include "GeneralParameters.cpp"
+#include "Walker.cpp"
+#include "GeneticSampler.cpp"
 #include "Pop.cpp"
 #include "ZipIterator.cpp"
 #include "Haplotype.cpp"
@@ -139,7 +148,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.9.13");
+    std::string VERSION("version 4.9.21");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -181,9 +190,12 @@ int NBT1MUTATIONS = 0;
  */
 
 std::vector<double> Individual::T3_IndPhenotype;
+std::vector<double> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0}; // This is necessary for when there is no selection at all.
 std::string OutputFile::GeneralPath;
 std::vector<int> Pop::T2LociToCorrect;
 std::string OutputFile::sequencingErrorStringToAddToFilnames = "";
+std::vector<int> LifeCycle::recombination_breakpoints = {INT_MAX};
+LifeCycle::ParentsData LifeCycle::PD;
 
 /*
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -256,7 +268,7 @@ int main(int argc, char *argv[])
 
     // Build population and do stuff
     {
-        std::mt19937 mtForReset = GP->mt; // reset after building populations. This is to avoid potential problem when loading seed but one of the species need random numbers to be drawn to be build.
+        RNG_type rngForReset = GP->rngw.getRNG(); // reset after building populations. This is to avoid potential problem when loading seed but one of the species need random numbers to be drawn to be build.
         for (int speciesIndex = 0; speciesIndex < GP->nbSpecies ; speciesIndex++)
         {
             #ifdef DEBUG
@@ -271,7 +283,7 @@ int main(int argc, char *argv[])
             
 
             SSP->resetGenetics.resetPopIfNeeded(pop_odd);
-            if (SSP->T56_nbBits)
+            if (SSP->T56_nbLoci)
             {
                 pop_odd.toggleT56MutationsIfNeeded();
             }
@@ -326,7 +338,7 @@ int main(int argc, char *argv[])
                 std::cout << "-------- pop even and odd added to 'allSpecies' --------" << std::endl;
             #endif
         }
-        GP->mt = mtForReset;
+        GP->rngw.setRNG(rngForReset);
     }
         
 

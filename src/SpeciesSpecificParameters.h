@@ -138,7 +138,7 @@ public:
 
     bool                                            isIndividualInitialization;
     int                                             T1_nbChars;
-    int                                             T1_nbBits;
+    int                                             T1_nbLoci;
     std::vector<std::vector<double>>                T1_FitnessEffects;
     bool                                            T1_isSelection;
     bool                                            T1_isEpistasis;
@@ -147,19 +147,19 @@ public:
     
     std::vector<std::vector<std::vector<T1_locusDescription>>>   T1_Epistasis_LociIndices;
     std::vector<std::vector<std::vector<double>>>                T1_Epistasis_FitnessEffects; //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex], where the fitnessValueIndex is function of the genotype
-    int                                             T1_nbBitsLastByte;
+    int                                             T1_nbLociLastByte;
     
 
     
     // Genetics and selection T2
-    int                                             T2_nbChars;
+    int                                             T2_nbLoci;
     std::vector<std::vector<double>>                T2_FitnessEffects;
     bool                                            T2_isSelection;
     std::vector<double>                             T2_MutationRate;  // cumulative
     double                                          T2_Total_Mutation_rate;    
 
     // Genetics and selection T3
-    int                                             T3_nbChars;
+    int                                             T3_nbLoci;
     std::vector<std::vector<double>>                T3_PhenotypicEffects; // even if it is not selection directly, it is habitat-specific to allow plasticity
     char                                            T3_fitnessLandscapeType;
     //std::vector<double>                             T3_fitnessLandscapeGaussMean;
@@ -180,24 +180,24 @@ public:
     double                                          T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation;
 
     // Genetics T5
-    int                                             T5_nbBits;
-    int                                             T5ntrl_nbBits;
-    int                                             T5sel_nbBits;
+    int                                             T5_nbLoci;
+    int                                             T5ntrl_nbLoci;
+    int                                             T5sel_nbLoci;
     std::vector<unsigned int>                       T5ntrl_flipped;
     //std::vector<unsigned int>                       T5sel_flipped;
 
 
     // T6 (compressed T5)
-    int                                             T6_nbBits;
-    int                                             T6ntrl_nbBits;
-    int                                             T6sel_nbBits;
+    int                                             T6_nbLoci;
+    int                                             T6ntrl_nbLoci;
+    int                                             T6sel_nbLoci;
     CompressedSortedDeque                           T6ntrl_flipped;
     //CompressedSortedDeque                           T6sel_flipped;
 
     // T56 (both T5 and T6)
-    int                                             T56_nbBits;
-    int                                             T56ntrl_nbBits;
-    int                                             T56sel_nbBits;
+    int                                             T56_nbLoci;
+    int                                             T56ntrl_nbLoci;
+    int                                             T56sel_nbLoci;
     bool                                            T56_isSelection;
     bool                                            T56_isMuliplicitySelection;
     std::vector<std::vector<double>>                T56_Initial_AlleleFreqs;
@@ -210,7 +210,7 @@ public:
     double                                          T56_approximationForNtrl;
     bool                                            T56ntrl_compress;
     bool                                            T56sel_compress;
-    int                                             quickScreenAtL_T56_nbBits;
+    int                                             quickScreenAtL_T56_nbLoci;
     std::vector<double>                             T56_MutationRate;  // cumulative
     double                                          T56_Total_Mutation_rate;
     std::vector<std::vector<double>>                T56_FitnessEffects;
@@ -227,25 +227,11 @@ public:
     std::vector<int>                                __MaxHabitat;
     int                                             MaxEverHabitat;
 
+    // Random shit
+    GeneticSampler                                  geneticSampler;
+    bool                                            geneticSampling_withWalker;
+    bool                                            individualSampling_withWalker;
     
-    // Random Distributions. If change number of distributions, don't forget to change the incremenet of 'nbParamSet' in 'setRandomDistributions'
-    std::poisson_distribution<int>                   rpois_nbRecombination;
-    std::poisson_distribution<int>                   T1_rpois_nbMut;
-    std::poisson_distribution<int>                   T2_rpois_nbMut;
-    std::poisson_distribution<int>                   T3_rpois_nbMut;
-    std::poisson_distribution<int>                   T56_rpois_nbMut;
-    
-    std::uniform_int_distribution<int>               runiform_int_ForRecPos;    // Used when const recombination rate
-    std::uniform_real_distribution<double>           runiform_double_ForRecPos;  // Used when variation in recombination rate
-    
-    std::uniform_int_distribution<int>               T1_runiform_int_ForMutPos;    // Used when const mutation rate
-    std::uniform_int_distribution<int>               T2_runiform_int_ForMutPos;    // Used when const mutation rate
-    std::uniform_int_distribution<int>               T3_runiform_int_ForMutPos;    // Used when const mutation rate
-    std::uniform_int_distribution<int>               T56_runiform_int_ForMutPos;    // Used when const mutation rate
-    std::uniform_real_distribution<double>           T1_runiform_double_ForMutPos;  // Used when variation in mutation rate
-    std::uniform_real_distribution<double>           T2_runiform_double_ForMutPos;  // Used when variation in mutation rate
-    std::uniform_real_distribution<double>           T3_runiform_double_ForMutPos;  // Used when variation in mutation rate
-    std::uniform_real_distribution<double>           T56_runiform_double_ForMutPos;  // Used when variation in mutation rate
     
     
     // Other
@@ -320,6 +306,8 @@ public:
     void readSubsetLociForfitnessSubsetLoci_file(InputReader& input);
     void readOutputSFSbinSize(InputReader& input);
     void readT4_printTree(InputReader& input);
+    void readGeneticSampling_withWalker(InputReader& input);
+    void readIndividualSampling_withWalker(InputReader& input);
     int selectNonEmptyPatch(int firstPatchToLookAt, std::vector<int>& PSs, bool increasingOrder);
 
     void IsThereSelection();

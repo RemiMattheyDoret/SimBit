@@ -103,9 +103,9 @@ ResetGeneticsEvent_A::ResetGeneticsEvent_A(
             std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) received T3locus index of "<<T3locus<<" for an event happening at generation "<<generation<<".\n";
             abort();
         }
-        if (T3locus >= SSP->T3_nbChars)
+        if (T3locus >= SSP->T3_nbLoci)
         {
-            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->T3_nbChars<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
+            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->T3_nbLoci<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
             abort();
         }
     }
@@ -327,10 +327,10 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                         // Security
                         if (T5genderlocus.first)
                         {
-                            assert(T5locusInGender < SSP->T5ntrl_nbBits);
+                            assert(T5locusInGender < SSP->T5ntrl_nbLoci);
                         } else
                         {
-                            assert(T5locusInGender < SSP->T5sel_nbBits);
+                            assert(T5locusInGender < SSP->T5sel_nbLoci);
                         }
 
 

@@ -62,8 +62,7 @@ public:
     std::vector<int>                                __GenerationChange;
     
     // Technic
-    std::mt19937                                    mt;
-    int                                             random_seed;
+    RNG_wrapper                                     rngw;
     int                                             nbThreads;
     int                                             OverwriteMode;
     bool                                            DryRun;
@@ -94,10 +93,6 @@ public:
     int                                             PatchNumber;
     int                                             maxEverPatchNumber;
     std::vector<int>                                __PatchNumber;    
-    
-    // Random Distributions. If change number of distributions, don't forget to change the incremenet of 'nbParamSet' in 'setRandomDistributions'
-    std::uniform_real_distribution<double>           random_0and1;
-    std::uniform_int_distribution<int>               random_0or1;
 
     // Manage outputs
     int                                             nbWarningsSentFrom_Haplotype_AddMutT2_Allele = 0;

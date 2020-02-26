@@ -137,11 +137,11 @@ public:
     void setT6ntrl_AlleleToZero(int& locus);
     void setT6ntrl_AlleleToOne_JustPushBack(unsigned& locus);
 
-    void mutateT1_Allele(int& MutPosition, int& Habitat);
+    void mutateT1_Allele(int MutPosition, int& Habitat);
     void toggleT1_Allele(int& byte_index, int& bit_index);
-    void AddMutT2_Allele(int& char_index);
-    void AddMutT2_Allele(int& char_index, int Habitat);
-    void AddMutT3_Allele(int& char_index);
+    void AddMutT2_Allele(int char_index);
+    void AddMutT2_Allele(int char_index, int Habitat);
+    void AddMutT3_Allele(int char_index);
     
     template<typename INT>
     void mutateT56ntrl_Allele(INT MutPosition);

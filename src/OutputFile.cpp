@@ -349,7 +349,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
         std::vector<T1_locusDescription> oneSpeciesSubset;
         for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies; speciesIndex++)
         {
-            for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->T1_nbBits; locus++)
+            for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->T1_nbLoci; locus++)
             {
                 /*
                 std::cout << "locus = " << locus << "\n";
@@ -832,7 +832,7 @@ void OutputFile::writeBinary(const char* first, int second)
     ofs.write(first, second);
 }
 
-void OutputFile::writeBinary(const std::mt19937 x)
+void OutputFile::writeBinary(const RNG_type x)
 {
     assert(this->isOpen());
     ofs << x;   

@@ -392,3 +392,5 @@ SimBit_4.9.11
 SimBit_4.9.13
 	Remove compute fitness of rnext generation. It improves maintanability and actually make the code faster.
 
+SimBit_4.9.21
+	Improvement of random number generator. Important performance improvement for simulations with very few loci

@@ -518,14 +518,14 @@ void Tree::addMutationsToNode(TreeNode* node)
 		double MRfrom = SSP->T4_MutationRate[0] * (node->left + 1);
 	    double MRto   = SSP->T4_MutationRate[0] * (node->right + 1);
 	    std::poisson_distribution<size_t> poissonDist(MRto - MRfrom);
-		size_t nbMutations = poissonDist(GP->mt);
+		size_t nbMutations = poissonDist(GP->rngw.getRNG());
 
 	    // Place mutations
 	    for (size_t mutation = 0 ; mutation < nbMutations ; mutation++)
 	    {
 	    	// Find position
 	    	std::uniform_int_distribution<size_t> dist(0, node->genotype.size()-1);
-	        auto MutPosition = dist(GP->mt);
+	        auto MutPosition = dist(GP->rngw.getRNG());
 
 	        // toggle bit
         	node->genotype[MutPosition] = !(node->genotype[MutPosition]);
@@ -538,14 +538,14 @@ void Tree::addMutationsToNode(TreeNode* node)
 		auto itFrom = SSP->T4_MutationRate.begin() + node->left;
 	    auto itTo = SSP->T4_MutationRate.begin() + node->right;
 	    std::poisson_distribution<size_t> poissonDist(*itTo - *itFrom);
-		size_t nbMutations = poissonDist(GP->mt);
+		size_t nbMutations = poissonDist(GP->rngw.getRNG());
 
 		// Place mutations
 	    for (size_t mutation = 0 ; mutation < nbMutations ; mutation++)
 	    {
 	    	// Find position - rnd
 	    	std::uniform_real_distribution<double> dist(*itFrom, *itTo);
-            double rnd = dist(GP->mt);
+            double rnd = dist(GP->rngw.getRNG());
             
             // Find position - binary search
             auto MutPosition = distance(itFrom,

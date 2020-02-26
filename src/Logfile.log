@@ -1,0 +1,14 @@
+	  ____  _           ____  _ _   
+	 / ___|(_)_ __ ___ | __ )(_) |_ 
+	 \___ \| | '_ ` _ \|  _ \| | __|
+	  ___) | | | | | | | |_) | | |_ 
+	 |____/|_|_| |_| |_|____/|_|\__| version 4.6.30
+
+Random seed:
+	123
+
+User Input:
+	--PN 1 --N unif 1000 --L t1 1e4 --nbGenerations 1e7 --seed 123 --T1_mu unif 1e-4 --r rate unif 1e-2 --T1_fit MultiplicityUnif 0.9949 
+
+		Time for initialization: 0 seconds (0.05886 seconds)
+

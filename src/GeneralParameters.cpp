@@ -465,13 +465,14 @@ void GeneralParameters::readSeed(InputReader& input)
 {
     //std::cout << "in readSeed: VIndex = " << input.getVIndex() << "\n";
     //std::cout << "in readSeed: V.size() = " << input.getSizeOfV() << "\n";
+    int random_seed;
     if (input.PeakNextElementString() == "binfile" || input.PeakNextElementString() == "f")
     {
         input.skipElement();
         std::string seedBinaryFilePath = input.GetNextElementString();
         std::ifstream file;
         file.open(seedBinaryFilePath, std::ios::out | std::ios::binary);
-        file >> mt;
+        file >> rngw.getRNG();
         random_seed = std::numeric_limits<int>::quiet_NaN();
     } else 
     {
@@ -485,10 +486,9 @@ void GeneralParameters::readSeed(InputReader& input)
         {
             random_seed = input.GetNextElementInt();
         }
-        std::mt19937 tmp(random_seed);
-        GP->mt = tmp;
+        RNG_wrapper tmp(random_seed);
+        rngw = tmp;
     }
-    //std::cout << GP->mt << "\n";
     //std::cout << "GP->random_seed = " << GP->random_seed << "\n";
 
 }

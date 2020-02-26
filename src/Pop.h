@@ -34,6 +34,7 @@ private:
     std::vector<Patch> patches;
     static std::vector<int>  T2LociToCorrect;
     std::vector<int>         indexFirstMale;
+    std::vector<std::vector<Walker>>      walkers; // Walkers[patch_index][sex]
 
 
     std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<unsigned int>& flipped, const int& nbLoci,  const double freqThreshold);

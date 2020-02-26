@@ -46,16 +46,19 @@ private:
 
     static void reproduceThroughSwap(Individual& parent, Haplotype& offspringHaplotype, HaplotypeData& parentHaploData, int& patch_index);
     static void reproduceThroughCopy(Individual& parent, Haplotype& TransmittedChrom, HaplotypeData& parentData, int& patch_index);
-    static int  recombination_nbRecs();
-    static std::vector<int> recombination_RecPositions(int& nbRecs, Individual& parent);
-    static void copyOver(Individual& parent,Haplotype& TransmittedChrom, std::vector<int>& breakpoints, int segregationIndex);
+    //static int  recombination_nbRecs();
+    static void recombination_RecPositions(int& nbRecs, Individual& parent);
+    static void copyOver(Individual& parent,Haplotype& TransmittedChrom, int segregationIndex);
     static void Mutate_T1(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T2(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T3(Haplotype& TransmittedChrom);
     static void Mutate_T56(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate(Haplotype& TransmittedChrom, int Habitat);
-    static ParentsData findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration);
+    static void findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration);
     static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD);
+
+    static std::vector<int> recombination_breakpoints; // for performance reason. It makes things a little messy though
+    static ParentsData PD;
 
 
 public:
