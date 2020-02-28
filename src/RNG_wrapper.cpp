@@ -1,4 +1,5 @@
 
+// I might want to implement a Poisson distribution with this formula (https://stats.stackexchange.com/questions/35658/simple-approximation-of-poisson-cumulative-distribution-in-long-tail/376393) and read bits by bits. It'll be fast for low rates.
 
 
 RNG_wrapper::RNG_wrapper(int seed)

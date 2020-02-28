@@ -1,0 +1,6 @@
+--PN 1
+--N unif 100
+--T1_mu unif 1e-6
+--nbGens 1e4
+--L T1 8
+--T1_fit unif 1 1 1
