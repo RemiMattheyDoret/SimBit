@@ -256,6 +256,7 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
 void DispersalData::setOriginalBackwardMigrationIfNeeded()
 {
     // memory
+    assert(forwardMigration.size() == forwardMigrationIndex.size());
     assert(forwardMigration.size() == GP->PatchNumber);
     BackwardMigration.resize(GP->PatchNumber);
     BackwardMigrationIndex.resize(GP->PatchNumber);
@@ -276,17 +277,28 @@ void DispersalData::setOriginalBackwardMigrationIfNeeded()
         for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
         {
             assert(forwardMigrationIndex.size() > patch_from);
+            assert(forwardMigration[patch_from].size() == forwardMigrationIndex[patch_from].size());
 
             for (unsigned FMpatchToFakeIndex = 0 ; FMpatchToFakeIndex < forwardMigration[patch_from].size() ; ++FMpatchToFakeIndex)
             {
                 auto patch_to = forwardMigrationIndex[patch_from][FMpatchToFakeIndex];
                 assert(patch_to >= 0 && patch_to < GP->PatchNumber);
-                double forwardMigrationRate = (double) forwardMigration[patch_from][patch_to];
+                double forwardMigrationRate = (double) forwardMigration[patch_from][FMpatchToFakeIndex];
                 migrationEventsForEachDestinationPatch[patch_to].addMigrationEvent(forwardMigrationRate, patch_from); // Will only be considered if rate is greater than 0
             }
         }
 
         computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(migrationEventsForEachDestinationPatch);
+
+        // assert
+        for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
+        {
+            double totalProb = 0.0;
+            for (auto& prob : BackwardMigration[patch_to]) totalProb+=prob;
+            assert(fabs(totalProb - 1.0) < 0.000000001);
+
+        }
+
     }
 }
 
@@ -432,6 +444,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
     std::vector<std::vector<double>> FullFormForwardMigration;
 
 
+
     // security
     if (probs.size() <= center)
     {
@@ -456,84 +469,55 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
 
     if (probs.size() > CurrentPatchNumber)
     {
-        std::cout << "There are more dispersal probabilities (" << probs.size() << ") than patches (" << GP->PatchNumber << ") (Oops, that was found only at the second security catch)!" << std::endl;
+        std::cout << "There are more dispersal probabilities (" << probs.size() << ") than patches (" << GP->PatchNumber << ") (Oops, that was found only at the second security catch which means there is a bug)!" << std::endl;
         abort();
     }
 
-    int howManyElementsBeforeCenter = center;
-    int howManyElementsAfterCenter = probs.size() - center - 1;
-    assert(howManyElementsAfterCenter >= 0);
 
-    // Loop through all destination patch
-    for (int patch_from=0 ; patch_from < CurrentPatchNumber ; patch_from++)
+    // Loop through all patch from
+    for (size_t patch_from=0 ; patch_from < CurrentPatchNumber ; patch_from++)
     {
-        // probsTmp wil be a truncated version of probs in case we hit a border of the world
-        auto probsTmp = probs;
-
-        
-        // truncate beginning of probsTmp
-        int nbElementsToRemoveBefore = howManyElementsBeforeCenter - patch_from;
-        assert(nbElementsToRemoveBefore < (int) probsTmp.size());
-        int newCenter;
-        if (nbElementsToRemoveBefore > 0)
+        std::vector<double> probsFromPatch(CurrentPatchNumber,-1.0);
+        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
-            newCenter = center - nbElementsToRemoveBefore;
-            assert(newCenter >= 0);
-            probsTmp.erase(probsTmp.begin(), probsTmp.begin() + nbElementsToRemoveBefore);
-        } else
-        {
-            newCenter = center;
-        }
-
-        // truncate end of probsTmp
-        int nbElementsToRemoveAfter = patch_from + howManyElementsAfterCenter - CurrentPatchNumber + 1;
-        if (nbElementsToRemoveAfter >= (int) probsTmp.size())
-        {
-            std::cout << "Internal error in DispersalData::FromProbaLineToFullFormForwardMigration. nbElementsToRemoveBefore = " << nbElementsToRemoveBefore << " nbElementsToRemoveAfter = " << nbElementsToRemoveAfter << " patch_from = "<< patch_from << " CurrentPatchNumber = " << CurrentPatchNumber << " howManyElementsAfterCenter = " << howManyElementsAfterCenter << " howManyElementsBeforeCenter = "<< howManyElementsBeforeCenter << " probsTmp.size() = " << probsTmp.size() << "\n";
-            abort();
-        }
-        if (nbElementsToRemoveAfter > 0)
-        {
-            probsTmp.resize(probsTmp.size() - nbElementsToRemoveAfter);
-        }
-        
-        // If vTmp diffes from 'v', then we need to scale probabilities up
-        if (probs.size() != probsTmp.size())
-        {
-
-            double sum=0;
-            int i;
-            for ( i = 0 ; i < probsTmp.size() ; i++ )
+            int positionRelativeToCenter = patch_to - patch_from;
+            int indexInProbs = center + positionRelativeToCenter;
+            if (indexInProbs >= 0 && indexInProbs < probs.size())
             {
-                sum += probsTmp[i];
-            }
-            assert(sum <= 1 && sum >= 0);
-            if (sum!=1)
+                probsFromPatch[patch_to] = probs[indexInProbs];
+            } else
             {
-                for ( i = 0 ; i < probsTmp.size() ; i++ )
-                {
-                    probsTmp[i] /= sum;
-                }
+                probsFromPatch[patch_to] = 0.0;
             }
         }
-        assert(probsTmp.size());
 
-
-        // insert in completeProbs
-        std::vector<double> completeProbs(CurrentPatchNumber,0.0);
-        int probsIndex = 0;
-        for (int patch_to = patch_from - newCenter ; patch_to < patch_from - newCenter + probsTmp.size() ; patch_to++)
+        // Rescale
+        double currentSumProbs = 0.0;
+        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
-            assert(patch_to >= 0);
-            assert(patch_to < CurrentPatchNumber);
-            completeProbs[patch_to] = probsTmp[probsIndex];
-            probsIndex++;
+            assert(probsFromPatch[patch_to] >= 0.0 && probsFromPatch[patch_to] <= 1.0);
+            currentSumProbs += probsFromPatch[patch_to];
         }
-        assert(probsIndex == probsTmp.size());
-            
+        if (currentSumProbs != 1.0)
+        {
+            assert(currentSumProbs < 1.0);
+            assert(currentSumProbs > 0.0);
+            for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+            {
+                probsFromPatch[patch_to] /= currentSumProbs;
+            }
+        }   
+
+        // assert
+        double sumOfProbs = 0.0;
+        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+        {
+            sumOfProbs += probsFromPatch[patch_to];
+        }
+        assert(fabs(sumOfProbs - 1.0) < 0.00000001);
 
         // build object
-        FullFormForwardMigration.push_back(completeProbs);
+        FullFormForwardMigration.push_back(probsFromPatch);
     }
     
     // security
@@ -780,9 +764,12 @@ void DispersalData::pushBack__ForwardMigrationRate(const std::vector<std::vector
         assert(FFFM[patch_from].size() == CurrentPatchNumber);
         forwardMigration[patch_from].resize(0);
         forwardMigrationIndex[patch_from].resize(0);
+        double totalRateFrom = 0.0;
         for (unsigned patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
             auto& rate = FFFM[patch_from][patch_to];
+            //std::cout << "from " << patch_from << " to " << patch_to << ": " << rate << "\n";
+            totalRateFrom += rate;
             assert(rate >= 0.0 && rate <= 1.0);
             if (rate > 0.0)
             {
@@ -790,6 +777,12 @@ void DispersalData::pushBack__ForwardMigrationRate(const std::vector<std::vector
                 forwardMigrationIndex[patch_from].push_back(patch_to);
             }
         }
+
+
+        // Assert
+        assert(fabs(totalRateFrom - 1.0) < 0.00000001);
+
+
         assert(forwardMigration[patch_from].size() > 0);
         assert(forwardMigration[patch_from].size() == forwardMigrationIndex[patch_from].size());
     }

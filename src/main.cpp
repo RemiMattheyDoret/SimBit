@@ -69,8 +69,8 @@ Note for Remi of things to do:
 #include "T1_locusDescription.h"
 #include "T1_locusDescription.cpp"
 
-// SmallOrderingSortingFunctions.cpp
-#include "SmallOrderingSortingFunctions.cpp"
+// variousSmallFunctions.cpp
+#include "variousSmallFunctions.cpp"
 
 // other .h
 #include "CompressedSortedDeque.h" // also contains the .h for CompressedSortedDeque::CompressedSortedDequeBlock and CompressedSortedDeque::iterator 
@@ -148,7 +148,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.9.21");
+    std::string VERSION("version 4.9.24");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
     // Stop here if it is a dryRun
     if (GP->DryRun)
     {
-        std::cout << "You asked for a DryRun.\n";
+        std::cout << "You asked for a DryRun. SimBit will therefore abort\n";
         abort();
     }
 

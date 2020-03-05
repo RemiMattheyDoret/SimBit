@@ -40,13 +40,29 @@ private:
 
 private:
     template<typename T>
+    void ExtendStringForAdvancedLogFile(std::string& s, T& entry, std::string name);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::string& entry, std::string name);
+    template<typename T>
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<T>& entry, std::string name);
+    template<typename T>
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<T>>& entry, std::string name);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::string>>& entry, std::string name);
+    template<typename T>
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::vector<T>>>& entry, std::string name);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::vector<T1_locusDescription>>>& entry, std::string name);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<FromLocusToTXLocusElement>& entry, std::string name);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::pair<bool, unsigned>>& entry, std::string name);
+
+
+
+    /*template<typename T>
     void ExtendStringForAdvancedLogFile(std::string& s, T& entry, int depth, bool willMoreCome);
     void ExtendStringForAdvancedLogFile(std::string& s, T1_locusDescription& entry, int depth, bool willMoreCome);
     template<typename T>
     void ExtendStringForAdvancedLogFile(std::string& s, std::vector<T>& entry, int depth, bool willMoreCome);
     template<typename T>
     void ExtendStringForAdvancedLogFile(std::string& s, T& entry, std::string name);
-    void ExtendStringForAdvancedLogFile(std::string& s, std::string entry, int depth, bool willMoreCome);
+    void ExtendStringForAdvancedLogFile(std::string& s, std::string entry, int depth, bool willMoreCome);*/
 
 public:
     // Will contain all the T1_loci that must be outputted

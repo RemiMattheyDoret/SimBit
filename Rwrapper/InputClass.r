@@ -22,14 +22,13 @@ for (needed_package in needed_packages)
 
 
 
-Simulation = R6Class(
+Input = R6Class(
     ### Class name
-    "Simulation",
+    "Input",
 
     ### Private members
     private = list(
-        commandPath = "",
-        ID = "",
+        data = "",
         shared = {
             env <- new.env()
             env$optionNames <- c("seed", "random_seed", "printProgress", "nbGens", "nbGenerations", "startAtGeneration", "nbThreads", "S", "species", "nbSubGens", "nbSubGenerations", "PN", "PatchNumber", "N", "patchCapacity", "H", "Habitats", "T5_approximationForNtrl", "T56_approximationForNtrl", "T5_fit", "T5_FitnessEffects", "T5_compressData", "T5_compress", "L", "Loci", "ploidy", "fec", "fecundityForFitnessOfOne", "m", "DispMat", "DispWeightByFitness", "gameteDispersal", "InitialpatchSize", "cloningRate", "selfingRate", "matingSystem", "LogfileType", "sequencingErrorRate", "additiveEffectAmongLoci", "selectionOn", "T1_mu", "T1_MutationRate", "T1_epistasis", "T1_EpistaticFitnessEffects", "T2_mu", "T2_MutationRate", "T4_mu", "T4_MutationRate", "T4_maxAverageNbNodesPerHaplotype", "T5_mu", "T5_MutationRate", "T5_toggleMutsEveryNGeneration", "T5_freqThreshold", "T5_frequencyThresholdForFlippingMeaning", "T3_mu", "T3_MutationRate", "T3_pheno", "T3_PhenotypicEffects", "T3_fit", "T3_FitnessLandscape", "T3_DN", "T3_DevelopmentalNoise", "T1_fit", "T1_FitnessEffects", "T2_fit", "T2_FitnessEffects", "r", "RecombinationRate", "recRateOnMismatch", "FitnessMapInfo", "indTypes", "individualTypes", "resetGenetics", "indIni", "individualInitialization", "T1_ini", "T1_Initial_AlleleFreqs", "T5_ini", "T5_Initial_AlleleFreqs", "GP", "GeneralPath", "T1_vcf_file", "T1_VCF_file", "T1_LargeOutput_file", "T1_AlleleFreq_file", "Log", "Logfile", "Logfile_file", "T1_MeanLD_file", "T1_LongestRun_file", "T1_HybridIndex_file", "T1_ExpectiMinRec_file", "T2_LargeOutput_file", "SaveBinary_file", "T3_LargeOutput_file", "T3_MeanVar_file", "fitness_file", "fitnessSubsetLoci_file", "fitnessStats_file", "T1_FST_file", "T1_FST_info", "extraGeneticInfo_file", "patchSize_file", "extinction_file", "genealogy_file", "coalesce", "shouldGenealogyBeCoalesced", "T4_LargeOutput_file", "T4_vcf_file", "T4_VCF_file", "T4_SFS_file", "T1_SFS_file", "T4_printTree", "T4_coalescenceFst_file", "T5_vcf_file", "T5_VCF_file", "T5_SFS_file", "T5_AlleleFreq_file", "T5_LargeOutput_file", "outputSFSbinSize", "eco", "speciesEcologicalRelationships", "popGrowthModel", "stochasticGrowth", "swapInLifeCycle", "Overwrite", "readPopFromBinary", "DryRun", "centralT1LocusForExtraGeneticInfo", "killOnDemand", "geneticSampling_withWalker", "individualSampling_withWalker")
@@ -53,38 +52,44 @@ Simulation = R6Class(
 
     ### Public members
     public = list(
-        initialize = function(pathToWriteCommandsTo, bigID, smallID)
+        initialize = function(){},
+
+        ### Print on file
+        print = function(path, append = FALSE, oneLine = FALSE)
         {
-            private$ID = paste0(bigID, ".", smallID)
-            path = pathToWriteCommandsTo
+            stopifnot(class(path) == "character")
+            stopifnot(length(path) == 1)
 
-            if (substring(path, nchar(path), nchar(path)) == "/")
+            if (file.exists(path))
             {
-                path = substring(path, 0, nchar(path)-1)
-            }
-
-            if (path == "")
-            {
-            	path = bigID
+                if (!append)
+                {
+                    file.remove(path)
+                    file.create(path)
+                }
             } else
             {
-            	path = paste0(path, "/", bigID)
+                file.create(path)
             }
 
-            dir.create(path, showWarnings = FALSE)
-            private$commandPath <- paste0(path, "/command_", private$ID, ".txt")
-
-            if (file.exists(private$commandPath))
+            if (oneLine)
             {
-                file.remove(private$commandPath)
+                sep = " "
+            } else
+            {
+                sep = "\n"
             }
-            file.create(private$commandPath)
-            
+
+            write(paste(private$data, collapse=sep), path, append=append)
         },
 
+
         ### Set option
-        set = function(optionName, ...)
+        set = function(optionName, ..., newline=TRUE)
         {
+            stopifnot(class(optionName) == "character")
+            stopifnot(length(optionName) == 1)
+
             if (!any(optionName == private$shared$optionNames))
             {
                 distances = stringdist(optionName, private$shared$optionNames)
@@ -108,7 +113,23 @@ Simulation = R6Class(
             }
             entry = paste(entries, collapse=" ")
 
-            write(paste0("--", optionName, " ", entry), private$commandPath, append=TRUE)
+            private$data[length(private$data)+1] = paste0("--", optionName, " ", entry)
+        },
+
+        ### just write
+        write = function(text, appendToPrevious=FALSE)
+        {
+            stopifnot(class(text) == "character")
+            stopifnot(length(text) == 1)
+            stopifnot(class(addHash) == "logical")
+            
+            if (appendToPrevious)
+            {
+                private$data[length(private$data)] = paste(private$data[length(private$data)], text)
+            } else
+            {
+                private$data[length(private$data)+1] = text
+            }
         },
 
         ### print options
@@ -118,33 +139,38 @@ Simulation = R6Class(
         },
 
         ### Print current command
-        catCommand = function()
+        catCommand = function(oneLine)
         {
-            cat( readChar(private$commandPath, file.info(private$commandPath)$size) )
-        },
-
-        ### runSimulation
-        run = function(executable)
-        {
-            system(paste(executable, "f", private$commandPath, "a"))
-        },
-
-        ### Get command path
-        getCommandPath = function()
-        {
-        	return ( private$commandPath )
+            if (oneLine)
+            {
+                cat( paste(private$data, collapse=" ") )
+            } else
+            {
+                cat( paste(private$data, collapse="\n") )
+            }
         }
     )
 )
 
+### runSimulation
+runSimBit = function(executable, path, lineNumber)
+{
+    stopifnot(class(executable) == "character")
+    stopifnot(length(executable) == 1)
+    stopifnot(class(path) == "character")
+    stopifnot(length(path) == 1)
+    system(paste(executable, "f", path, lineNumber))
+}
+
+
 #### Example
-# simulation = Simulation$new("Test","1","/Users/remi/test")
-# simulation$set("PN", 1)
-# simulation$set("N", "unif 100")
-# simulation$set("L", "T1 8")
-# simulation$set("T1_mu", "unif 1e-7")
-# simulation$set("nbGens", "100")
-# simulation$catCommand()
-# simulation$getCommandPath()
-# simulation$run("SimBit")
+# input = Input$new("Test","1","/Users/remi/test")
+# input$set("PN", 1)
+# input$set("N", "unif 100")
+# input$set("L", "T1 8")
+# input$set("T1_mu", "unif 1e-7")
+# input$set("nbGens", "100")
+# input$catCommand(oneLine = TRUE)
+# input$print("path/to/file.txt", append=FALSE, oneLine=FALSE)
+# runSimBit("SimBit", "path/to/file.txt", "a")
 

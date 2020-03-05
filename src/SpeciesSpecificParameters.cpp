@@ -1673,7 +1673,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
     bool receivedT56_info = false;
     std::vector<unsigned char> T1_info;
     std::vector<unsigned char> T2_info;
-    std::vector<char> T3_info;
+    std::vector<double> T3_info;
     std::vector<unsigned int> T56_info;
 
     while (input.IsThereMoreToRead() && input.PeakNextElementString().substr(0,5) != "haplo" && input.PeakNextElementString() != "ind")
@@ -1741,7 +1741,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
             T3_info.reserve(this->T3_nbLoci);
             for (unsigned T3locus = 0 ; T3locus < this->T3_nbLoci ; ++T3locus)
             {
-                T3_info.push_back(input.GetNextElementInt()); // implicit cast
+                T3_info.push_back(input.GetNextElementDouble()); 
             }
 
         } else if (TT == "T4" || TT == "t4")

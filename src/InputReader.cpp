@@ -423,7 +423,7 @@ long long int InputReader::GetNextElementInt()
         std::cout << "Message from 'InputReader method GetNextElementInt': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
-    int r = readInt(V[VIndex], false);
+    long long int r = readInt(V[VIndex], false);
     VIndex++;
     return r;
 }
@@ -565,7 +565,7 @@ double InputReader::readDouble(const std::string& s)
     return r;
 }
 
-int InputReader::readInt(const std::string& s, bool ComingFromMarker)
+long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
 {
     if (s.at(0)=='@')
     {
@@ -596,7 +596,7 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         }
         abort();
     }
-    int r;
+    long long int r;
     try
     {
         double d = std::stod(s);
@@ -611,7 +611,8 @@ int InputReader::readInt(const std::string& s, bool ComingFromMarker)
             std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " received the entry "<< s << " when it was expecting an integer value. Sadly "<< s <<" is outside of the range of value that SimBit represents when reading input (this is a security against overflow). It might mean that SimBit should be able to deal with these numbers and then, the current code should be edited. Please let Remi know about it." <<std::endl;
             abort();
         }
-        r = (int) std::stod(s);;
+        
+        r = (long long int) std::stod(s);
     }
     catch(...)
     {

@@ -138,7 +138,7 @@ public:
 
     bool                                            isIndividualInitialization;
     int                                             T1_nbChars;
-    int                                             T1_nbLoci;
+    long long int                                   T1_nbLoci;
     std::vector<std::vector<double>>                T1_FitnessEffects;
     bool                                            T1_isSelection;
     bool                                            T1_isEpistasis;
@@ -180,9 +180,9 @@ public:
     double                                          T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation;
 
     // Genetics T5
-    int                                             T5_nbLoci;
-    int                                             T5ntrl_nbLoci;
-    int                                             T5sel_nbLoci;
+    long long int                                   T5_nbLoci;
+    long long int                                   T5ntrl_nbLoci;
+    long long int                                   T5sel_nbLoci;
     std::vector<unsigned int>                       T5ntrl_flipped;
     //std::vector<unsigned int>                       T5sel_flipped;
 

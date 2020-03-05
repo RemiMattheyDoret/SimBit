@@ -44,7 +44,7 @@ private:
     std::string ErrorMessage;
 
     double readDouble(const std::string& s);
-    int readInt(const std::string& s, bool ComingFromMarker);
+    long long int readInt(const std::string& s, bool ComingFromMarker);
 
     int FindHabitatFromString(std::string s_habitat);
     int FindGenerationFromString(std::string s_generation);

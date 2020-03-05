@@ -179,8 +179,12 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
         double allele = (double) haplo0.getT3_Allele(byte_index);
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
-            std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
-            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][byte_index * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->rngw.getRNG());
+            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][byte_index * SSP->T3_PhenoNbDimensions + dim] * allele;
+            if (SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim] != 0.0)
+            {
+                std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
+                T3_IndPhenotype[dim] += dist(GP->rngw.getRNG());
+            }
         }
     }
 }
@@ -201,7 +205,7 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
         if (SSP->T3_fitnessLandscapeType == 'L')
         {
             W *= 1 - (std::abs(diffToOptimal) * SSP->T3_fitnessLandscapeLinearGradient[Habitat][dim]);
-            if (W < 0.0) 
+            if (W < 0.0)
             {
                 W = 0.0;
                 break;

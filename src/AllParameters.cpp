@@ -1904,7 +1904,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
 
     } else if (flag == "DryRun")
     {       
-        GP->DryRun = true;
+        GP->DryRun = input.GetNextElementBool();
 
     }  else if (flag == "centralT1LocusForExtraGeneticInfo")
     {

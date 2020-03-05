@@ -930,7 +930,7 @@ std::cout << "Enters in 'Mutate_T3'\n";
         // Make the mutation
         //std::cout << "MutPosition = " <<  MutPosition << "    SSP->T3_nbLoci = " << SSP->T3_nbLoci << "\n";
         assert(MutPosition < SSP->T3_nbLoci);   
-        TransmittedChrom.AddMutT3_Allele(MutPosition);  // add 1 and changes T2_W   
+        TransmittedChrom.mutateT3_Allele(MutPosition);  // add 1 and changes T2_W   
     }  
 }
 

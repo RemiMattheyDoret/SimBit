@@ -52,6 +52,8 @@ void OutputWriter::PrintGeneration()
         }
     }
 }
+
+/*
 template<typename T>
 void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, T& entry, int depth, bool willMoreCome)
 {
@@ -122,7 +124,127 @@ void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, T& entry, std:
     s += name + "\n";
     ExtendStringForAdvancedLogFile(s,entry,0,false);
     s+= "\n\n";
+}*/
+
+
+template<typename T>
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, T& entry, std::string name)
+{
+    s += name + "\n" + std::to_string(entry) + "\n\n";
 }
+
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::string& entry, std::string name)
+{
+    s += name + "\n'" + entry + "'\n\n";
+}
+
+template<typename T>
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<T>& entry, std::string name)
+{
+    s += name + "\nc(";
+    for (auto& elem : entry)
+        s += std::to_string(elem) + ",";
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+template<typename T>
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<T>>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elemA : entry)
+    {
+        s += "c(";
+        for (auto& elemB : elemA)
+            s += std::to_string(elemB) + ",";
+        if (s.back() == ',') s.pop_back();
+        s += "),";
+    }
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::string>>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elemA : entry)
+    {
+        s += "c(";
+        for (auto& elemB : elemA)
+            s += "'" + elemB + "',";
+        if (s.back() == ',') s.pop_back();
+        s += "),";
+    }
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+
+template<typename T>
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::vector<T>>>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elemA : entry)
+    {
+        s += "list(";
+        for (auto& elemB : elemA)
+        {
+            s += "c(";
+            for (auto& elemC : elemB)
+            {
+                s += std::to_string(elemC) + ",";
+            }
+            if (s.back() == ',') s.pop_back();
+            s += "),";
+        }
+        if (s.back() == ',') s.pop_back();
+        s += "),";
+    }
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::vector<std::vector<T1_locusDescription>>>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elemA : entry)
+    {
+        s += "list(";
+        for (auto& elemB : elemA)
+        {
+            s += "list(";
+            for (auto& elemC : elemB)
+                s += "c(" + std::to_string(elemC.byte_index) + "," + std::to_string(elemC.bit_index) + "," + std::to_string(elemC.locus) + "),";
+            if (s.back() == ',') s.pop_back();
+            s += "),";
+        }
+        if (s.back() == ',') s.pop_back();
+        s += "),";
+    }
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<FromLocusToTXLocusElement>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elem : entry)
+        s += "c(" + std::to_string(elem.T1) + "," + std::to_string(elem.T2) + "," + std::to_string(elem.T3) + "," + std::to_string(elem.T4) + "," + std::to_string(elem.T56ntrl) + "," + std::to_string(elem.T56sel) + "," + std::to_string(elem.TType) + "),";
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+void OutputWriter::ExtendStringForAdvancedLogFile(std::string& s, std::vector<std::pair<bool, unsigned>>& entry, std::string name)
+{
+    s += name + "\nlist("; 
+    for (auto& elem : entry)
+        s += "c(" + std::to_string(elem.first) + "," + std::to_string(elem.second) + "),";
+    if (s.back() == ',') s.pop_back();
+    s +=  ")\n\n";
+}
+
+
+
 
 bool OutputWriter::AreThereAnyOutput()
 {
@@ -372,6 +494,11 @@ void OutputWriter::PrintLogfile(std::string& AllInputInLongString)
                 // Dispersal
                 this->ExtendStringForAdvancedLogFile(s, SSP->dispersalData.__forwardMigration,"dispersalData.__forwardMigration");
                 this->ExtendStringForAdvancedLogFile(s, SSP->dispersalData.__forwardMigrationIndex,"dispersalData.__forwardMigrationIndex");
+                {
+                    auto FFM = getFullFormMatrix(SSP->dispersalData.__forwardMigration,SSP->dispersalData.__forwardMigrationIndex);
+                    this->ExtendStringForAdvancedLogFile(s, FFM, "fullFormForwardMigrationMatrix");
+                }
+                
                 
                 // Genetic Map
                 this->ExtendStringForAdvancedLogFile(s, SSP->NbElementsInFitnessMap,"NbElementsInFitnessMap");
@@ -3496,7 +3623,7 @@ std::cout << "Enters in 'OutputWriter::imitateSequencingError'\n";
         for (size_t i = 0 ; i < nbMuts ; i++)
         {
             auto MutPosition = d_mutPos(GP->rngw.getRNG());
-            TransmittedChrom.AddMutT3_Allele(MutPosition);
+            TransmittedChrom.mutateT3_Allele(MutPosition);
         }    
     }
 

@@ -394,3 +394,13 @@ SimBit_4.9.13
 
 SimBit_4.9.21
 	Improvement of random number generator. Important performance improvement for simulations with very few loci
+
+SimBit_4.9.22
+	Fix a bug when using LSS as mode of entry fo option --m
+
+SimBit_4.9.23
+	Change logfile type 2 to make it easier to graph parameters (and added a small example on how to do that)	
+
+SimBit_4.9.24
+	Use double for QTLs
+	Add security on overflow in the InputReader	

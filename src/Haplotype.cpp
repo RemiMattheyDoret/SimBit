@@ -140,11 +140,11 @@ unsigned char Haplotype::getT2_Allele(const int char_index)
     return T2_Alleles[char_index];
 }
 
-char Haplotype::getT3_Allele(const int char_index)
+double Haplotype::getT3_Allele(const int index)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->T2_nbLoci);
-    return T3_Alleles[char_index];
+    return T3_Alleles[index];
 }
 
 void Haplotype::setT1_char(int& char_index, unsigned char& c)
@@ -182,7 +182,7 @@ void Haplotype::setT1_AlleleToOne(int& char_index, int& bit_index)
 }
 
 void Haplotype::setT1_AlleleToZero(int& char_index, int& bit_index)
-{;
+{
     //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
@@ -197,11 +197,11 @@ void Haplotype::setT2_Allele(const int char_index, const unsigned char value)
     T2_Alleles[char_index] = value;
 }
 
-void Haplotype::setT3_Allele(const int char_index, const char value)
+void Haplotype::setT3_Allele(const int index, const double value)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->T2_nbLoci);
-    T3_Alleles[char_index] = value;
+    T3_Alleles[index] = value;
 }
 
 void Haplotype::toggleT1_Allele(int& byte_index, int& bit_index)
@@ -383,27 +383,27 @@ void Haplotype::AddMutT2_Allele(int char_index, int Habitat)
     }
 }
 
-void Haplotype::AddMutT3_Allele(int char_index)
+void Haplotype::mutateT3_Allele(int index)
 {
     // Add or substract while preventing
 #ifdef DEBUG
 std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
 std::cout << "SSP->T3_nbLoci = " << SSP->T3_nbLoci << "\n";
 assert(SSP->T3_nbLoci == T3_Alleles.size());    
-assert(char_index < T3_Alleles.size());
-assert(char_index >= 0);
+assert(index < T3_Alleles.size());
+assert(index >= 0);
 #endif
     if (GP->rngw.get_1b())
     {
-        if (T3_Alleles[char_index] != CHAR_MAX)
+        if (T3_Alleles[index] != std::numeric_limits<double>::max())
         {
-            T3_Alleles[char_index]++;
+            T3_Alleles[index]++;
         }
     } else
     {
-        if (T3_Alleles[char_index] != CHAR_MIN)
+        if (T3_Alleles[index] != std::numeric_limits<double>::min())
         {
-            T3_Alleles[char_index]--;
+            T3_Alleles[index]--;
         }
     }
 }
@@ -551,7 +551,7 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
     }
 }
 
-Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<char> T3_info, std::vector<unsigned int> T56_info)
+Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, std::vector<unsigned int> T56_info)
 {
     assert(SSP != nullptr); 
 

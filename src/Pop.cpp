@@ -529,7 +529,7 @@ int Pop::SelectionOriginPatch(size_t patch_to)
         rnd -= probability;
     }   
  
-    //if (patch_to > 1e3) std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
+    //std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
     assert(patch_from >= 0 && patch_from < GP->PatchNumber);
     
 #ifdef CALLENTRANCEFUNCTIONS

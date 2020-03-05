@@ -32,7 +32,7 @@ class Haplotype // a Haplotype is a whole halotype but can correspond to several
 private:
     std::vector<unsigned char> T1_Alleles;   // Type 1 Each bit is a binary site
     std::vector<unsigned char> T2_Alleles;   // Type 2 Each byte is a locus for which number of mutations are counted.
-    std::vector<char> T3_Alleles;            // Type 3 Each byte is the allelic effect along a single phenotypic dimension
+    std::vector<double> T3_Alleles;          // Type 3 QTLs
 
     // T4 types are tracked with T4Tree
 
@@ -97,7 +97,7 @@ public:
     bool getT1_Allele(const int T1Locus);
     bool getT1_Allele(const int char_index, const int bit_index);
     unsigned char getT2_Allele(const int char_index);
-    char getT3_Allele(const int char_index);
+    double getT3_Allele(const int index);
     //bool getT56_Allele(const int Locus);
     //bool getT5ntrl_Allele(const int Locus);
     //bool getT5sel_Allele(const int Locus);
@@ -111,7 +111,7 @@ public:
     void setT1_char(int& T1_char_index, unsigned char& c);
     void setT1_char(int& T1_char_index, unsigned char&& c);
     void setT2_Allele(const int char_index, const unsigned char value);
-    void setT3_Allele(const int char_index, const char value);
+    void setT3_Allele(const int index, const double value);
     
     void setEntireT5_Allele(std::vector<unsigned int>& t5a);
     void setT5_Allele(const int& locus, const bool& value);
@@ -141,7 +141,7 @@ public:
     void toggleT1_Allele(int& byte_index, int& bit_index);
     void AddMutT2_Allele(int char_index);
     void AddMutT2_Allele(int char_index, int Habitat);
-    void AddMutT3_Allele(int char_index);
+    void mutateT3_Allele(int index);
     
     template<typename INT>
     void mutateT56ntrl_Allele(INT MutPosition);
@@ -180,7 +180,7 @@ public:
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
-    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<char> T3_info, std::vector<unsigned int> T56_info);
+    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, std::vector<unsigned int> T56_info);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);

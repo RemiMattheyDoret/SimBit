@@ -303,3 +303,46 @@ std::vector<bool> inverseWhich(std::vector<INT> idx, INTT size )
   return r;
 }
 
+
+std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<double>>& rates, std::vector<std::vector<unsigned>>& indices)
+{
+  assert(rates.size() == indices.size());
+  auto nbPatches = rates.size(); // Cannot use GP as we aregoing through different generation index
+  std::vector<std::vector<double>> r(nbPatches);
+
+  for (size_t from_patch_index = 0 ; from_patch_index < nbPatches ; ++from_patch_index)
+  {
+    r[from_patch_index].resize(nbPatches, 0.0); // important to initialize to zero
+    assert(rates[from_patch_index].size() == indices[from_patch_index].size());
+    for (size_t fake_to_patch_index = 0 ; fake_to_patch_index < rates[from_patch_index].size() ; ++fake_to_patch_index)
+    {
+      auto& to_patch_index = indices[from_patch_index][fake_to_patch_index];
+      auto& rate = rates[from_patch_index][fake_to_patch_index];
+      assert(rate >= 0.0 && rate <= 1.0);
+      r[from_patch_index][to_patch_index] = rate;
+    }
+
+    double sum = 0.0;
+    for (size_t to_patch_index = 0 ; to_patch_index < nbPatches ; ++to_patch_index)
+    {
+      sum += r[from_patch_index][to_patch_index];
+    }
+    assert(fabs(sum - 1.0) < 0.00000001);
+  }
+
+  return r;
+}
+
+
+std::vector<std::vector<std::vector<double>>> getFullFormMatrix(std::vector<std::vector<std::vector<double>>>& __rates, std::vector<std::vector<std::vector<unsigned>>>& __indices)
+{
+  assert(__rates.size() == __indices.size());
+  std::vector<std::vector<std::vector<double>>> __r(__indices.size());
+  for (size_t generation_index = 0 ; generation_index < __rates.size() ; ++generation_index)
+  {
+    __r[generation_index] = getFullFormMatrix(__rates[generation_index], __indices[generation_index]);
+  }
+
+  return __r;
+}
+
