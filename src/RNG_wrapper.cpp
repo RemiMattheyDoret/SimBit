@@ -6,10 +6,10 @@ RNG_wrapper::RNG_wrapper(int seed)
 :
 initial_seed(seed),
 rng(seed),
-nbDrawsLeft1b(0),
-nbDrawsLeft8b(0),
-nbDrawsLeft16b(0),
-nbDrawsLeft32b(0)
+nbDrawsLeft1b(0)
+//nbDrawsLeft8b(0),
+//nbDrawsLeft16b(0),
+//nbDrawsLeft32b(0)
 {
 	assert(RNG_type::max() == maxValue_64b);
 	assert(RNG_type::min() == 0);
@@ -34,7 +34,7 @@ void RNG_wrapper::setRNG(RNG_type& in)
 
 std::uint32_t RNG_wrapper::operator()()
 {
-	return get_32b();
+	return rng();
 };
 
 
@@ -43,13 +43,13 @@ RNG_wrapper RNG_wrapper::operator=(const RNG_wrapper other)
 	this->initial_seed = other.initial_seed;
 	this->rng = other.rng;
 	this->randomValue1b = other.randomValue1b;
-	this->randomValue8b = other.randomValue8b;
+/*	this->randomValue8b = other.randomValue8b;
 	this->randomValue16b = other.randomValue16b;
 	this->randomValue32b = other.randomValue32b;
 	this->nbDrawsLeft1b = other.nbDrawsLeft1b;
 	this->nbDrawsLeft8b = other.nbDrawsLeft8b;
 	this->nbDrawsLeft16b = other.nbDrawsLeft16b;
-	this->nbDrawsLeft32b = other.nbDrawsLeft32b;
+	this->nbDrawsLeft32b = other.nbDrawsLeft32b;*/
 	return *this;
 }
 
@@ -93,11 +93,12 @@ bool RNG_wrapper::get_1b()
 	bool r = randomValue1b & 1;
 	randomValue1b >>= 1;
 	nbDrawsLeft1b--;
+	//std::cout << r << " ";
 	return r;
 }
 
 
-
+/*
 std::uint8_t RNG_wrapper::get_8b()
 {
 	if (nbDrawsLeft8b == 0)
@@ -136,13 +137,8 @@ std::uint32_t RNG_wrapper::get_32b()
 	randomValue32b >>= 32;
 	nbDrawsLeft32b--;
 	return r;
-}
+}*/
 
-
-std::uint64_t RNG_wrapper::get_64b()
-{
-	return rng();
-}
 
 template<class int_type>
 int_type RNG_wrapper::uniform_int_distribution(int_type diff)
@@ -153,37 +149,24 @@ int_type RNG_wrapper::uniform_int_distribution(int_type diff)
 	} else if (diff == 1)
 	{
 		return get_1b();
-	} else if (diff <= maxValue_8b)
+	} else 
 	{
-		if (diff == maxValue_8b)
-		{
-			return get_8b();
-		} else
-		{
-			return get_8b() % (diff + 1);
-		}
-	} else if (diff <= maxValue_16b)
-	{
-		if (diff == maxValue_16b)
-		{
-			return get_16b();
-		} else
-		{
-			return get_16b() % (diff + 1);
-		}
-	} else if (diff <= maxValue_32b)
-	{
-		return get_32b() % (diff + 1);
-	} else
-	{
-		return get_64b() % (diff + 1);
+		return rng() % (diff + 1);
 	}
 	//return (int_type) (uniform_real_distribution((double) to) + 0.5);
 }
 
 double RNG_wrapper::uniform_real_distribution(double diff)
 {
-	return (double) get_32b() / (maxValue_32b+0.1) * diff;
+	/*double rr = rng();
+	double r = (double) rr / (maxValue_64b+0.1) * diff;
+	std::cout << "-----\n";
+	std::cout << "rr = " << rr << "\n";
+	std::cout << "diff = " << diff << "\n";
+	std::cout << "maxValue_64b = " << maxValue_64b << "\n";
+	std::cout << "r = " << r << "\n";
+	std::cout << "-----\n";*/
+	return (double) rng() / (maxValue_64b+0.1) * diff;
 }
 
 template<class int_type>

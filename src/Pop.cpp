@@ -437,6 +437,8 @@ int Pop::SelectionParent(int patch_from, int sex)
         } else
         {
             double rnd = GP->rngw.uniform_real_distribution(this->CumSumFits[patch_from][sex].back());
+            //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].back() = " << this->CumSumFits[patch_from][sex].back() << "\n";
+            //std::cout << "rnd = " << rnd << "\n";
             std::vector<double>::iterator high = std::upper_bound(CumSumFits[patch_from][sex].begin(), CumSumFits[patch_from][sex].end(), rnd);
             index = distance(CumSumFits[patch_from][sex].begin(), high);
         }

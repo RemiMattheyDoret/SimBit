@@ -404,3 +404,7 @@ SimBit_4.9.23
 SimBit_4.9.24
 	Use double for QTLs
 	Add security on overflow in the InputReader	
+
+SimBit_4.9.25
+	Fix bug introduced at version 4.9.21
+	

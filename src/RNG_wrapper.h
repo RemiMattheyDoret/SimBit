@@ -8,18 +8,18 @@ private:
 	RNG_type rng;
 
 	std::uint64_t randomValue1b;
-	std::uint64_t randomValue8b;
+	unsigned char nbDrawsLeft1b;
+	
+	/*std::uint64_t randomValue8b;
 	std::uint64_t randomValue16b;
 	std::uint64_t randomValue32b;
-
-	unsigned char nbDrawsLeft1b;
 	unsigned char nbDrawsLeft8b;
 	unsigned char nbDrawsLeft16b;
-	unsigned char nbDrawsLeft32b;
+	unsigned char nbDrawsLeft32b;*/
 
-	static constexpr double maxValue_8b = 255.0;
-	static constexpr double maxValue_16b = 65535.0;
-	static constexpr double maxValue_32b = 4294967295.0;
+	//static constexpr double maxValue_8b = 255.0;
+	//static constexpr double maxValue_16b = 65535.0;
+	//static constexpr double maxValue_32b = 4294967295.0;
 	static constexpr double maxValue_64b = 18446744073709551616.0;
 
 
@@ -39,10 +39,10 @@ public:
 	RNG_type& getRNG();
 
 	bool get_1b();
-	std::uint8_t get_8b();
+	/*std::uint8_t get_8b();
 	std::uint16_t get_16b();
 	std::uint32_t get_32b();
-	std::uint64_t get_64b();
+	std::uint64_t get_64b();*/
 
 
 	template<class int_type>

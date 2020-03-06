@@ -121,7 +121,6 @@ Input = R6Class(
         {
             stopifnot(class(text) == "character")
             stopifnot(length(text) == 1)
-            stopifnot(class(addHash) == "logical")
             
             if (appendToPrevious)
             {
