@@ -71,7 +71,7 @@ Individual& Patch::getInd(const int& ind_index, const int& patch_index)
     return this->getInd(ind_index);
 }
 
-Patch::Patch(){}
+/*Patch::Patch(){}
 
 Patch::Patch(const Patch& p)
 {
@@ -84,16 +84,16 @@ Patch Patch::operator=(const Patch& p)
     return *this;
 }
 
-Patch::Patch(const Patch&& p)
+Patch::Patch(Patch&& p)
 {
-    inds = p.inds;
+    inds.swap(p.inds);
 }
 
-Patch Patch::operator=(const Patch&& p)
+Patch Patch::operator=(Patch&& p)
 {
-    inds = p.inds;
+    inds.swap(p.inds);
     return *this;
-}
+}*/
 
 Patch::Patch(int patch_index, bool ShouldReadPopFromBinary)
 {
@@ -115,6 +115,7 @@ std::cout << "Enters in 'Patch::Patch(int patch_index, bool ShouldReadPopFromBin
 
     //std::cout << "SSP->patchSize["<<patch_index<<"] = " << SSP->patchSize[patch_index] << "\n";
 
+    inds.reserve(SSP->patchSize[patch_index]);
     for (int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
     {
         inds.push_back(Individual(ShouldReadPopFromBinary));
@@ -128,6 +129,8 @@ Patch::Patch(const int patch_index, char Abiogenesis)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\n";
 #endif
+
+    inds.reserve(SSP->patchCapacity[patch_index]);
 
     //////////////////////////////////////
     /// Initialize with indiviualTypes ///
@@ -172,6 +175,20 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
             inds.push_back(ind);
         }
     }
+
+
+    //// Ensures that they are at carrying capacity in case the initial patch size differs from the carrying capacity
+    if (inds.size() != SSP->patchCapacity[patch_index])
+    {
+        Haplotype ConstantHaplotype(patch_index, Abiogenesis, -1.0);
+        Individual ConstantInd(ConstantHaplotype, Abiogenesis);
+        for (int ind_index = inds.size() ; ind_index < SSP->patchCapacity[patch_index] ; ++ind_index)
+        {
+            inds.push_back(ConstantInd); // Those individuals won't be used be we still need to allocate their memory
+        }
+
+        assert(inds.size() == SSP->patchCapacity[patch_index]);
+    }
 }
 
 
@@ -181,3 +198,25 @@ void Patch::toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std:
         ind.toggleT56LociFromHaplotypes(T5ntrlLociToToggle, T5selLociToToggle, Habitat);
 }
 
+
+std::vector<double> Patch::computeT1RelativeFrequencies(size_t self_patch_index)
+{
+    std::vector<double> r(SSP->T1_nbLoci, 0.0);   
+    for (size_t ind_index = 0 ; ind_index < SSP->patchSize[self_patch_index] ; ++ind_index)
+    {
+        for (size_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+        {
+            for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+            {
+                r[locus] += getInd(ind_index).getHaplo(haplo_index).getT1_Allele(locus);
+            }
+        }
+    }
+
+    for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+    {
+        r[locus] /= 2*SSP->patchSize[self_patch_index];
+    }
+
+    return r;
+}

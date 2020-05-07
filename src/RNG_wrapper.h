@@ -1,5 +1,6 @@
 
 using RNG_type = std::mt19937_64; // The code below assumes that the min and max value are 0 and 2^64-1 (which is the case for mersenne twister). So be careful if I use another RNG (there is an assertion in the constructors for security)
+constexpr unsigned char NB_BITS_IN_CACHE = sizeof(RNG_type::result_type) * 8;
 
 class RNG_wrapper
 {
@@ -7,8 +8,8 @@ private:
 	int initial_seed;
 	RNG_type rng;
 
-	std::uint64_t randomValue1b;
-	unsigned char nbDrawsLeft1b;
+	RNG_type::result_type cache;
+	unsigned char cache_index = 0;
 	
 	/*std::uint64_t randomValue8b;
 	std::uint64_t randomValue16b;

@@ -90,16 +90,21 @@ void reorder(std::vector<T> &v, std::vector<size_t> const &order )  {
 // String manipulation
 
 // trim from start
-static inline std::string &ltrimString(std::string &s) {
+/*static inline std::string &ltrimString(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(),
             std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+*/
+static inline std::string &ltrimString(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !std::isspace(c);}));
     return s;
 }
 
 // trim from end
 static inline std::string &rtrimString(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+            [](int c) {return !std::isspace(c);}).base(), s.end());
     return s;
 }
 
@@ -229,7 +234,17 @@ std::vector<T> intersection(std::vector<T>& a, std::vector<T>& b)
 {
   // Both vectors must be sorted
   std::vector<T> r;
+  //std::cout << "\na:";
+  //for (auto& ae : a)
+  //  std::cout << ae.locus << " ";
+  //std::cout << "\nb:";
+  //for (auto& be : b)
+  //  std::cout << be.locus << " ";
   std::set_intersection(a.begin(), a.end(), b.begin(), b.end(), back_inserter(r));
+  //std::cout << "\nr:";
+  //for (auto& re : r)
+  //  std::cout << re.locus << " ";
+  //std::cout << "\n";
   return r;
 }
 

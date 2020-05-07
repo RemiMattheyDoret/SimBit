@@ -529,7 +529,7 @@ void ResetGenetics::makeEventBHappen(ResetGeneticsEvent_B& event, Pop& pop)
         unsigned ind_index = from;
         do
         {
-            // Do not use push_back as inds is actually always intiialized with size at carrying capacity (which is probably stupid)
+            // Do not use push_back as inds is actually always initialized with size at carrying capacity (which is probably stupid)
             assert(ind_index < SSP->patchCapacity[patch_index]);
             ThePatch.setInd(TheIndType, ind_index);
 
@@ -588,56 +588,5 @@ void ResetGenetics::resetPopIfNeeded(Pop& pop)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-void ProgrammedT1Mutation::MakeProgrammedT1Mutation(Pop& pop)
-{
-    if (SSP->ProgrammedT1Mutations.size() != 0 && SSP->ProgrammedT1MutationsIndexToDo < SSP->ProgrammedT1Mutations.size())
-    {
-        while (SSP->ProgrammedT1MutationsIndexToDo < SSP->ProgrammedT1Mutations.size())
-        {
-            if (SSP->ProgrammedT1Mutations[SSP->ProgrammedT1MutationsIndexToDo].generation == GP->CurrentGeneration)
-            {
-                ProgrammedT1Mutation& mut = SSP->ProgrammedT1Mutations[SSP->ProgrammedT1MutationsIndexToDo];
-                int randomChromosome = GP->random_0or1(GP->mt);
-                std::uniform_int_distribution<int> runiform_int_0andNbInds(0,SSP->patchSize[mut.patch_index]);
-                int randomIndividual = runiform_int_0andNbInds(GP->mt);
-                pop.getPatch(mut.patch_index).getInd(randomIndividual).getHaplo(randomChromosome).toggleT1_Allele(mut.locus, SSP->Habitats[mut.patch_index]);
-
-                SSP->ProgrammedT1MutationsIndexToDo++;
-            } else
-            {
-                break;
-            }
-        }
-    }
-}
-
-*/
 
 

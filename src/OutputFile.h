@@ -57,7 +57,8 @@ typedef enum {
     T56_SFS_file = 27,
     T56_AlleleFreqFile = 28,
     T56_LargeOutputFile = 29,
-    T4CoalescenceFst = 30
+    T4CoalescenceFst = 30,
+    T1_AverageHybridIndexFile = 31
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific
@@ -77,14 +78,16 @@ private:
     std::vector<int> times;
     bool isGenerationSpecific;
     bool isSpeciesSpecific;
+    bool isPatchSpecific;
     bool isNbLinesEqualNbOutputTimes;
     bool doesTimeNeedsToBeSet;
-    std::vector<std::vector<T1_locusDescription>> subset;
+    
 
     static const std::vector<int> listOfOutputFileTypeThatCanTakeASubset;
     static const std::vector<std::string> OutputFileTypesNames; // initialized in .cpp
 
 public:
+    std::vector<std::vector<T1_locusDescription>> subset;
     static std::string GeneralPath;
     static std::string sequencingErrorStringToAddToFilnames;
 
@@ -94,6 +97,7 @@ public:
     bool containsRightNumberOfLines(std::ifstream& pFile);
     bool getDoesTimeNeedsToBeSet();
     void open();
+    void openPatchSpecific(int patch_index = -1);
     void openForSeed();
     void open(int generation);
     void openWithoutGenerationDespiteBeingGenerationSpecific();
@@ -116,8 +120,8 @@ public:
     void interpretTimeAndSubsetInput(InputReader& input);
     void interpretSubsetInput(InputReader& input);
     std::string getPathForSeed();
-    std::string getPath();
-    std::string getPath(int generation);
+    std::string getPath(std::string patchIndexString = "");
+    std::string getPath(int generation, std::string patchIndexString = "");
     std::string getPathWithoutGenerationDespiteBeingGenerationSpecific();
     std::vector<int>& getTimes();
     OutputFileTypes getFileType();

@@ -28,3 +28,4 @@ sani:
 
 clean:
 	rm bin/*
+

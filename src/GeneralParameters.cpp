@@ -149,7 +149,7 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
         /////////////////
         // interaction //
         /////////////////
-        std::string s_interaction_exp = "interaction";
+        std::string s_interaction_exp = "predation";
         std::string s_interaction = input.GetNextElementString();
         if (s_interaction != s_interaction_exp)
         {
@@ -197,7 +197,7 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
                     {
                         if (input.GetNextElementString() != "self")
                         {
-                            std::cout << "For option --eco, received something else than 'self' for the interaction matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
+                            std::cout << "For option --eco, received something else than 'self' for the predation matrix for the effect of species index " << speciesIndexFrom << " onto itself.\n";
                             abort();
                         }
                         speciesInteraction[speciesIndexTo][speciesIndexFrom] = {'A',0.0}; 
@@ -224,7 +224,7 @@ void GeneralParameters::readSpeciesEcologicalRelationships(InputReader& input)
                             type = '0';
                         } else
                         {
-                            std::cout << "For option --eco, for the interaction matrix, received the type " << stype <<" for the effect of species index "<<speciesIndexFrom << " on species index "<<speciesIndexTo << ". Sorry only types 'A', 'B', 'C' and 'D' are recognized.\n";
+                            std::cout << "For option --eco, for the predation matrix, received the type " << stype <<" for the effect of species index "<<speciesIndexFrom << " on species index "<<speciesIndexTo << ". Sorry only types 'A', 'B', 'C' and 'D' are recognized.\n";
                             abort();
                         }
                         speciesInteraction[speciesIndexTo][speciesIndexFrom] = {type,magnitude};

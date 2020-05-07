@@ -71,7 +71,8 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "T5_SFS_file",
     "T5_AlleleFreqFile",
     "T5_LargeOutputFile",
-    "T4CoalescenceFst"
+    "T4CoalescenceFst",
+    "T1_AverageHybridIndexFile"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -105,6 +106,7 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not T5_AlleleFreqFile
     // not T5_LargeOutputFile
     // not T4CoalescenceFst
+    T1_AverageHybridIndexFile
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -170,7 +172,7 @@ std::string OutputFile::getPathForSeed()
     return GeneralPath + filename + "_seed" + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
 }
 
-std::string OutputFile::getPath()
+std::string OutputFile::getPath(std::string patchIndexString)
 {
     if (this->isSpeciesSpecific)
     {
@@ -180,20 +182,20 @@ std::string OutputFile::getPath()
             // This is the complete path!
             if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
             {
-                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
+                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
             } else
             {
-                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;    
+                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;    
             }
             
         } else
         {
             if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
             {
-                return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+                return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
             } else
             {
-                return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;    
+                return GeneralPath + filename + "_" + SSP->speciesName + patchIndexString + sequencingErrorStringToAddToFilnames + extension;    
             }
             
         }
@@ -202,12 +204,12 @@ std::string OutputFile::getPath()
     {
         if (this->isGenerationSpecific)
         {
-            return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
+            return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
         } else
         {
-            return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+            return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
         }
-    }
+    }       
 }
 
 std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific()
@@ -230,7 +232,7 @@ std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific()
     }
 }
 
-std::string OutputFile::getPath(int generation)
+std::string OutputFile::getPath(int generation, std::string patchIndexString)
 {
     assert(this->isGenerationSpecific);
     if (this->isSpeciesSpecific)
@@ -239,15 +241,15 @@ std::string OutputFile::getPath(int generation)
 
         if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
         {
-            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
         } else
         {
-            return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+            return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
         }
         
     } else
     {
-        return GeneralPath + filename + std::string("_G") + std::to_string(generation) + sequencingErrorStringToAddToFilnames + extension;
+        return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
     }
 }
 
@@ -334,7 +336,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             while (inputOneSpecies.IsThereMoreToRead())
             {
                 int locus = inputOneSpecies.GetNextElementInt();
-   		oneSpeciesSubset.push_back({locus/8, locus%8, locus});
+                oneSpeciesSubset.push_back({locus/8, locus%8, locus});
             }  
 	    inputOneSpecies.workDone(); 
             this->subset.push_back(oneSpeciesSubset);
@@ -500,7 +502,7 @@ bool OutputFile::isTime()
 }
 
 OutputFile::OutputFile(OutputFile&& f)
-: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet), subset(f.subset)
+: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isPatchSpecific(f.isPatchSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet), subset(f.subset)
 {}
 
 OutputFile::OutputFile(std::string f, OutputFileTypes t)
@@ -516,6 +518,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".log");
         isGenerationSpecific = false;
         isSpeciesSpecific = false;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
     } else if (t == T1_vcfFile)
@@ -523,6 +526,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1vcf");
         isGenerationSpecific = true;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else if (t == T1_LargeOutputFile)
@@ -530,6 +534,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T1_AlleleFreqFile)
@@ -537,6 +542,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1AllFreq");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == MeanLDFile)
@@ -544,6 +550,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1LD");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == LongestRunFile)
@@ -551,6 +558,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1LR");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == HybridIndexFile)
@@ -558,6 +566,15 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1HI");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+    } else if (t == T1_AverageHybridIndexFile)
+    {
+        this->extension = std::string(".T1AverageHI");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == ExpectiMinRecFile)
@@ -565,6 +582,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1EMR");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T2_LargeOutputFile)
@@ -572,6 +590,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T2LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == SaveBinaryFile)
@@ -579,6 +598,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".bin");
         isGenerationSpecific = true;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else if (t == T3_MeanVarFile)
@@ -586,6 +606,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T3MeanVar");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T3_LargeOutputFile)
@@ -593,6 +614,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T3LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == fitness)
@@ -600,6 +622,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".fit");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == fitnessStats)
@@ -607,6 +630,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".fitStats");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T1_FST)
@@ -614,6 +638,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1_FST");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == extraGeneticInfo)
@@ -621,6 +646,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".extraGeneticInfo");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
     }  else if (t == patchSize)
@@ -628,6 +654,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".patchSize");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == extinction)
@@ -635,6 +662,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".extinction");
         isGenerationSpecific = false;
         isSpeciesSpecific = false;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
     } else if (t == genealogy)
@@ -642,6 +670,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".genealogy");
         isGenerationSpecific = true;   // Actually the end result is not. SimBit uses getPathWithoutGenerationDespiteBeingGenerationSpecific to produce the last file.
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else if (t == fitnessSubsetLoci)
@@ -649,6 +678,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".fitSubLoci");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T4_LargeOutputFile)
@@ -656,6 +686,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T4LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T4_vcfFile)
@@ -663,6 +694,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T4vcf");
         isGenerationSpecific = true;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else if (t == T4_SFS_file)
@@ -670,6 +702,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T4SFS");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T1_SFS_file)
@@ -677,6 +710,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T1SFS");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T4_printTree)
@@ -685,12 +719,14 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         // The following false/true should not matter as this file is not going into the outputWriter
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
     } else if (t == T56_vcfFile)
     {
         this->extension = std::string(".T5vcf");
         isGenerationSpecific = true;
         isSpeciesSpecific = true;
+        isPatchSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
     } else if (t == T56_SFS_file)
@@ -698,6 +734,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T5SFS");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
 
@@ -706,6 +743,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T5AllFreq");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T56_LargeOutputFile)
@@ -713,6 +751,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T5LO");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else if (t == T4CoalescenceFst)
@@ -720,6 +759,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         this->extension = std::string(".T4CoalescenceFst");
         isGenerationSpecific = false;
         isSpeciesSpecific = true;
+        isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
     } else 
@@ -742,8 +782,34 @@ void OutputFile::openForSeed()
     }    
 }
 
+void OutputFile::openPatchSpecific(int patch_index)
+{
+    std::string patchIndexString("");
+    if (patch_index != -1)
+    {
+        patchIndexString = std::string("_P") + std::to_string(patch_index);
+    }
+
+    std::string path = this->getPath(patchIndexString);
+    
+    if (OutputFileType == SaveBinaryFile)
+    {
+        ofs.open(path, std::ios::out | std::ios::binary);
+    } else
+    {
+        ofs.open(path, std::ios_base::app);
+    }
+
+    if (!ofs.is_open())
+    {
+        std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+        abort();
+    }
+    
+}
+
 void OutputFile::open()
-{   
+{       
     std::string path = this->getPath();
     
     if (OutputFileType == SaveBinaryFile)
@@ -773,6 +839,9 @@ void OutputFile::openWithoutGenerationDespiteBeingGenerationSpecific()
     }
 }
 
+
+    
+
 void OutputFile::open(int generation)
 {
     std::string path = this->getPath(generation);
@@ -789,16 +858,34 @@ void OutputFile::clearContent()
 {
     std::string path;
     
-    path = this->getPath();
-    
-    
-    ofs.open(path, std::ofstream::out | std::ofstream::trunc);
-    if (!ofs.is_open())
+    if (this->isPatchSpecific)
     {
-        std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
-        abort();
+        for (size_t patch_index = 0 ; patch_index < GP->maxEverPatchNumber; ++patch_index)
+        {
+            std::string patchIndexString = std::string("_P") + std::to_string(patch_index);
+
+            path = this->getPath(patchIndexString);
+        
+            ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+            if (!ofs.is_open())
+            {
+                std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+                abort();
+            }
+            ofs.close();
+        }
+    } else
+    {
+        path = this->getPath();
+        
+        ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+        if (!ofs.is_open())
+        {
+            std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+            abort();
+        }
+        ofs.close();
     }
-    ofs.close();
 }
 
 void OutputFile::clearContentAndLeaveOpen(int generation)

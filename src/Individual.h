@@ -70,10 +70,10 @@ public:
     Individual(Haplotype& knownHaplotype, char Abiogenesis);
     Individual(const Haplotype& knownHaplotype);   // copy constructor
     Individual();
-    Individual(const Individual& I);
+    /*Individual(const Individual& I);
     Individual(const Individual&& I);
     Individual operator=(const Individual& I);
-    Individual operator=(const Individual&& I);
+    Individual operator=(const Individual&& I);*/
 
     void PrintBinaryFile(OutputFile& file);
     bool isFreeFromMutations();

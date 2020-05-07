@@ -31,18 +31,15 @@
 
 void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop)
 {   
-    /* 
+    
     #ifdef DEBUG
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
-    */   
+    
     //size_t nbSwaps = 0;
 
-    if (SSP->T4_nbBits > 0)
-    {
-        SSP->T4Tree.newGeneration();
-    }
-
+    //std::cout << "\nBEGIN: Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
+    //std::cout << "BEGIN: Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
 
     // Calculate fitness
     //SSP->simTracker.prepareT1SitesForFitness(Parent_pop);
@@ -80,6 +77,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
         {
+            //std::cout << "offspring_index = " << offspring_index << "\n";
+            //std::cout << "patchSizeNextGeneration["<<patch_index<<"] = " << patchSizeNextGeneration[patch_index] << "\n";
+            
             //std::cout << "LifeCycle line 74 offspring_index = "<<offspring_index<<"\n";
             //std::cout << " patchSizeNextGeneration["<<patch_index<<"] = " <<  patchSizeNextGeneration[patch_index] << "   GP->PatchNumber = "<<GP->PatchNumber<<"\n";
 
@@ -87,6 +87,8 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             Individual& Offspring = Offspring_pop.getPatch(patch_index).getInd(offspring_index);
             Haplotype& Offspring_mHaplo = Offspring.getHaplo(0); // maternally inherited haplotype
             Haplotype& Offspring_fHaplo = Offspring.getHaplo(1); // paternally inherited haplotype
+            //std::cout << "Before: Offspring_mHaplo.T4ID = " << Offspring_mHaplo.T4ID << "\n";
+            //std::cout << "Offspring_fHaplo.T4ID = " << Offspring_fHaplo.T4ID << "\n";
 
             //std::cout << "\n\n\n\n\n\nBegin Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
             //std::cout << "Begin Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
@@ -100,13 +102,14 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             auto& mother = Parent_pop.getPatch(CD.mother.patch).getInd(CD.mother.ind);
             auto& father = Parent_pop.getPatch(CD.father.patch).getInd(CD.father.ind);
 
-            
+            //std::cout << "mother.getHaplo0(0).T4ID = " << mother.getHaplo(0).T4ID << "\n";
+            //std::cout << "mother.getHaplo0(1).T4ID = " << mother.getHaplo(1).T4ID << "\n";
 
             //std::cout << "Begin mother.getHaplo(CD.mother.segregationIndex).nbT56muts() = "<< mother.getHaplo(CD.mother.segregationIndex).nbT56muts() << "\n";
             //std::cout << "Begin father.getHaplo(CD.father.segregationIndex).nbT56muts() = "<< father.getHaplo(CD.father.segregationIndex).nbT56muts() << "\n";
 
             //std::cout << "M: " << CD.mother.patch << " " << CD.mother.ind  << " " << CD.mother.segregationIndex << " | " << CD.father.patch << " " << CD.father.ind << " " << CD.father.segregationIndex << "\n";
-
+            
 
             // Clear T56 vectors
             if (SSP->T56sel_nbLoci || SSP->T56ntrl_nbLoci)
@@ -189,7 +192,6 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 }
             } // end of if else should I clone
 
-
             // Fitness for next generation. Set fitness to zero if the habitat has changed. Could do better here as not all of them will necessarily have habitat specific selection
             if (SSP->Habitats[patch_index] != SSP->Habitats[CD.mother.patch])
             {
@@ -234,7 +236,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 Offspring_fHaplo,
                 SSP->Habitats[patch_index] // needs the habitat to adjust the fitness
             );
-
+            //std::cout << "line 235: Offspring_mHaplo.T4ID = " << Offspring_mHaplo.T4ID << "\n";
             //std::cout << "just after mutation Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
             //std::cout << "just after mutation Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
             
@@ -258,7 +260,6 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
             // 4.5 Genealogy. Will do something only if the last isTime was true
             SSP->genealogy.addOffspringIfIsTime(patch_index, offspring_index, CD.mother.patch, CD.mother.ind, CD.father.patch, CD.father.ind);
-
 
             //std::cout << "End Offspring_mHaplo.nbT56muts() = "<< Offspring_mHaplo.nbT56muts() << "\n";
             //std::cout << "End Offspring_fHaplo.nbT56muts() = "<< Offspring_fHaplo.nbT56muts() << "\n";
@@ -294,17 +295,21 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             SSP->whenDidExtinctionOccur = GP->CurrentGeneration;
         }
     }
+
+    //std::cout << "END0: Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
+    //std::cout << "END0: Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
     
 
-    if (SSP->T4_nbBits > 0)
+    if (SSP->T4_nbLoci > 0)
     {
-        SSP->T4Tree.pruneDeadLineages();
+        SSP->T4Tree.simplify_ifNeeded(Offspring_pop);
     }
 
     if (SSP->T56_nbLoci)
     {
         Offspring_pop.toggleT56MutationsIfNeeded();
     }
+    
 
     //std::cout << "nbSwaps = " << nbSwaps << "\n";
 }
@@ -312,15 +317,16 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
 void LifeCycle::reproduceThroughSwap(Individual& parent, Haplotype& offspringHaplotype, HaplotypeData& parentHaploData, int& patch_index)
 {
-    
-    parent.getHaplo(parentHaploData.segregationIndex).swap(offspringHaplotype);
+    auto& parentalHaplo = parent.getHaplo(parentHaploData.segregationIndex);
 
-    if (SSP->T4_nbBits > 0)
+    auto parentalT4ID = parentalHaplo.T4ID; // only used for T4
+    parentalHaplo.swap(offspringHaplotype);
+
+    if (SSP->T4_nbLoci > 0)
     {
-        //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
-        SSP->T4Tree.addChildHaplotype_setParentInfo(parentHaploData.patch, parentHaploData.ind);
-        SSP->T4Tree.addChildHaplotype_addNode(parentHaploData.segregationIndex,0,SSP->T4_nbBits);
-        SSP->T4Tree.addChildHaplotype_finished(patch_index);
+        //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbLoci = "<<SSP->T4_nbLoci<<"\n";
+        std::vector<int> RecPos = {INT_MAX};
+        offspringHaplotype.T4ID = SSP->T4Tree.addHaplotype(RecPos, {parentalT4ID, std::numeric_limits<std::size_t>::max()});
     }
 }
 
@@ -468,7 +474,6 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
         // add upper bound
         recombination_breakpoints.push_back(INT_MAX);
     }
-    
 }
 
 void LifeCycle::copyOver(Individual& parent, Haplotype& TransmittedChrom, int segregationIndex)
@@ -480,13 +485,8 @@ std::cout << "Enters in 'copyOver'\n";
     if (recombination_breakpoints.size()==1)
     {
         //if (GP->CurrentGeneration >= 50) std::cout << "parent.getHaplo(segregationIndex).getW_T1(0) = " << parent.getHaplo(segregationIndex).getW_T1(0) << "\n";
-        TransmittedChrom = parent.getHaplo(segregationIndex);
+        TransmittedChrom = parent.getHaplo(segregationIndex); // ID should be correctly incremented here
         //if (GP->CurrentGeneration >= 50) std::cout << "TransmittedChrom.getW_T1(0) = " << TransmittedChrom.getW_T1(0) << "\n";
-        if (SSP->T4_nbBits > 0)
-        {
-            //std::cout <<"\tLIFECYCLE!! b = NA: SSP->T4_nbBits = "<<SSP->T4_nbBits<<"\n";
-            SSP->T4Tree.addChildHaplotype_addNode(segregationIndex, 0, SSP->T4_nbBits);
-        }
         
     } else if (recombination_breakpoints.size()>1)
     {
@@ -535,7 +535,7 @@ std::cout << "Enters in 'copyOver'\n";
         
         
 
-        for (auto& b : recombination_breakpoints)
+        for (auto b : recombination_breakpoints)
         {
             // Get positions for the two traits
             if (b == INT_MAX)
@@ -544,7 +544,7 @@ std::cout << "Enters in 'copyOver'\n";
                 T1_to = SSP->T1_nbLoci;
                 T2_to = SSP->T2_nbLoci;
                 T3_to = SSP->T3_nbLoci;
-                T4_to = SSP->T4_nbBits;
+                T4_to = SSP->T4_nbLoci;
                 T56ntrl_to = SSP->T56ntrl_nbLoci;
                 T56sel_to = SSP->T56sel_nbLoci;
                 b = SSP->TotalNbLoci - 1;
@@ -565,7 +565,7 @@ std::cout << "Enters in 'copyOver'\n";
             assert(T1_to <= SSP->T1_nbLoci);
             assert(T2_to <= SSP->T2_nbLoci);
             assert(T3_to <= SSP->T3_nbLoci);
-            assert(T4_to <= SSP->T4_nbBits);
+            assert(T4_to <= SSP->T4_nbLoci);
             assert(T56ntrl_to <= SSP->T56ntrl_nbLoci);
             assert(T56sel_to <= SSP->T56sel_nbLoci);
             
@@ -744,9 +744,10 @@ std::cout << "Enters in 'copyOver'\n";
             // Copy for T4. from included, to excluded
             if (T4_from < T4_to)
             {
-                assert(T4_to > 0 && T4_to <= SSP->T4_nbBits + 1);
+                // nothing to do
+
+                assert(T4_to > 0 && T4_to <= SSP->T4_nbLoci + 1);
                 //std::cout <<"\tLIFECYCLE!! b = "<<b<<" T4_from = "<<T4_from<<" T4_to = "<<T4_to<<"\n";
-                SSP->T4Tree.addChildHaplotype_addNode(haplo_index, T4_from, T4_to);
                 #ifdef DEBUG
                 Safety_T4_Absolutefrom = std::min(Safety_T4_Absolutefrom, T4_from);
                 Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
@@ -813,10 +814,10 @@ std::cout << "Enters in 'copyOver'\n";
             assert(Safety_T3_Absolutefrom == 0);
         }
 
-        if (SSP->T4_nbBits)
+        if (SSP->T4_nbLoci)
         {
-            assert(T4_to == SSP->T4_nbBits);
-            assert(Safety_T4_Absoluteto == SSP->T4_nbBits);
+            assert(T4_to == SSP->T4_nbLoci);
+            assert(Safety_T4_Absoluteto == SSP->T4_nbLoci);
             assert(Safety_T4_Absolutefrom == 0);
         }
 
@@ -853,19 +854,18 @@ void LifeCycle::reproduceThroughCopy(Individual& parent, Haplotype& TransmittedC
 std::cout << "Enters in 'reproduceThroughCopy'\n";
 #endif     
 
-    if (SSP->T4_nbBits > 0)
-    {
-        SSP->T4Tree.addChildHaplotype_setParentInfo(parentData.patch, parentData.ind);
-    }
-
+    //std::cout << "TransmittedChrom.T4ID = " << TransmittedChrom.T4ID << "\n";
+    //std::cout << "parent.getHaplo(parentData.segregationIndex).T4ID = " << parent.getHaplo(parentData.segregationIndex).T4ID<< "\n";
+    //std::cout << "parent.getHaplo(!parentData.segregationIndex).T4ID = " << parent.getHaplo(!parentData.segregationIndex).T4ID<< "\n";
+    
     recombination_RecPositions(parentData.nbRecs, parent); // parent is used if recRateOnMismatch_bool
 
     // copy from parents chromosomes to TransmittedChrom. The function also set the new values for W_T1 and W_T2
     copyOver(parent, TransmittedChrom, parentData.segregationIndex); // This will copy data from parents to offspring so it must always run
 
-     if (SSP->T4_nbBits > 0)
+    if (SSP->T4_nbLoci > 0)
     {
-        SSP->T4Tree.addChildHaplotype_finished(patch_index);
+        TransmittedChrom.T4ID = SSP->T4Tree.addHaplotype(recombination_breakpoints, {parent.getHaplo(parentData.segregationIndex).T4ID, parent.getHaplo(!parentData.segregationIndex).T4ID});
     }
 }
 
@@ -891,7 +891,6 @@ std::cout << "Enters in 'Mutate_T1'\n";
     for (int i = 0 ; i < nbMuts ; i++)
     {
         auto MutPosition = SSP->geneticSampler.get_T1_mutationPosition();
-
         // Make the mutation
         TransmittedChrom.mutateT1_Allele(MutPosition, Habitat);         // toggle bit
         // TransmittedChrom.setT1_AlleleToOne(byte_index,bit_index,);   // set bit to one

@@ -328,7 +328,7 @@ void Tree::addChildHaplotype_finished(size_t child_patch_index)
 			expectedLeft = newHaplotypeDescription[chunkIndex]->right;
 		}
 		std::cout << "expectedLeft = " << expectedLeft << "\n";
-		assert(expectedLeft == SSP->T4_nbBits);
+		assert(expectedLeft == SSP->T4_nbLoci);
 	}
 #endif
 
@@ -405,7 +405,7 @@ void Tree::initialize()
 	{
 		for (int indHaplo_index = 0 ; indHaplo_index < (SSP->patchSize[patch_index] * 2) ; indHaplo_index++)
 		{
-			TreeNode* newNode = new TreeNode(0, SSP->T4_nbBits); // no parent constructor
+			TreeNode* newNode = new TreeNode(0, SSP->T4_nbLoci); // no parent constructor
 			newNode->assignGenotypeOfFalses();
 			// this->addChildHaplotype_setParentInfo(); no need to set parent info. Just set isCurrentlyBuildingHaplotype to true
 			this->isCurrentlyBuildingHaplotype = true;
@@ -751,7 +751,7 @@ void Tree::mergeCurrentHaplotypes()
 HaplotypeDescription Tree::mergeHaplotype(HaplotypeDescription& original)
 {
 	size_t lastRight = 0;
-	TreeNode* newNode = new TreeNode(0, SSP->T4_nbBits);
+	TreeNode* newNode = new TreeNode(0, SSP->T4_nbLoci);
 	nbNodesInTree++;
 	for (auto& node : original)
 	{
@@ -871,7 +871,7 @@ void Tree::addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to)
 		std::cout << "ParentHaplotypeChunkIndex = " << ParentHaplotypeChunkIndex << " --- ";
 		std::cout << "chunk->left = " << chunk->left << "  chunk->right = "<< chunk->right<< " --- ";
 		std::cout << "from = " << from << "  to = "<< to << "\n";
-		assert(to <= SSP->T4_nbBits);
+		assert(to <= SSP->T4_nbLoci);
 		*/
 		
 
@@ -982,15 +982,15 @@ std::vector<std::vector<double>> Tree::getCurrentStates_frequencies()
 	for (size_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
 	{
 		// Sum up the trues
-		r[patch_index].resize(SSP->T4_nbBits);
+		r[patch_index].resize(SSP->T4_nbLoci);
 		for (size_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
 		{
 			for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
 			{
 				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index].size() == 1);
-				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbBits);
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbLoci);
 
-				for (size_t locus = 0 ; locus < SSP->T4_nbBits ; locus++)
+				for (size_t locus = 0 ; locus < SSP->T4_nbLoci ; locus++)
 				{
 					if (currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype[locus])
 						r[patch_index][locus]++;
@@ -999,7 +999,7 @@ std::vector<std::vector<double>> Tree::getCurrentStates_frequencies()
 		}
 
 		// divide
-		for (size_t locus = 0 ; locus < SSP->T4_nbBits ; locus++)       
+		for (size_t locus = 0 ; locus < SSP->T4_nbLoci ; locus++)       
 	  	{
 	    	r[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
 	    	assert(r[patch_index][locus] >= 0.0 && r[patch_index][locus] <= 1.0);
@@ -1030,7 +1030,7 @@ std::vector<std::vector<std::vector<std::vector<bool>>>> Tree::getCurrentStates(
 			for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
 			{
 				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index].size() == 1);
-				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbBits);
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbLoci);
 				r[patch_index][ind_index][haplo_index] = currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype;
 			}
 		}

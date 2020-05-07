@@ -26,7 +26,7 @@
 
  */
 
-
+/*
 Pop Pop::operator=(Pop&& p)
 {
     //std::cout << "Pop move assignment\n";
@@ -53,7 +53,7 @@ Pop::Pop(Pop&& p)
 Pop::Pop(const Pop& p)
 {
     //std::cout << "Pop copy constructor\n";
-    patches = std::move(p.patches);
+    patches = p.patches;
     T2LociToCorrect = p.T2LociToCorrect;
     indexFirstMale = p.indexFirstMale;
     //maleCurrentSum = p.maleCurrentSum;
@@ -73,7 +73,7 @@ Pop Pop::operator=(const Pop& p)
     return *this;
 }
 
-Pop::Pop(){}
+Pop::Pop(){}*/
 
 Pop::Pop(bool ShouldReadPopFromBinary)
 {
@@ -96,6 +96,7 @@ std::cout << "Enters in 'Pop::Pop'\n";
             
 
         //.read each patch (each patch starts with its PatchSize)
+       	patches.reserve(GP->PatchNumber);
         for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             patches.push_back(Patch(patch_index, ShouldReadPopFromBinary));
@@ -135,6 +136,7 @@ std::cout << "Enters in 'Pop::Pop'\n";
         GP->BinaryFileToRead.close();
     } else
     {
+    	patches.reserve(GP->PatchNumber);
         for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             patches.push_back(Patch(patch_index, 'A'));
@@ -467,19 +469,20 @@ int Pop::SelectionParent(int patch_from, int sex)
         {
             if (sex == 0)
             {
-                parent_index = GP->rngw.uniform_int_distribution(indexFirstMale[patch_from]-1);
+                parent_index = GP->rngw.uniform_int_distribution(indexFirstMale[patch_from]);
             } else
             {
-                parent_index = GP->rngw.uniform_int_distribution(indexFirstMale[patch_from],SSP->patchSize[patch_from]-1);
+                parent_index = GP->rngw.uniform_int_distribution(indexFirstMale[patch_from],SSP->patchSize[patch_from]);
             }
         } else
         {
-            parent_index = GP->rngw.uniform_int_distribution(SSP->patchSize[patch_from]-1);
+            parent_index = GP->rngw.uniform_int_distribution(SSP->patchSize[patch_from]);
         }
     }
 
     
     //std::cout << "parent_index = " << parent_index << "\n";
+    //std::cout << "haplo indices = " << getPatch(0).getInd(parent_index).getHaplo(0).T4ID << " & " << getPatch(0).getInd(parent_index).getHaplo(1).T4ID << "\n";
     //std::cout << "SSP->patchSize[patch_from] = " << SSP->patchSize[patch_from] << "\n";
     
     assert(parent_index >= 0 && parent_index < SSP->patchSize[patch_from]);
@@ -567,7 +570,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
     {
         assert(GP->PatchNumber - pop1.getNbPatches() > 0);
         int nbPatchesToAdd = GP->PatchNumber - pop1.getNbPatches();
-        Patch NewPatch;  // empty patch
+        Patch NewPatch(pop1.getPatch(0));
         for (int newPatch_index = 0 ; newPatch_index < nbPatchesToAdd ; ++newPatch_index)
         {
             pop1.AddPatch(NewPatch);  // Will copy in 'AddPatch'
@@ -1208,47 +1211,108 @@ std::vector<unsigned> Pop::computeT56Frequencies()
     return r;
 }
 
+std::vector<double> Pop::computeT56RelativeFrequencies()
+{
+    auto freqs = computeT56Frequencies();
+    std::vector<double> relFreqs(freqs.size());
+    for (size_t locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
+    {
+        relFreqs[locus] = (double)freqs[locus] / (2.0*SSP->TotalpatchSize);
+        assert(relFreqs[locus]>=0.0 && relFreqs[locus] <= 1.0);
+    }
+    return relFreqs;
+}
+
+std::vector<std::vector<double>> Pop::computeT1RelativeFrequenciesPerPatch()
+{
+    std::vector<std::vector<double>> r(GP->PatchNumber);
+    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        r[patch_index] = this->getPatch(patch_index).computeT1RelativeFrequencies(patch_index);
+    }
+    return r;
+}
+
+
 
 
 std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
 {
+    // Gather the genetics of one "random" individual
+    std::vector<bool> oneAllele(SSP->T1_nbLoci);
+    {
+        assert(SSP->patchSize.size() == GP->PatchNumber);
+        auto& oneHaplo = getPatch(GP->PatchNumber-1).getInd(SSP->patchSize[GP->PatchNumber-1]-1).getHaplo(0);
+
+
+        size_t locus = 0;
+
+        // First bytes
+        for (size_t byte = 0 ; byte < (SSP->T1_nbChars-1) ; ++byte )
+        {
+            if (oneHaplo.getT1_char(byte))
+            {
+                for (unsigned bit = 0 ; bit < 8 ; ++bit )
+                {
+                    oneAllele[locus] = oneHaplo.getT1_Allele(byte, bit);
+                    ++locus;
+                }
+            } else
+            {
+                locus+=8;
+            }
+        }
+        assert(locus == (SSP->T1_nbChars-1) * 8);
+
+        // last byte
+        auto lastByte = SSP->T1_nbChars-1;
+        if (oneHaplo.getT1_char(lastByte))
+        {
+            for (size_t bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit )
+            {
+                oneAllele[locus] = oneHaplo.getT1_Allele(lastByte, bit);
+                ++locus;
+            }
+        }
+    }
+        
+
+
+
+    // Figure out what is polymorphic
     std::vector<bool> isPoly(SSP->T1_nbLoci, false);
 
-    for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
+    for ( int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index )
     {
         for (int ind_index=0;ind_index<SSP->patchSize[patch_index];++ind_index)
         {
-            for (int haplo_index=0;haplo_index<SSP->ploidy;haplo_index++)
+            assert(SSP->ploidy == 2);
+            for ( int haplo_index=0 ; haplo_index < SSP->ploidy ; haplo_index++ )
             { 
                 auto& haplo = getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
                 unsigned locus = 0;
+
                 // First bytes
                 for (unsigned byte = 0 ; byte < (SSP->T1_nbChars-1) ; ++byte )
                 {
-                    if (haplo.getT1_char(byte))
+                    for (unsigned bit = 0 ; bit < 8 ; ++bit )
                     {
-                        for (unsigned bit = 0 ; bit < 8 ; ++bit )
-                        {
-                            isPoly[locus] = haplo.getT1_Allele(byte, bit);
-                            ++locus;
-                        }
-                    } else
-                    {
-                        locus+=8;
+                        if (haplo.getT1_Allele(byte, bit) != oneAllele[locus])
+                            isPoly[locus] = true;
+                        ++locus;
                     }
                 }
                 assert(locus == (SSP->T1_nbChars-1) * 8);
 
                 // last byte
                 auto lastByte = SSP->T1_nbChars-1;
-                if (haplo.getT1_char(lastByte))
+                
+                for (unsigned bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit )
                 {
-                    for (unsigned bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit )
-                    {
-                        isPoly[locus] = haplo.getT1_Allele(lastByte, bit);
-                        ++locus;
-                    }
+                    if (haplo.getT1_Allele(lastByte, bit) != oneAllele[locus])
+                            isPoly[locus] = true;
+                    ++locus;
                 }
             }
         }

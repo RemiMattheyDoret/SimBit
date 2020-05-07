@@ -58,7 +58,6 @@ public:
 
         // Genetics and Selection T4
         {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
-        {{"T4_maxAverageNbNodesPerHaplotype"},          {"S", "L"}, false},
 
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
@@ -83,6 +82,9 @@ public:
         {{"FitnessMapInfo"},           {"S", "H", "L","T1_mu","T2_mu","T3_mu","r","m","T1_fit","T2_fit"}, false},
         //{{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
+
+        {{"T4_maxNbEdges"},                             {"S", "L", "N", "r"}, false},
+
         // Initializer
         {{"indTypes","individualTypes"},                {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
         {{"resetGenetics"},                             {"indTypes","L","nbGenerations","S","PN","N", "T5_MutationRate"}, false},
@@ -100,6 +102,7 @@ public:
         {{"T1_MeanLD_file"},                        {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_LongestRun_file"},                    {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_HybridIndex_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T1_AverageHybridIndex_file"},            {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_ExpectiMinRec_file"},                 {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T2_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, false},
         {{"SaveBinary_file"},                       {"GP", "S", "startAtGeneration", "L"}, false},
@@ -119,8 +122,8 @@ public:
         {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
-        {{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
+        //{{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
+        //{{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
 
         {{"T5_vcf_file","T5_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T5_SFS_file"},                                {"GP", "S", "startAtGeneration", "L"}, true},

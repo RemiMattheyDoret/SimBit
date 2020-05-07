@@ -21,6 +21,6 @@ This project comes with an MIT license, which is a permissive free software lice
 If, after reading the manual, you have any questions or requests for new features, please feel free to contact me 
 
 Remi Matthey-Doret
+	matthez@zoology.ubc.ca
 	remi.b.md@gmail.com
-	matthey@zoology.ubc.ca
 

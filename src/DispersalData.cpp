@@ -156,6 +156,10 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
 
 void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
 {
+#ifdef DEBUG
+    std::cout << "Enters in DispersalData::getMigrationEventsForEachDestinationPatch\n";
+#endif
+
     
     //////////////////////////////////////
     /// Offspring production per patch ///
@@ -251,6 +255,9 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
     }
 
     assert(migrationEventsForEachDestinationPatch.size() == GP->PatchNumber);
+#ifdef DEBUG
+    std::cout << "Exit in DispersalData::getMigrationEventsForEachDestinationPatch\n";
+#endif
 }
 
 void DispersalData::setOriginalBackwardMigrationIfNeeded()
@@ -372,6 +379,9 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
 
 void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
 {
+#ifdef DEBUG
+    std::cout << "Enters in DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch\n";
+#endif    
     // Loop through each patch_to
     assert(nextGenerationPatchSizes.size() == GP->PatchNumber);
     for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
@@ -390,7 +400,7 @@ void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDes
             {
                 long intPart = (long)sumOfIncomingMigrants;
                 double fracPart = sumOfIncomingMigrants - intPart;
-                if (GP->rngw.uniform_real_distribution(1.0) < fracPart)
+                if (fracPart != 0.0 && GP->rngw.uniform_real_distribution(1.0) < fracPart)
                 {
                     nextGenerationPatchSizes[patch_to] = intPart+1;
                 } else
@@ -432,6 +442,10 @@ void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDes
 
     // Security
     assert(BackwardMigration.size() == GP->PatchNumber);
+
+#ifdef DEBUG
+    std::cout << "Exit in DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch\n";
+#endif    
 }
 
 
@@ -448,7 +462,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
     // security
     if (probs.size() <= center)
     {
-        std::cout << "center (last element given to DispMat LSS if LSS was used) is larger (" << center + 1 << ") than the number of probabilities indicated (" << probs.size() << ")" << std::endl;
+        std::cout << "center (first element given to DispMat LSS if LSS was used) is larger (" << center + 1 << ") than the number of probabilities indicated (" << probs.size() << ")" << std::endl;
         abort();
     }
     if (probs.size() > CurrentPatchNumber)
@@ -550,10 +564,11 @@ void DispersalData::readDispMat(InputReader& input)
         if (Mode.compare("LSS") == 0) // Linear Stepping Stone (but with as many stones as we want and potential assymetry). First value is the number of probabilities that will follow. Then are the probabilities which must sum to one, the last value is an integer which indicate which of the probabilities (0 based counting) correspond to the probability of not migrating
         {
             // Gather values
-            int nbValues = input.GetNextElementInt();
+            int center = input.GetNextElementInt();
             std::vector<double> probs;
             double sum = 0.0;
-            for (int i = 0 ; i < nbValues ; i++)
+
+            while (input.IsThereMoreToRead() && input.PeakNextElementString().at(0) != '@')
             {
                 double x = input.GetNextElementDouble();
                 if (x < 0.0)
@@ -564,16 +579,16 @@ void DispersalData::readDispMat(InputReader& input)
                 sum+=x;
                 probs.push_back(x);
             }
+            
             if (std::abs(sum - 1.0) > 0.0001 )
             {
                 std::cout << "In option --m (--DispMat), mode LSS, the sum of probabilities is different from one. It is " <<sum<<". Of course, it can sometimes be hard to get a value that is exactly equal to one (typically 0.333333 + 0.333333 + 0.333333 is not equal to 1.0) but SimBit will allow some approximation.\n";
                 abort();
             }
-            int center = input.GetNextElementInt();
 
-            if (center < 0 || center >= nbValues)
+            if (center < 0 || center >= probs.size())
             {
-                std::cout << "In option '--m (--DispMat)', Mode 'LSS', " << nbValues << " probabilities were expected. Center is " << center << " which is either lower than zero or equal or bigger to " << nbValues << ". The center is indicated by zero based counting.\n";
+                std::cout << "In option '--m (--DispMat)', Mode 'LSS', " << probs.size() << " probabilities were received. Center is " << center << " which is either lower than zero or equal or bigger to " << probs.size() << ". The center is indicated by zero based counting.\n";
                 abort();
             }
             

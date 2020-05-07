@@ -36,6 +36,8 @@ Note for Remi of things to do:
 
 //#define CALLENTRANCEFUNCTIONS  
 
+
+
 // Libraries
 #include <iostream>
 #include <list>
@@ -50,11 +52,17 @@ Note for Remi of things to do:
 #include <iomanip>
 #include <algorithm>
 #include <map>
+#include <math.h>
 #include <queue>
 #include <ctime>
 #include <boost/algorithm/string.hpp>
 #include <boost/tokenizer.hpp>
+#include <cstdlib>
+#include <boost/cstdint.hpp> // Fixed size integers for FDR
 #include <signal.h>
+#include <unordered_map>
+//#include <moreRNG/FastDiceRoller.cpp>
+//#include <moreRNG/xorshiro128.cpp>
 
 
 // forward class declaration and global variables
@@ -87,6 +95,7 @@ Note for Remi of things to do:
 #include "TreeNode.h"
 #include "Tree.h"
 #include "KillOnDemand.h"
+#include "T4TreeRec/T4TreeRec.h"
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
 #include "FromLocusToTXLocusElement.h"
@@ -126,8 +135,7 @@ Note for Remi of things to do:
 //#include "SimulationTracker.cpp"
 #include "KillOnDemand.cpp"
 #include "SpeciesSpecificParameters.cpp"
-#include "TreeNode.cpp"
-#include "Tree.cpp"
+#include "T4TreeRec/T4TreeRec.cpp"
 
 #include "codeToInsert.cpp"
     
@@ -148,7 +156,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.9.25");
+    std::string VERSION("version 4.10.8");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -269,6 +277,7 @@ int main(int argc, char *argv[])
     // Build population and do stuff
     {
         RNG_type rngForReset = GP->rngw.getRNG(); // reset after building populations. This is to avoid potential problem when loading seed but one of the species need random numbers to be drawn to be build.
+        allSpecies.reserve(GP->nbSpecies);
         for (int speciesIndex = 0; speciesIndex < GP->nbSpecies ; speciesIndex++)
         {
             #ifdef DEBUG
@@ -277,6 +286,7 @@ int main(int argc, char *argv[])
 
             // set SSP*
             SSP = allParameters.getSSPaddress(speciesIndex);
+            
             
             // Create populations
             Pop pop_odd(SSP->readPopFromBinary);
@@ -304,10 +314,11 @@ int main(int argc, char *argv[])
                 std::cout << "-------- Fitness of pop computed --------" << std::endl;
             #endif
 
+            /*
             Pop pop_even;
+            pop_even = pop_odd;
             if (GP->startAtGeneration + 1 <= GP->nbGenerations) // If something is simulated (a user might want nothing to be simualated just to extract a binary file)
             {
-                pop_even = pop_odd;
                 assert(pop_odd.CumSumFits.size() == GP->PatchNumber);
                 assert(pop_odd.CumSumFits[0].size() > 0);
                 assert(pop_even.CumSumFits.size() == GP->PatchNumber);
@@ -319,23 +330,32 @@ int main(int argc, char *argv[])
                 std::cout << "-------- pop has been copied --------" << std::endl;
             #endif
 
-            pop_odd.PrintBinaryFile();    // Save population in binary file if you asked for it. It will also save the seed to binary if SSP points to the parameters for the last speciesIndex 
-            outputWriter.WriteOutputs(pop_odd); // WriteOutputs if you asked for it
-
-            #ifdef DEBUG
-            std::cout << "-------- Headers for output created --------" << std::endl;
-            #endif
-
 
             //SSP->ClearT1_Initial_AlleleFreqs(); // We don't need the vector 'T1_Initial_AlleleFreqs' Anymore
-            assert(pop_odd.CumSumFits.size() == GP->PatchNumber);
-            assert(pop_odd.CumSumFits[0].size() > 0);
-            assert(pop_even.CumSumFits.size() == GP->PatchNumber);
-            assert(pop_even.CumSumFits[0].size() > 0);
             allSpecies.push_back(std::pair<Pop,Pop>(std::move(pop_odd), std::move(pop_even)));
+            */
+
+            allSpecies.push_back(std::pair<Pop,Pop>(
+                pop_odd,
+                std::move(pop_odd)
+            ));
 
             #ifdef DEBUG
                 std::cout << "-------- pop even and odd added to 'allSpecies' --------" << std::endl;
+            #endif
+
+            GP->CurrentGeneration = GP->startAtGeneration; // Not needed for the moment but it is just in case I modify the ::initialize method
+            if (SSP->T4_nbLoci) SSP->T4Tree.initialize(allSpecies[speciesIndex].second);            
+
+            #ifdef DEBUG
+                std::cout << "-------- T4Tree initialized --------" << std::endl;
+            #endif
+
+            allSpecies[speciesIndex].second.PrintBinaryFile();    // Save population in binary file if you asked for it. It will also save the seed to binary if SSP points to the parameters for the last speciesIndex 
+            outputWriter.WriteOutputs(allSpecies[speciesIndex].second); // WriteOutputs if you asked for it
+
+            #ifdef DEBUG
+            std::cout << "-------- Headers for output created --------" << std::endl;
             #endif
         }
         GP->rngw.setRNG(rngForReset);
@@ -355,11 +375,7 @@ int main(int argc, char *argv[])
     // Time calculation
     outputWriter.SetBeforeSimulationTime();
     outputWriter.PrintInitializationTimeToLogFile();
-
-    if (GP->startAtGeneration + 1 <= GP->nbGenerations) // If something is simulated (a user might want nothing to be simualated just to extract a binary file)
-    {
-        allParameters.UpdatePopsAndParameters();
-    }
+    
 
 
 
@@ -371,7 +387,7 @@ int main(int argc, char *argv[])
         
 
     // Loop through each generation
-    bool isGenerationOdd = false;
+    std::vector<bool> isFirstPopOffspring(GP->nbSpecies, false);
     for ( GP->CurrentGeneration = GP->startAtGeneration + 1 ; GP->CurrentGeneration <= GP->nbGenerations ;  GP->CurrentGeneration++ )
     {
         #ifdef DEBUG
@@ -400,13 +416,17 @@ int main(int argc, char *argv[])
                 for (int subGeneration = 0 ; subGeneration < SSP->nbSubGenerationsPerGeneration ; subGeneration++ )
                 {
                     // get Pops
-                    isGenerationOdd     = !isGenerationOdd;
-                    Pop& pop_Offspring  = isGenerationOdd ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
-                    Pop& pop_Parent     = isGenerationOdd ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
-
+                    isFirstPopOffspring[speciesIndex]     = !isFirstPopOffspring[speciesIndex];
+                    Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
+                    Pop& pop_Parent     = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
 
                     // Do selection dispersal, selection and breeding
+                    //std::cout << "\nBEFORE: pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
+                    //std::cout << "BEFORE: pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
+                    //std::cout << "--------------------------\n";
                     LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring, pop_Parent);
+                    //std::cout << "AFTER: pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
+                    //std::cout << "AFTER: pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
 
                     // In case, the T2 blocks capacity have been overpassed, correct them or abort.
                     nbT2LociCorrections += pop_Offspring.correctT2Loci();
@@ -429,7 +449,7 @@ int main(int argc, char *argv[])
             SSP = allParameters.getSSPaddress(speciesIndex);
 
             // get Pop
-            Pop& pop_Offspring  = isGenerationOdd ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
+            Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
 
             // reset genetics if needed (under user requirement only)
             SSP->resetGenetics.resetPopIfNeeded(pop_Offspring);
@@ -469,8 +489,7 @@ int main(int argc, char *argv[])
         }
     }
 
-
-
+    
 
     /*
     ##########################################

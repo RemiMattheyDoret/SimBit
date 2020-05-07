@@ -69,11 +69,13 @@ void SpeciesSpecificParameters::setRandomDistributions()
     geneticSampler.set_T1_nbMuts(T1_Total_Mutation_rate);
     geneticSampler.set_T2_nbMuts(T2_Total_Mutation_rate);
     geneticSampler.set_T3_nbMuts(T3_Total_Mutation_rate);
+    geneticSampler.set_T4_nbMuts(T4_Total_Mutation_rate);
     geneticSampler.set_T56_nbMuts(T56_Total_Mutation_rate);
     geneticSampler.set_recombinationPosition(RecombinationRate);
     geneticSampler.set_T1_mutationPosition(T1_MutationRate);
     geneticSampler.set_T2_mutationPosition(T2_MutationRate);
     geneticSampler.set_T3_mutationPosition(T3_MutationRate);
+    geneticSampler.set_T4_mutationPosition(T4_MutationRate);
     geneticSampler.set_T56_mutationPosition(T56_MutationRate);
     SSP = nullptr;
 
@@ -152,7 +154,6 @@ void SpeciesSpecificParameters::readOutputSFSbinSize(InputReader& input)
 SpeciesSpecificParameters::SpeciesSpecificParameters(std::string sN, int sI)
 : speciesName(sN), speciesIndex(sI)
 {
-    T4Tree = Tree();
     //std::cout << "Constructor of SpeciesSpecificParameters\n";
 }
 
@@ -368,7 +369,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     assert(this->FromLocusToTXLocus.size() == this->TotalNbLoci);
 
     // Add last element to boundaries
-    FromLocusToTXLocusElement E(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
+    FromLocusToTXLocusElement E(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, this->FromLocusToTXLocus[this->TotalNbLoci-1].TType);
     FromFitnessMapIndexToTXLocus.push_back(E);
     assert(FromFitnessMapIndexToTXLocus.size() == NbElementsInFitnessMap);
 
@@ -393,6 +394,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     assert(NbElementsInFitnessMap == FromLocusToFitnessMapIndex.back()+1);
     
     // print to console
+    /*
     if ( ShouldThereBeSeveralFitnessBlocks )
     {
         if (NbElementsInFitnessMap == 1)
@@ -404,6 +406,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
             std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " elements\n\n";
         }
     }
+    */
 
     /*
     std::cout << "FromFitnessMapIndexToTXLocus";
@@ -421,6 +424,7 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
 
 }
 
+/*
 void SpeciesSpecificParameters::readT4_printTree(InputReader& input)
 {
 #ifdef DEBUG
@@ -429,6 +433,7 @@ void SpeciesSpecificParameters::readT4_printTree(InputReader& input)
     OutputFile file(input.GetNextElementString(), T4_printTree);
     T4Tree.indicateOutputFile(&file);
 }
+*/
 
 void SpeciesSpecificParameters::readGeneticSampling_withWalker(InputReader& input)
 {
@@ -455,7 +460,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     this->T1_nbChars  = 0;
     this->T2_nbLoci  = 0;
     this->T3_nbLoci  = 0;
-    this->T4_nbBits   = 0;
+    this->T4_nbLoci   = 0;
     this->T5_nbLoci   = 0;
     this->T5sel_nbLoci = 0;
     this->T5ntrl_nbLoci = 0;
@@ -483,7 +488,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT1LocusToLocus.push_back(this->TotalNbLoci);
                     this->T1_nbLoci++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 1);
+                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 1);
                     this->FromLocusToTXLocus.push_back(CME);
                 }
             }
@@ -497,7 +502,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT2LocusToLocus.push_back(this->TotalNbLoci);
                     this->T2_nbLoci++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 2);
+                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 2);
                     this->FromLocusToTXLocus.push_back(CME);                
                 }
             }
@@ -512,7 +517,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                     this->FromT3LocusToLocus.push_back(this->TotalNbLoci);
                     this->T3_nbLoci++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 3);
+                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 3);
                     this->FromLocusToTXLocus.push_back(CME);            
                 }
             }
@@ -526,9 +531,9 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                 {
 
                     this->FromT4LocusToLocus.push_back(this->TotalNbLoci);
-                    this->T4_nbBits++;
+                    this->T4_nbLoci++;
                     this->TotalNbLoci++;
-                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 4);
+                    FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 4);
                     this->FromLocusToTXLocus.push_back(CME);
                 }
             }
@@ -561,7 +566,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                             this->T5_nbLoci++;
                         }
                         this->T56ntrl_nbLoci++;
-                        FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 50);
+                        FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 50);
                         this->FromLocusToTXLocus.push_back(CME);
                     } else
                     {
@@ -578,7 +583,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                         }
 
                         this->T56sel_nbLoci++;
-                        FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbBits, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 51);
+                        FromLocusToTXLocusElement CME(this->T1_nbLoci, this->T2_nbLoci, this->T3_nbLoci, this->T4_nbLoci, this->T56ntrl_nbLoci, this->T56sel_nbLoci, 51);
                         this->FromLocusToTXLocus.push_back(CME);
                     }
 
@@ -596,7 +601,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     assert(this->T1_nbLoci == this->FromT1LocusToLocus.size());
     assert(this->T2_nbLoci == this->FromT2LocusToLocus.size());
     assert(this->T3_nbLoci == this->FromT3LocusToLocus.size());
-    assert(this->T4_nbBits == this->FromT4LocusToLocus.size());
+    assert(this->T4_nbLoci == this->FromT4LocusToLocus.size());
     assert(this->T56sel_nbLoci == this->FromT56selLocusToLocus.size());
     assert(this->T56ntrl_nbLoci == this->FromT56ntrlLocusToLocus.size());
     assert(this->T56sel_nbLoci == this->FromT56selLocusToLocus.size());
@@ -606,14 +611,14 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
     assert(this->T56_nbLoci == this->T5_nbLoci + this->T6_nbLoci);
     assert(this->T56ntrl_nbLoci == this->T5ntrl_nbLoci + this->T6ntrl_nbLoci);
     assert(this->T56sel_nbLoci == this->T5sel_nbLoci + this->T6sel_nbLoci);
-    assert(this->TotalNbLoci == T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbBits + T56_nbLoci );
+    assert(this->TotalNbLoci == T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbLoci + T56_nbLoci );
 
     /*
     std::cout << "TotalNbLoci  = " << TotalNbLoci << "\n";
     std::cout << "T1_nbLoci  = " <<  T1_nbLoci<< "\n";
     std::cout << "T2_nbLoci  = " << T2_nbLoci << "\n";
     std::cout << "T3_nbLoci  = " << T3_nbLoci << "\n";
-    std::cout << "T4_nbBits  = " << T4_nbBits << "\n";
+    std::cout << "T4_nbLoci  = " << T4_nbLoci << "\n";
     std::cout << "T56_nbLoci = " << T56_nbLoci << "\n";
     */
 
@@ -633,7 +638,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
         abort();
     }
 
-    if (this->T4_nbBits > 0)
+    if (this->T4_nbLoci > 0)
     {
         if (this->nbSubGenerationsPerGeneration != 1)
         {
@@ -3017,7 +3022,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
         }
     }
 
-    if (localCount_T56ntrl_nbLoci <= 65534 && localCount_T56ntrl_nbLoci != 0) // 65535 is the largest unsigned short (65535 = 2^16-1) and we are actually wasting a bit at every operation in order to gain .
+    if (localCount_T56ntrl_nbLoci <= 65534 && localCount_T56ntrl_nbLoci > 5e3) // 65535 is the largest unsigned short (65535 = 2^16-1) and we are actually wasting a bit at every operation in order to gain .
     {
         T56ntrl_compress = true;
     } else
@@ -4244,14 +4249,16 @@ void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
     {
         double constantRate = input.GetNextElementDouble();
         T4_MutationRate.push_back(constantRate); // yes, just one value. It will be taken care of. Not very clean though as a design
+        T4_Total_Mutation_rate = constantRate * T4_nbLoci;
     } else if (mode == "A")
     {
-        if (T4_nbBits > 0)
+        if (T4_nbLoci > 0)
             T4_MutationRate.push_back(input.GetNextElementDouble());
-        for (size_t locus = 1 ; locus < T4_nbBits ; locus++)
+        for (size_t locus = 1 ; locus < T4_nbLoci ; locus++)
         {
             T4_MutationRate.push_back(T4_MutationRate.back() + input.GetNextElementDouble());
         }
+        T4_Total_Mutation_rate = T4_MutationRate.back();
     } else
     {
         std::cout << "For option 'T4_MutationRate', received the mode of entry '"<<mode<<"'. Sorry, only modes 'unif' and 'A' are accepted.\n";
@@ -4259,18 +4266,20 @@ void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
     }
 }
 
-void SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype(InputReader& input)
+void SpeciesSpecificParameters::readT4_maxNbEdges(InputReader& input)
 {
 #ifdef DEBUG
-    std::cout << "For option 'T4_maxAverageNbNodesPerHaplotype', the std::string that is read is: " << input.print() << std::endl;
+    std::cout << "For option 'T4_maxNbEdges', the std::string that is read is: " << input.print() << std::endl;
 #endif 
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
-        T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation = 100;
+        //std::cout << "SSP->TotalpatchCapacity = " << SSP->TotalpatchCapacity << "\n";
+        //std::cout << "SSP->TotalRecombinationRate = " << SSP->TotalRecombinationRate << "\n";
+        T4_maxNbEdges = 1.1e9; // This is a very arbitrary choice and will strongly affect the RAM vs CPU time trade-off. has not been thoroughly tested and might be a poor default choice. I could use something like (SSP->TotalpatchCapacity + SSP->TotalpatchCapacity * SSP->TotalRecombinationRate * 100000) * 100000; maybe
     } else
     {
-        T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation = input.GetNextElementDouble();
+        T4_maxNbEdges = input.GetNextElementInt();
     }
 }
 
@@ -4347,6 +4356,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
     if (Mode.compare("unif")==0)
     {
         double InputValue = input.GetNextElementDouble();
+        //std::cout << "InputValue = " << InputValue << "\n";
         double AddToParam;
         double cumsum = 0.0;
         
@@ -4363,6 +4373,11 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
                 AddToParam = InputValue / 100;
             } else if (unit.compare("rate")==0)
             {
+                if (InputValue > 0.5)
+                {
+                    std::cout << "Error found while reading option --r (--RecombinationRate): Received unit 'rate' and value '"<< InputValue <<"'. When you indicate a recombination rate in 'rate' (as opposed to 'cM' or 'M'), you cannot specify a value greater than 0.5 because it makes no sense. Independent chromosome have a recombination rate of 0.5. If you meant to express a recombination distance in centimorgans or morgans, please use 'cM' or 'M' as a unit instead.\n";
+                    abort();
+                }
                 AddToParam = - log(1 - 2 * InputValue)/2;
             } else
             {
@@ -4503,7 +4518,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
     
     if (this->RecombinationRate.size() != this->TotalNbLoci - 1 && this->RecombinationRate.size() != 1)
     {
-        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->T1_nbLoci = " << this->T1_nbLoci << "    this->T2_nbLoci = " << this->T2_nbLoci  << "    this->T3_nbLoci = " << this->T3_nbLoci << "    this->T4_nbBits = " << this->T4_nbBits << "    this->T56_nbBitd = " << this->T56_nbLoci << "\n\n";
+        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->T1_nbLoci = " << this->T1_nbLoci << "    this->T2_nbLoci = " << this->T2_nbLoci  << "    this->T3_nbLoci = " << this->T3_nbLoci << "    this->T4_nbLoci = " << this->T4_nbLoci << "    this->T56_nbBitd = " << this->T56_nbLoci << "\n\n";
         std::cout << "In '--RecombinationRate' did not receive the expected number of elements!" << std::endl;
         abort();
     }

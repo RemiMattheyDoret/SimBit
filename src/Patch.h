@@ -38,21 +38,22 @@ public:
     void removeLastIndividual();
     void AddIndividual(Individual& newInd);
     int getpatchCapacity();
-    Patch();
     Patch(const int patch_index, char Abiogenesis);
     Patch(const int patch_index, bool ShouldReadPopFromBinary);
     void PrintBinaryFile(OutputFile& file, int patch_index);
-    Patch(const Patch& p);
-    Patch operator=(const Patch& p);
-    Patch(const Patch&& p);
-    Patch operator=(const Patch&& p);
+    //Patch();
+    //Patch(const Patch& p);
+    //Patch operator=(const Patch& p);
+    //Patch( Patch&& p);
+    //Patch operator=( Patch&& p);
 
     void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle, int Habitat);
     //Patch(Patch&&) = default;
     //Patch& operator=(Patch&& ) = default;
 
-    std::vector<double> computeT5ntrlFrequencies();
-    std::vector<double> computeT5selFrequencies();
+    //std::vector<double> computeT5ntrlFrequencies();
+    //std::vector<double> computeT5selFrequencies();
+    std::vector<double> computeT1RelativeFrequencies(size_t self_patch_index);
 };
 
 

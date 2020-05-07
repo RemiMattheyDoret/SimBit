@@ -392,7 +392,7 @@ Individual::Individual(const Haplotype& knownHaplotype)
 
 
 Individual::Individual(){}
-
+/*
 Individual::Individual(const Individual& I)
 {
     haplo0 = I.haplo0;
@@ -402,8 +402,8 @@ Individual::Individual(const Individual& I)
 
 Individual::Individual(const Individual&& I)
 {
-    haplo0 = I.haplo0;
-    haplo1 = I.haplo1;
+    haplo0 = std::move(I.haplo0);
+    haplo1 = std::move(I.haplo1);
 }
 
 Individual Individual::operator=(const Individual& I)
@@ -416,10 +416,10 @@ Individual Individual::operator=(const Individual& I)
 
 Individual Individual::operator=(const Individual&& I)
 {
-    haplo0 = I.haplo0;
-    haplo1 = I.haplo1;
+    haplo0 = std::move(I.haplo0);
+    haplo1 = std::move(I.haplo1);
     return *this;
-}
+}*/
 
 
 

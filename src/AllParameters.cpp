@@ -691,15 +691,6 @@ std::cout << "Enters in 'SetParameters'\n";
         {
             SSPi.DispWeightByFitness = true;
         }
-
-        // Initialize tree for T4
-        if (SSPi.T4_nbBits)
-        {
-            SSP = &SSPi;
-            SSPi.T4Tree.initialize();
-            SSP=nullptr;
-        }
-
     }
         
     #ifdef DEBUG
@@ -906,6 +897,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
         // Nothing to do
     }
     else if (flag == "T1_HybridIndex_file")
+    {
+        // Nothing to do
+    }
+    else if (flag == "T1_AverageHybridIndex_file")
     {
         // Nothing to do
     }
@@ -1310,23 +1305,23 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         for (auto& SSPi : this->SSPs)
         {
-            if (SSPi.T4_nbBits)
+            if (SSPi.T4_nbLoci)
             {
                 std::cout << "You asked for T4 loci for species "<<SSPi.speciesName<<"but option '--T4_MutationRate' is missing!\n";
                 abort();
             }
         }
-    } else if (flag == "T4_maxAverageNbNodesPerHaplotype")
+    } else if (flag == "T4_maxNbEdges")
     {
-        InputReader input(std::string("default"), "In Default value for --T4_maxAverageNbNodesPerHaplotype,");
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype);
+        InputReader input(std::string("default"), "In Default value for --T4_maxNbEdges,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxNbEdges);
     }
     else if (flag == "eco")
     { 
         assert(this->GlobalP.nbSpecies > 0);
         assert(this->GlobalP.nbSpecies == this->SSPs.size());
 
-        InputReader input(std::string("interaction default competition default"), "In Default value for --eco,");
+        InputReader input(std::string("predation default competition default"), "In Default value for --eco,");
         GP->readSpeciesEcologicalRelationships(input);
     } else if (flag == "popGrowthModel")
     {
@@ -1441,7 +1436,14 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
     
-    }  else if (flag == "T1_ExpectiMinRec_file" )
+    }  else if (flag == "T1_AverageHybridIndex_file" )
+    {
+        OutputFile file(input.GetNextElementString(), T1_AverageHybridIndexFile);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+    
+    } 
+    else if (flag == "T1_ExpectiMinRec_file" )
     {
         OutputFile file(input.GetNextElementString(), ExpectiMinRecFile);
         file.interpretTimeAndSubsetInput(input);
@@ -1612,10 +1614,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         outputWriter.insertOutputFile(std::move(file));
 
     }
-    else if (flag == "T4_printTree")
+    /*else if (flag == "T4_printTree")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_printTree);
-    } 
+    } */
     else if (flag == "T4_coalescenceFst_file")
     {
         OutputFile file(input.GetNextElementString(), T4CoalescenceFst);
@@ -1649,7 +1651,7 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
             std::cout << "In --" << flag << ", received a negative error rate (received "<<GP->sequencingErrorRate<<").";
             abort();
         }
-        if (GP->sequencingErrorRate > 0.0 && SSP->T4_nbBits)
+        if (GP->sequencingErrorRate > 0.0 && SSP->T4_nbLoci)
         {
             std::cout << "WARNING: The current version cannot simulate sequencing error on T4 loci. Sorry.\n";
         }
@@ -1869,9 +1871,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_MutationRate);
         
-    } else if (flag == "T4_maxAverageNbNodesPerHaplotype")
+    } else if (flag == "T4_maxNbEdges")
     {
-        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxAverageNbNodesPerHaplotype);
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_maxNbEdges);
     } else if (flag == "Habitats" || flag == "H")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readHabitats);

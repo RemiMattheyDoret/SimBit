@@ -6,7 +6,7 @@ RNG_wrapper::RNG_wrapper(int seed)
 :
 initial_seed(seed),
 rng(seed),
-nbDrawsLeft1b(0)
+cache_index(NB_BITS_IN_CACHE)
 //nbDrawsLeft8b(0),
 //nbDrawsLeft16b(0),
 //nbDrawsLeft32b(0)
@@ -42,7 +42,8 @@ RNG_wrapper RNG_wrapper::operator=(const RNG_wrapper other)
 {
 	this->initial_seed = other.initial_seed;
 	this->rng = other.rng;
-	this->randomValue1b = other.randomValue1b;
+	this->cache = other.cache;
+	this->cache_index = other.cache_index;
 /*	this->randomValue8b = other.randomValue8b;
 	this->randomValue16b = other.randomValue16b;
 	this->randomValue32b = other.randomValue32b;
@@ -85,14 +86,14 @@ void RNG_wrapper::set_seed(std::ifstream& file)
 
 bool RNG_wrapper::get_1b()
 {
-	if (nbDrawsLeft1b == 0)
+	if (cache_index == 0)
 	{
-		randomValue1b = rng();
-		nbDrawsLeft1b = 64;
+		cache = rng();
+		cache_index = NB_BITS_IN_CACHE;
 	}
-	bool r = randomValue1b & 1;
-	randomValue1b >>= 1;
-	nbDrawsLeft1b--;
+	bool r = cache & 1;
+	cache >>= 1;
+	cache_index--;
 	//std::cout << r << " ";
 	return r;
 }
@@ -141,17 +142,18 @@ std::uint32_t RNG_wrapper::get_32b()
 
 
 template<class int_type>
-int_type RNG_wrapper::uniform_int_distribution(int_type diff)
+int_type RNG_wrapper::uniform_int_distribution(int_type diff) // diff is not included unlike in the random header filethis logic
 {
-	if (diff == 0)
+	assert(diff);
+	if (diff == 1)
 	{
 		return 0;
-	} else if (diff == 1)
+	} else if (diff == 2)
 	{
 		return get_1b();
-	} else 
+	} else
 	{
-		return rng() % (diff + 1);
+		return rng() % (diff);
 	}
 	//return (int_type) (uniform_real_distribution((double) to) + 0.5);
 }
@@ -170,7 +172,7 @@ double RNG_wrapper::uniform_real_distribution(double diff)
 }
 
 template<class int_type>
-int_type RNG_wrapper::uniform_int_distribution(int_type from, int_type to)
+int_type RNG_wrapper::uniform_int_distribution(int_type from, int_type to) // to is not included unlike in the random header filethis logic
 {
 	return from + uniform_int_distribution(to - from);
 }

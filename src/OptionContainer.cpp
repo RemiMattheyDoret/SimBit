@@ -72,7 +72,7 @@ std::string OptionContainer::renameFlag(std::string flag)
     this->listOptions();
 
     std::cout << "The option '--" << flag << "' was not found. ";
-    if (bestLevenshteinDistance < 0.7)
+    if (bestLevenshteinDistance < 0.9)
     {
         std::cout << "Did you mean '"<< getOption(*bestPossibleFlag).getNamesToPrint() <<"'?";
     }

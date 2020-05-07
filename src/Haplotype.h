@@ -50,7 +50,11 @@ private:
     
     std::vector<unsigned int> getT56ntrlTrueHaplotype();
     std::vector<unsigned int> getT56selTrueHaplotype();
+
 public:
+    // Used for T4Tree
+    // ID is a little bit of a weird attribute because Haplotype does not manage its value but T4Tree and LifeCycle do. It will remain uninitialized unless T4Tree wants to do something with it
+    size_t T4ID;
 
 
     ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T5ntrl_AllelesBegin();
@@ -185,9 +189,10 @@ public:
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);
     Haplotype();                              // default constructor
+    //Haplotype( Haplotype&& other);             // MOVE constructor
     Haplotype(const Haplotype& other);             // copy constructor
     Haplotype& operator=(const Haplotype& other);  // copy assignment operator
-    Haplotype& operator=(Haplotype&& other); // move assignment operator
+    //Haplotype& operator=(Haplotype&& other); // move assignment operator
     void swap(Haplotype& other);
     void PrintBinaryFile(OutputFile& file);
 

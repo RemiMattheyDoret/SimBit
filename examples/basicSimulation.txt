@@ -1,0 +1,31 @@
+##### This is a very simple input file
+##### Because this input file spend over several lines, it will need to be called with 'bin/SimBit f examples/basicSimulation.txt all'
+##### The simulation runs in 8 seconds on my personal laptop
+
+### Set number of generations
+--nbGens 1e4
+
+### Set number of patch.
+### Could be called '--PN 4'
+--PatchNumber 4
+
+### All patches contain 100 individuals.
+### '--patchCapacity unif 200', '--N A 200 200 2e2 200' would both do the same thing
+--N unif 2e2
+
+### Migration scenario set with and island model with migration rate 0.1.
+### Note that because by default option '--DispWeightByFitness' is set to 'false', the migration rate is not affected by local patch fitnesses
+--m Island 0.1
+
+### Set genetic map of 1000 T5 loci. '--L T5 100 T5 900' would be perfeclty equivalent.
+--L T5 1e3 
+
+### Mutation rate for T5 loci.
+### The first 400 loci have a mutation rate of 1e-6 (0.000001) and the 600 other loci have a mutation rate of 1e-7 (0.0000001)
+--T5_mu A rep 1e-6 400 rep 1e-7 600
+
+### Recombination rate: Distance of 1e-6 cM between any two loci.
+### Note that if you want to specify the recombination between any two loci, use the keyword 'A' instead of 'unif' and specify one fewer values than there are loci indicated with the --L option.
+--r cM unif 1e-6
+
+### No outputs has been required. SimBit should send a warning message

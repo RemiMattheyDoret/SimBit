@@ -530,7 +530,7 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
     file.writeBinary(reinterpret_cast<const char*>(&T3_Alleles[0]), T3_Alleles.size()*sizeof(char));
 
     // Print T4_alleles
-    if (SSP->T4_nbBits)
+    if (SSP->T4_nbLoci)
         std::cout << "\n\tWARNING: You are printing to a binary file while you have T4 loci. In the current version of SimBit, T4 loci cannot be printed on a binary file (sorry). The binary file will be produced ignoring T4 loci\n";
 
     // Print T5_alleles (there should not be any flipped meaning normally)
@@ -646,7 +646,7 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->T3_nbLoci*sizeof(char));
 
     //.read T4_alleles
-    if (SSP->T4_nbBits)
+    if (SSP->T4_nbLoci)
         std::cout << "\n\n\tWARNING: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data. Those loci will be initiated as perfectly unmutated\n\n";
 
     //.read T56_alleles
@@ -721,10 +721,10 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in 'Haplotype::Haplotype(const int patch_index, char Abiogenesis)'\n";
-#endif      
+#endif   
     (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
     assert(SSP!=nullptr);
-    assert(SSP->T1_nbChars + SSP->T2_nbLoci + SSP->T3_nbLoci + SSP->T4_nbBits + SSP->T56_nbLoci > 0);
+    assert(SSP->T1_nbChars + SSP->T2_nbLoci + SSP->T3_nbLoci + SSP->T4_nbLoci + SSP->T56_nbLoci > 0);
     assert(indHaplo_index < 2 * SSP->patchSize[patch_index]);
 
     // Initiate W_T1 and W_T2
@@ -1076,12 +1076,44 @@ Haplotype::Haplotype(const Haplotype& other)
             W_T56 = other.W_T56;
         }
     }
+
+    if (SSP->T4_nbLoci)
+    {
+        T4ID = other.T4ID;
+    }
 }
+
+/*
+Haplotype::Haplotype( Haplotype&& other)
+{
+    T1_Alleles = std::move(other.T1_Alleles);
+    T2_Alleles = std::move(other.T2_Alleles);
+    T3_Alleles = std::move(other.T3_Alleles);
+    T5ntrl_Alleles = std::move(other.T5ntrl_Alleles);
+    T5sel_Alleles = std::move(other.T5sel_Alleles);
+    T6ntrl_Alleles = std::move(other.T6ntrl_Alleles);
+    T6sel_Alleles = std::move(other.T6sel_Alleles);
+    W_T1 = std::move(other.W_T1);
+    W_T2 = std::move(other.W_T2);
+    W_T56 = std::move(other.W_T56);
+    T4ID = std::move(other.T4ID);
+    T1_Alleles.swap(other.T1_Alleles);
+    T2_Alleles.swap(other.T2_Alleles);
+    T3_Alleles.swap(other.T3_Alleles);
+    T5ntrl_Alleles.swap(other.T5ntrl_Alleles);
+    T5sel_Alleles.swap(other.T5sel_Alleles);
+    T6ntrl_Alleles.swap(other.T6ntrl_Alleles);
+    T6sel_Alleles.swap(other.T6sel_Alleles);
+    W_T1.swap(other.W_T1);
+    W_T2.swap(other.W_T2);
+    W_T56.swap(other.W_T56);
+    T4ID = other.T4ID;
+}*/
 
 Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment operator
 {
     //std::cout << "copy assignment haplotype\n";
-if (SSP->T1_nbLoci)
+    if (SSP->T1_nbLoci)
     {
         T1_Alleles = other.T1_Alleles;
         if (SSP->T1_isMultiplicitySelection)
@@ -1127,9 +1159,15 @@ if (SSP->T1_nbLoci)
             W_T56 = other.W_T56;
         }
     }
+
+    if (SSP->T4_nbLoci)
+    {
+        T4ID = other.T4ID;
+    }
+
     return *this;
 }
-
+/*
 Haplotype& Haplotype::operator=(Haplotype&& other) // move assignment operator
 {
     T1_Alleles = std::move(other.T1_Alleles);
@@ -1142,9 +1180,21 @@ Haplotype& Haplotype::operator=(Haplotype&& other) // move assignment operator
     W_T1 = std::move(other.W_T1);
     W_T2 = std::move(other.W_T2);
     W_T56 = std::move(other.W_T56);
+    T4ID = std::move(other.T4ID);
+        T1_Alleles.swap(other.T1_Alleles);
+    T2_Alleles.swap(other.T2_Alleles);
+    T3_Alleles.swap(other.T3_Alleles);
+    T5ntrl_Alleles.swap(other.T5ntrl_Alleles);
+    T5sel_Alleles.swap(other.T5sel_Alleles);
+    T6ntrl_Alleles.swap(other.T6ntrl_Alleles);
+    T6sel_Alleles.swap(other.T6sel_Alleles);
+    W_T1.swap(other.W_T1);
+    W_T2.swap(other.W_T2);
+    W_T56.swap(other.W_T56);
+    T4ID = other.T4ID;
     //assert(W_T1.size() == other.W_T1.size());
     return *this;
-}
+}*/
 
 void Haplotype::swap(Haplotype& other)
 {
@@ -1158,6 +1208,7 @@ void Haplotype::swap(Haplotype& other)
     W_T1.swap(other.W_T1);
     W_T2.swap(other.W_T2);
     W_T56.swap(other.W_T56);
+    T4ID = other.T4ID;
 }
 
 

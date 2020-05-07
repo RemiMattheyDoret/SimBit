@@ -174,10 +174,13 @@ public:
     std::vector<std::vector<double>>                T3_DevelopmentalNoiseStandardDeviation;
 
     // Genetics T4
-    int                                             T4_nbBits;
+    int                                             T4_nbLoci;
     std::vector<double>                             T4_MutationRate; // cumulative
-    Tree                                            T4Tree;
-    double                                          T4_maxAverageNbNodesPerHaplotypeBeforeRecalculation;
+    double                                          T4_Total_Mutation_rate;
+    T4TreeRec                                       T4Tree;
+    size_t                                          T4_maxNbEdges;
+    int                                             T4_minimumNbGenerationsBetweeSimplification = 1e3;
+
 
     // Genetics T5
     long long int                                   T5_nbLoci;
@@ -268,7 +271,7 @@ public:
     void readT2_FitnessEffects(InputReader& input);
     void readT3_FitnessLandscape(InputReader& input);
     void readT3_DevelopmentalNoise(InputReader& input);
-    void readT4_maxAverageNbNodesPerHaplotype(InputReader& input);
+    void readT4_maxNbEdges(InputReader& input);
     void readT56_FitnessEffects(InputReader& input);
     void readT56_compress(InputReader& input);
     void readT56_approximationForNtrl(InputReader& input);
@@ -305,7 +308,7 @@ public:
     void readReadPopFromBinary(InputReader& input);
     void readSubsetLociForfitnessSubsetLoci_file(InputReader& input);
     void readOutputSFSbinSize(InputReader& input);
-    void readT4_printTree(InputReader& input);
+    //void readT4_printTree(InputReader& input);
     void readGeneticSampling_withWalker(InputReader& input);
     void readIndividualSampling_withWalker(InputReader& input);
     int selectNonEmptyPatch(int firstPatchToLookAt, std::vector<int>& PSs, bool increasingOrder);
@@ -321,6 +324,8 @@ public:
 
     SpeciesSpecificParameters(std::string sN, int sI);
     SpeciesSpecificParameters();
+    //SpeciesSpecificParameters(SpeciesSpecificParameters& other);
+    //SpeciesSpecificParameters(SpeciesSpecificParameters&& other);
     ~SpeciesSpecificParameters();
 
 

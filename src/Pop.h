@@ -59,11 +59,11 @@ public:
     void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle);
     
     Pop(bool ShouldReadPopFromBinary);
-    Pop();
-    Pop(Pop&& p);
+    /*Pop();
+    Pop(const Pop&& p);
     Pop(const Pop& p);
-    Pop operator=(Pop&& p);
-    Pop operator=(const Pop& p);
+    Pop operator=(const Pop&& p);
+    Pop operator=(const Pop& p);*/
 
     void PrintBinaryFile();
 
@@ -75,6 +75,8 @@ public:
     std::vector<unsigned> computeT56ntrlFrequencies();
     std::vector<unsigned> computeT56selFrequencies();
     std::vector<unsigned> computeT56Frequencies();
+    std::vector<double> computeT56RelativeFrequencies();
+    std::vector<std::vector<double>> computeT1RelativeFrequenciesPerPatch();
     std::vector<std::vector<unsigned>> computePatchSpecificT56ntrlFrequencies();
     std::vector<std::vector<unsigned>> computePatchSpecificT56selFrequencies();
     std::vector<std::vector<unsigned>> computePatchSpecificT56Frequencies();
