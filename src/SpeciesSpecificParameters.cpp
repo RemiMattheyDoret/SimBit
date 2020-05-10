@@ -394,19 +394,13 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     assert(NbElementsInFitnessMap == FromLocusToFitnessMapIndex.back()+1);
     
     // print to console
-    /*
+    
     if ( ShouldThereBeSeveralFitnessBlocks )
     {
-        if (NbElementsInFitnessMap == 1)
-        {
-            std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " element\n\n";
-        } else
-        {
-            assert(NbElementsInFitnessMap > 1);
-            std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " elements\n\n";
-        }
+        assert(NbElementsInFitnessMap >= 1);
+        std::cout << "\t\tThe fitnessMap of species '"<<this->speciesName<<"' contains " << NbElementsInFitnessMap << " element\n\n";
     }
-    */
+    
 
     /*
     std::cout << "FromFitnessMapIndexToTXLocus";
