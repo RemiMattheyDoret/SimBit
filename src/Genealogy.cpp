@@ -71,7 +71,8 @@ void Genealogy::resetParentsToFalse(std::vector<std::vector<bool>>& Parents)
 void Genealogy::getFields(std::vector<std::string>& fields, std::string& token, std::string filePath)
 {
 	//std::cout << token << "\n";
-	boost::split( fields, token, boost::is_any_of( "_" ) );
+	fields.reserve(3);
+	tokenize(fields, token, '_');
 
   	// Assertions
   	if (fields.size() != 3)

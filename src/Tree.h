@@ -7,7 +7,7 @@ private:
 
 	struct PQcompare
 	{
-		bool operator()(const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b)
+		bool operator()(const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b)
 		{
 		    return a.first > b.first;
 		}
@@ -20,18 +20,18 @@ private:
 	std::vector<std::vector<HaplotypeDescription>> currentGenerationHaplotypes;
 
 	// Security checks 
-	size_t nbNodesInTree;
+	uint32_t nbNodesInTree;
 	bool currentStatesGotJustComputed;
 	bool isCurrentlyBuildingHaplotype;
 
 	// For optimization
-	size_t TotalNbNodesCurrentGeneration;
-	size_t TotalNbIndividualsCurrentGeneration;
+	uint32_t TotalNbNodesCurrentGeneration;
+	uint32_t TotalNbIndividualsCurrentGeneration;
 
 	// While producing new haplotypes
 	HaplotypeDescription newHaplotypeDescription;
-	size_t parent_patch_index_newHaplotypeDescription;
-	size_t parent_ind_index_newHaplotypeDescription;
+	uint32_t parent_patch_index_newHaplotypeDescription;
+	uint32_t parent_ind_index_newHaplotypeDescription;
 
 	// outputing the tree
 	OutputFile* file;
@@ -53,14 +53,14 @@ private:
 	void destroyListOfNodes(std::vector<TreeNode*>& nodes);
 	std::vector<TreeNode*> getRootsAndSetChildren();
 	std::vector<TreeNode*> placeMutationsOnTree(std::queue<TreeNode*> FIFO, TreeNode* lastOfGenerationNode);
-	std::string getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, size_t& serialNumber);
+	std::string getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, uint32_t& serialNumber);
 
 	double computeMeanCoalescenceTime(std::vector<TreeNode*> offsprings);
 	double computeTt();
 	double computeTt_fast();
 	double computeTs();
 	double computeTs_fast();
-	size_t computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y);
+	uint32_t computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y);
 	double computeTb();
 	double computeTb_fast();
 
@@ -72,9 +72,9 @@ public:
 	~Tree();
 	
 	void newGeneration();
-	void addChildHaplotype_setParentInfo(size_t parent_patch, size_t parent_ind_index);
-	void addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to);
-	void addChildHaplotype_finished(size_t child_patch_index);
+	void addChildHaplotype_setParentInfo(uint32_t parent_patch, uint32_t parent_ind_index);
+	void addChildHaplotype_addNode(uint32_t haploIndex, uint32_t from, uint32_t to);
+	void addChildHaplotype_finished(uint32_t child_patch_index);
 
 
 	void pruneDeadLineages();

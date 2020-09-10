@@ -30,7 +30,7 @@ int main ()
 	std::vector<double> cumSumFits = {0.8, 1.6, 1.7, 1.8, 5};
 	Walker walker(cumSumFits);
 
-	std::vector<size_t> counts(5,0);
+	std::vector<uint32_t> counts(5,0);
 	for (int i = 0 ; i < 1e5; ++i)
 	{
 		counts[walker(rngw)]++;

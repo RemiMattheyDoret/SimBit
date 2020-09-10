@@ -142,7 +142,7 @@ std::uint32_t RNG_wrapper::get_32b()
 
 
 template<class int_type>
-int_type RNG_wrapper::uniform_int_distribution(int_type diff) // diff is not included unlike in the random header filethis logic
+int_type RNG_wrapper::uniform_int_distribution(int_type diff) // diff is not included unlike in the random header logic
 {
 	assert(diff);
 	if (diff == 1)

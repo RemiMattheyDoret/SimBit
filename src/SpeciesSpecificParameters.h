@@ -33,13 +33,14 @@ private:
     void resetT56_freqThresholToDefault();
     bool T5_freqThresholdWasSetToDefault;
 
-    bool isT56LocusUnderSelection(size_t locus);
+    //bool isT56LocusUnderSelection(uint32_t locus);
 
 
 public:
-
     Genealogy                                       genealogy;
     ResetGenetics                                   resetGenetics;
+    T56_memoryManager                               T56_memManager;
+    SampleSequenceDataContainer                     sampleSequenceDataContainer;
     
     // species ID
     std::string                                     speciesName;
@@ -73,6 +74,13 @@ public:
     bool                                            T2_isLocalSelection;
     bool                                            T3_isLocalSelection;
     bool                                            T56_isLocalSelection;
+
+
+    // kill individuals
+    std::vector<size_t>                             killIndividuals_times;
+    std::vector<size_t>                             killIndividuals_patch;
+    std::vector<bool>                               killIndividuals_isAllBut;
+    std::vector<size_t>                             killIndividuals_numberInds;
     
     // selectionOn = 0; "fertility"
     // selectionOn = 1; "viability"
@@ -85,16 +93,8 @@ public:
     bool                                            gameteDispersal;
     
     // Genetic Map
+    GeneticMap                                      Gmap;
     std::vector<int>                                ChromosomeBoundaries;
-    std::vector<FromLocusToTXLocusElement>          FromLocusToTXLocus; // points to the current or previous TXLocus from Locus
-    std::vector<int>                                FromT1LocusToLocus;
-    std::vector<int>                                FromT2LocusToLocus;
-    std::vector<int>                                FromT3LocusToLocus;
-    std::vector<int>                                FromT4LocusToLocus;
-    std::vector<int>                                FromT56selLocusToLocus;
-    std::vector<int>                                FromT56ntrlLocusToLocus;
-    std::vector<std::pair<bool, unsigned>>          FromT56LocusToT56genderLocus; // true means ntrl.
-    std::vector<bool>                               isT56neutral;
 
     // Fitness Map
     std::vector<int>                                FromLocusToFitnessMapIndex;
@@ -116,13 +116,13 @@ public:
     std::vector<double>                             RecombinationRate;
     double                                          TotalRecombinationRate;
 
-    int                                             TotalNbLoci;
     bool                                            T1_isMultiplicitySelection;
     bool                                            T56_isMultiplicitySelection;
     bool                                            recRateOnMismatch_bool;
     int                                             recRateOnMismatch_halfWindow;
     double                                          recRateOnMismatch_factor;
     double                                          fecundityForFitnessOfOne;
+    bool                                            fecundityDependentOfFitness;
 
     std::vector<std::vector<double>>                __growthK;
     std::vector<double>                             growthK; // It is a double to avoid recasting but values must be integers.
@@ -135,31 +135,32 @@ public:
     
     std::map<std::string, Individual>               individualTypes;
     std::vector<std::vector<std::string>>           individualTypesForInitialization;
+    std::vector<size_t>                             redefIndTypes_times;
+    std::vector<std::string>                        redefIndTypes_types;
+    std::vector<std::pair<std::array<int, 3>, std::array<int, 3>>>   redefIndTypes_whereFromInfo;
 
     bool                                            isIndividualInitialization;
-    int                                             T1_nbChars;
-    long long int                                   T1_nbLoci;
     std::vector<std::vector<double>>                T1_FitnessEffects;
     bool                                            T1_isSelection;
     bool                                            T1_isEpistasis;
     std::vector<double>                             T1_MutationRate;  // cumulative
+    char                                            T1_mutDirection;
     double                                          T1_Total_Mutation_rate;
     
     std::vector<std::vector<std::vector<T1_locusDescription>>>   T1_Epistasis_LociIndices;
     std::vector<std::vector<std::vector<double>>>                T1_Epistasis_FitnessEffects; //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex], where the fitnessValueIndex is function of the genotype
-    int                                             T1_nbLociLastByte;
+    
     
 
     
     // Genetics and selection T2
-    int                                             T2_nbLoci;
     std::vector<std::vector<double>>                T2_FitnessEffects;
     bool                                            T2_isSelection;
     std::vector<double>                             T2_MutationRate;  // cumulative
-    double                                          T2_Total_Mutation_rate;    
+    double                                          T2_Total_Mutation_rate;
+
 
     // Genetics and selection T3
-    int                                             T3_nbLoci;
     std::vector<std::vector<double>>                T3_PhenotypicEffects; // even if it is not selection directly, it is habitat-specific to allow plasticity
     char                                            T3_fitnessLandscapeType;
     //std::vector<double>                             T3_fitnessLandscapeGaussMean;
@@ -174,33 +175,26 @@ public:
     std::vector<std::vector<double>>                T3_DevelopmentalNoiseStandardDeviation;
 
     // Genetics T4
-    int                                             T4_nbLoci;
     std::vector<double>                             T4_MutationRate; // cumulative
+    char                                            T4_mutDirection;
     double                                          T4_Total_Mutation_rate;
     T4TreeRec                                       T4Tree;
-    size_t                                          T4_maxNbEdges;
-    int                                             T4_minimumNbGenerationsBetweeSimplification = 1e3;
+    uint32_t                                        T4_simplifyEveryNGenerations;
+    bool                                            T4_paintedHaplo_shouldIgnorePatchSizeSecurityChecks;
+    bool                                            T4_respectPreviousMutationsOutputs;
+    size_t                                          T4_nbMutationPlacingsPerOutput;
 
 
     // Genetics T5
-    long long int                                   T5_nbLoci;
-    long long int                                   T5ntrl_nbLoci;
-    long long int                                   T5sel_nbLoci;
-    std::vector<unsigned int>                       T5ntrl_flipped;
-    //std::vector<unsigned int>                       T5sel_flipped;
+    std::vector<uint32_t>                           T5ntrl_flipped;
+    //std::vector<uint32_t>                         T5sel_flipped;
 
 
     // T6 (compressed T5)
-    int                                             T6_nbLoci;
-    int                                             T6ntrl_nbLoci;
-    int                                             T6sel_nbLoci;
     CompressedSortedDeque                           T6ntrl_flipped;
     //CompressedSortedDeque                           T6sel_flipped;
 
     // T56 (both T5 and T6)
-    int                                             T56_nbLoci;
-    int                                             T56ntrl_nbLoci;
-    int                                             T56sel_nbLoci;
     bool                                            T56_isSelection;
     bool                                            T56_isMuliplicitySelection;
     std::vector<std::vector<double>>                T56_Initial_AlleleFreqs;
@@ -211,10 +205,9 @@ public:
     double                                          T56ntrl_frequencyThresholdForFlippingMeaning;
     double                                          T56sel_frequencyThresholdForFlippingMeaning;
     double                                          T56_approximationForNtrl;
-    bool                                            T56ntrl_compress;
-    bool                                            T56sel_compress;
     int                                             quickScreenAtL_T56_nbLoci;
     std::vector<double>                             T56_MutationRate;  // cumulative
+    char                                            T56_mutDirection;
     double                                          T56_Total_Mutation_rate;
     std::vector<std::vector<double>>                T56_FitnessEffects;
     
@@ -271,7 +264,7 @@ public:
     void readT2_FitnessEffects(InputReader& input);
     void readT3_FitnessLandscape(InputReader& input);
     void readT3_DevelopmentalNoise(InputReader& input);
-    void readT4_maxNbEdges(InputReader& input);
+    void readT4_simplifyEveryNGenerations(InputReader& input);
     void readT56_FitnessEffects(InputReader& input);
     void readT56_compress(InputReader& input);
     void readT56_approximationForNtrl(InputReader& input);
@@ -293,21 +286,36 @@ public:
     void readDispMat(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
     Haplotype getHaplotypeForIndividualType(InputReader& input, bool haploIndex, std::string& IndividualTypeName);
+    void readRedefIndTypes(InputReader& input);
     void readIndividualTypes(InputReader& input);
     void readIndividualInitialization(InputReader& input);
     void readInitialpatchSize(InputReader& input);
     void readCloningRate(InputReader& input);
     void readSelfingRate(InputReader& input);
+    void readShrinkT56EveryNGeneration(InputReader& input);
     void readStochasticGrowth(InputReader& input);
     void readDispWeightByFitness(InputReader& input);
     void readPloidy(InputReader& input);
     void readFitnessMapInfo(InputReader& input);
     void readT56_toggleMutsEveryNGeneration(InputReader& input);
     void readfecundityForFitnessOfOne(InputReader& input);
+    void readfecundityDependentOfFitness(InputReader& input);
     void readMatingSystem(InputReader& input);
     void readReadPopFromBinary(InputReader& input);
     void readSubsetLociForfitnessSubsetLoci_file(InputReader& input);
     void readOutputSFSbinSize(InputReader& input);
+    void readSampleSeq_info(InputReader& input);
+    void readT1_mutDirection(InputReader& input);
+    void readT4_mutDirection(InputReader& input);
+    void readT56_mutDirection(InputReader& input);
+    void readT4_paintedHaplo_ignorePatchSizeSecurityChecks(InputReader& input);
+    void readkillIndividuals(InputReader& input);
+    void killIndividualsIfAskedFor();
+
+    void readT4_nbMutationPlacingsPerOutput(InputReader& input);
+    void readT4_respectPreviousMutationsOutputs(InputReader& input);
+    
+
     //void readT4_printTree(InputReader& input);
     void readGeneticSampling_withWalker(InputReader& input);
     void readIndividualSampling_withWalker(InputReader& input);
@@ -330,5 +338,6 @@ public:
 
 
     void readQuickScreenOfOptionL(InputReader& input);
+    void redefineIndividualTypesIfNeeded(Pop& pop);
 
 };

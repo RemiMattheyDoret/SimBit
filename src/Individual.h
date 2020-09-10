@@ -82,4 +82,6 @@ public:
     //Individual& operator=(Individual&& ) = default;
 
     void toggleT56LociFromHaplotypes(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle, int Habitat);
+
+    void freeT56Memory();
 };

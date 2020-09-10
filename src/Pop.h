@@ -37,7 +37,7 @@ private:
     std::vector<std::vector<Walker>>      walkers; // Walkers[patch_index][sex]
 
 
-    std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<unsigned int>& flipped, const int& nbLoci,  const double freqThreshold);
+    std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<uint32_t>& flipped, const int& nbLoci,  const double freqThreshold);
     void toggleT56FixedMutations();
     void checkIfCumSumFitsIsNotTooSmall(int patch_index);
 
@@ -48,12 +48,13 @@ public:
     Patch& getPatch(const int& patch_index);
     int getNbPatches();
     void AddPatch(Patch& newPatch);
+    void AddPatch();
     void RemoveLastPatch();
     int SelectionParent(int patch_from, int sex);
     void CalculateFitnesses();
     //double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
     //void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
-    int SelectionOriginPatch(size_t patch_to);
+    int SelectionOriginPatch(uint32_t patch_to);
     int patchSizeNextGeneration(int patch_index);
     void toggleT56MutationsIfNeeded();
     void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle);
@@ -70,7 +71,7 @@ public:
     static void addT2LocusToCorrect(int T2Locus);
     int correctT2Loci();
 
-    static void updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes);
+    static void updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, std::vector<int>& previousPatchSizes);
 
     std::vector<unsigned> computeT56ntrlFrequencies();
     std::vector<unsigned> computeT56selFrequencies();
@@ -80,6 +81,8 @@ public:
     std::vector<std::vector<unsigned>> computePatchSpecificT56ntrlFrequencies();
     std::vector<std::vector<unsigned>> computePatchSpecificT56selFrequencies();
     std::vector<std::vector<unsigned>> computePatchSpecificT56Frequencies();
+    void freeMemory();
+    void freeT56Memory(); // reset all T56 to zero
 
     std::vector<T1_locusDescription> listT1PolymorphicLoci();
 

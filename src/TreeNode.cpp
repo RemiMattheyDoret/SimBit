@@ -3,22 +3,22 @@
 /// TreeNode ///
 ////////////////
 
-TreeNode::TreeNode(TreeNode* p, size_t l, size_t r) // normal constructor
+TreeNode::TreeNode(TreeNode* p, uint32_t l, uint32_t r) // normal constructor
 :parent(p), nbChildren(0), left(l), right(r)
 {
 	parent->nbChildren++;
 	// parent->children.push_back(this); No need to create that for the moment
 #ifdef DEBUG
-	assert(r <= SSP->T4_nbLoci);
+	assert(r <= SSP->Gmap.T4_nbLoci);
 #endif
 }
 
-TreeNode::TreeNode(size_t l, size_t r) // no parent constructor
+TreeNode::TreeNode(uint32_t l, uint32_t r) // no parent constructor
 :parent(nullptr), nbChildren(0), left(l), right(r)
 {
 	// parent->children.push_back(this); No need to create that for the moment
 #ifdef DEBUG
-	assert(r <= SSP->T4_nbLoci);
+	assert(r <= SSP->Gmap.T4_nbLoci);
 #endif
 }
 
@@ -32,7 +32,7 @@ TreeNode::TreeNode(TreeNode* n) // copy constructor
 
 void TreeNode::assignGenotypeOfFalses()
 {
-	genotype.resize(SSP->T4_nbLoci, false);
+	genotype.resize(SSP->Gmap.T4_nbLoci, false);
 }
 
 void TreeNode::announceDeathToChildren()

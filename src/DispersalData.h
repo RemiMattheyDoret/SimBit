@@ -1,3 +1,4 @@
+
 /*
 
  Author: Remi Matthey-Doret
@@ -50,7 +51,7 @@ class ListMigrationEvents
 {
 private:
     std::vector<MigrationEvent> migrantEvents;
-    double sumOfIncomingMigrants = 0;
+    double sumOfIncomingMigrants = 0.0;
     
 public:
     void addMigrationEvent(double nbMigrants, unsigned patch_from)
@@ -83,7 +84,7 @@ public:
 class DispersalData
 {
 private:
-    void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
+    void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
     double computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r);
     void computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
 
@@ -114,6 +115,7 @@ public:
     void readDispMat(InputReader& input);
     void pushBack__ForwardMigrationRate(const std::vector<std::vector<double>>& FFFM, const int& CurrentPatchNumber);
     void updateDispersalData();
+    void print();
 
     
 };

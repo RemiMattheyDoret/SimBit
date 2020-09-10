@@ -30,14 +30,27 @@ class KillOnDemand
 {
 private:
     std::string functionToCall;
+
     int isT1LocusFixedAfterGeneration_T1locus;
     int isT1LocusFixedAfterGeneration_generation;
-
-public:
-    bool mustKill(Pop& pop);
-    void readUserInput(InputReader& input);
+    int isT4LocusFixed_T4Locus;
+    std::vector<uint32_t> killWhenT1HaplotypeConfigurationIsFixed_T1loci;
+    std::vector<size_t> isTotalPatchSizeGreaterThan_patches;
+    size_t isTotalPatchSizeGreaterThan_N;
 
     bool isT1LocusFixedAfterGeneration(Pop& pop);
 
+    bool isT4LocusFixed(Pop& pop);
+
+    bool isT1HaplotypeConfigurationFixed(Pop& pop);
+
+    bool isTotalPatchSizeGreaterThan(Pop& pop);
+
+public:
+    static bool justAboutToKill;
+    bool mustKill(Pop& pop);
+    void readUserInput(InputReader& input);
+
+    
 };
 

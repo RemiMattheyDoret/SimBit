@@ -48,7 +48,7 @@ void LifeCycle::ParentsData::resizeCloneInfo(const std::vector<int>& patchSizeNe
     if (SSP->cloningRate != 0)
     {
         cloneInfo.resize(GP->PatchNumber);
-        for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             cloneInfo[patch_index].resize(patchSizeNextGeneration[patch_index]);
         }
@@ -64,7 +64,7 @@ void LifeCycle::ParentsData::resizeForNewGeneration(const std::vector<int>& patc
     lastOffspring.resize(2);
     lastOffspring[0].resize(GP->PatchNumber);
     lastOffspring[1].resize(GP->PatchNumber);
-    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         lastOffspring[0][patch_index].resize(SSP->patchSize[patch_index], HaplotypeData(-1,-1,-1,-1));
         lastOffspring[1][patch_index].resize(SSP->patchSize[patch_index], HaplotypeData(-1,-1,-1,-1));
@@ -75,7 +75,7 @@ void LifeCycle::ParentsData::resizeForNewGeneration(const std::vector<int>& patc
 }
 
 
-bool LifeCycle::ParentsData::shouldIClone(size_t patch_index, size_t ind_index)
+bool LifeCycle::ParentsData::shouldIClone(uint32_t patch_index, uint32_t ind_index)
 {
     if (SSP->cloningRate == 0)
     { 
@@ -89,7 +89,7 @@ bool LifeCycle::ParentsData::shouldIClone(size_t patch_index, size_t ind_index)
 
 
 
-bool LifeCycle::ParentsData::isLastOffspring(HaplotypeData& parent, size_t patch_index, size_t ind_index, size_t segregationIndex)
+bool LifeCycle::ParentsData::isLastOffspring(HaplotypeData& parent, uint32_t patch_index, uint32_t ind_index, uint32_t segregationIndex)
 {
     auto& lastParentoffspring = lastOffspring[parent.segregationIndex][parent.patch][parent.ind];
     auto offspring = HaplotypeData(patch_index, ind_index, segregationIndex, 0);

@@ -32,6 +32,14 @@ Note for Remi of things to do:
 
  */
 
+void InputReader::removeWhatPrecedesIndex()
+{
+    V.erase(V.begin(), V.begin() + VIndex);
+    VIndex = 0;
+    VIndex_previous_habitat = 0;
+    VIndex_previous_generation = 0;
+}
+
 
 InputReader::InputReader(InputReader& fullInput, int from, int to)
 {
@@ -69,9 +77,15 @@ std::string InputReader::GetErrorMessage()
 
 std::string InputReader::print()
 {
-    std::string s = this->toString();
+    std::string s;
+    for (auto& elem : V)
+    {
+        std::cout << "\t" << elem << "\n";
+        s += elem + " ";
+    }
+    std::cout << "(current index is " + std::to_string(VIndex) + ")";
     s += "(current index is " + std::to_string(VIndex) + ")";
-    return s;
+    return this->toString();
 }
 
 std::string InputReader::toString()
@@ -517,18 +531,68 @@ InputReader::InputReader(InputReader& fullInput, int from, int to, int speciesIn
 InputReader::InputReader(std::string entry, std::string ForErrorMessage)
 : VIndex(0), VIndex_previous_habitat(0), VIndex_previous_generation(0), ErrorMessage(ForErrorMessage)
 {
-    std::istringstream iss(entry);
-    std::string sub;
-    while (iss >> sub)
-    {
-        V.push_back(sub);
-    }
-    if (V.size() < 1)
+    //std::cout << "Building input reader from entry " << entry << "\n";
+    if (entry.size()==0)
     {
         std::cout << "Error Message from the 'InputReader constructor': " << ErrorMessage << " no arguments has been received\n";
         abort();
     }
-    //std::cout << ErrorMessage << " V.size() = " << V.size() << "\n";
+
+    assert(entry[0] != ' ');
+
+    std::string word;
+    for( size_t i = 0 ; i < entry.size() ; )
+    {
+        if( entry[i] == ' ' )
+        {
+            if (word.size())
+            {
+                V.push_back(word);
+                word.clear();
+            }
+            ++i;
+        } else if (entry[i] == '\"' || entry[i] == '\'' )
+        {
+            //std::cout << "entry["<<i<<"] = " << entry[i] << "\n";
+            ++i;
+            if (i == entry.size())
+            {
+                std::cout << "Error Message from the 'InputReader constructor': " << ErrorMessage << "received an oppening quote that at the end of the input. Received either \", \'. Note that btw SimBit does not distinguish between single and double quotes.\n";
+                abort();
+            }
+            if (entry[i] == '\"' || entry[i] == '\'')
+            {
+                std::cout << "Error Message from the 'InputReader constructor': " << ErrorMessage << "received a closing quote, just after an openning one. Received either \"\", \'\', \"\' or \'\". Note btw that SimBit does not distinguish between single and double quotes.\n";
+                abort();
+            }
+            while ( entry[i] != '\"' && entry[i] != '\'' )
+            {
+                //std::cout << "entry["<<i<<"] = " << entry[i] << "\n";
+                word.push_back(entry[i]);
+                ++i;
+                if (i == entry.size())
+                {
+                    std::cout << "Error Message from the 'InputReader constructor': " << ErrorMessage << " received an oppening quote (followed by a number of characters) that does not close. The last character read is '" <<  entry.back() << "'. Note btw that SimBit does not distinguish between single and double quotes.\n";
+                    abort();
+                }
+            }
+            ++i;
+        } else
+        {
+            word.push_back(entry[i]);
+            ++i;
+        }
+    }
+    if (word.size()) V.push_back(word);
+    word.clear();
+
+    if (V.size()  == 0)
+    {
+        std::cout << "Error Message from the 'InputReader constructor': " << ErrorMessage << "it appears that SimBit failed to build the input reader. This is likely due to an internal bug but you might want to check your input anyway.\n";
+        abort();
+    }
+
+
     #ifdef DEBUG
     std::cout << this->print() << "\n";
     #endif
@@ -571,10 +635,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader method.readInt': " << ErrorMessage << " Expected a 'Int' value after a species, generation or habitat specific marker (@S, @H or @G) but another '@' instead (received '" << s << "'" << std::endl;
+            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected a 'Int' value after a species, generation or habitat specific marker (@S, @H or @G) but another '@' instead (received '" << s << "')" << std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader method.readInt': " << ErrorMessage << " Expected a 'Int' value but received a species, generation or habitat specific marker (@S, @H or @G) (received '" << s << "'" << std::endl;
+            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected a 'Int' value but received a species, generation or habitat specific marker (@S, @H or @G) (received '" << s << "')" << std::endl;
         }
         std::cout << "It is also possible that this error message comes from an input starting with a marker starting with '@' but does not start with the right one. For example, if you input '--N @G20 100 @100 200' and you forget to specify anything before '@20'. Insread you should do '--N @G0 50 @G20 100 @100 200'\n";
         abort();
@@ -589,10 +653,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "' (error caught at the first security gate)" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "' (error caught at the first security gate)" <<std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' (error caught at the first security gate)" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' (error caught at the first security gate)" <<std::endl;
         }
         abort();
     }
@@ -603,12 +667,12 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         double fraction = d - ((long)d);
         if (fraction > 0.00001 || fraction < -0.00001)
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
             abort();
         }
         if (d > std::numeric_limits<int>::max() || d < std::numeric_limits<int>::min())
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " received the entry "<< s << " when it was expecting an integer value. Sadly "<< s <<" is outside of the range of value that SimBit represents when reading input (this is a security against overflow). It might mean that SimBit should be able to deal with these numbers and then, the current code should be edited. Please let Remi know about it." <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " received the entry "<< s << " when it was expecting an integer value. Sadly "<< s <<" is outside of the range of value that SimBit represents when reading input (this is a security against overflow). It might mean that SimBit should be able to deal with these numbers and then, the current code should be edited. Please let Remi know about it." <<std::endl;
             abort();
         }
         
@@ -618,10 +682,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "'' (error caught at the third security gate) " << std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "'' (error caught at the third security gate) " << std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader method.readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
         }
         abort();
     }
@@ -747,20 +811,25 @@ void InputReader::consideredFullyRead()
 
 void InputReader::interpretKeywords()
 {
+    //std::cout << "\n\n\n\nENTERING interpretKeywords with ErrorMessage '"<<ErrorMessage<<"'\n";
     //this->print();
     //std::cout << "V.size() = " << V.size() << "\n";
     //std::cout << "VIndex = " << VIndex << "\n";
     for (int vi = V.size()-1; vi >= VIndex; vi--) // vi is int because it must be allowed to go to -1
     {
-        //std::cout << "V["<<vi<<"] = "<< V[vi] << std::endl;
         std::vector<std::string> toInsert;
 
         std::string currentKeyword = V[vi];
         if (currentKeyword == "seq")
         {
-            double from = std::stod(V[vi+1]);
-            double to   = std::stod(V[vi+2]);
-            double by   = std::stod(V[vi+3]);
+            if (V.size() < vi+3)
+            {
+                std::cout << ErrorMessage <<"received keyword 'seq' but could not find three elements (from to by) following the keyword\n";
+                abort();
+            }
+            double from = readDouble(V[vi+1]);
+            double to   = readDouble(V[vi+2]);
+            double by   = readDouble(V[vi+3]);
 
 
             for (double i = from ; i <= to; i += by)
@@ -774,12 +843,12 @@ void InputReader::interpretKeywords()
         {
             if (V.size() <= vi + 3)
             {
-                std::cout << "In InputReader::interpretKeywords, received the keyword 'seqInt' followed by less than three values. seqInt expects a 'from', a 'to' and a 'by' value\n";
+                std::cout << ErrorMessage << "in InputReader::interpretKeywords, received the keyword 'seqInt' followed by less than three values. seqInt expects a 'from', a 'to' and a 'by' value\n";
                 abort();
             }
-            int from = (int) std::stod(V[vi+1]);
-            int to   = (int) std::stod(V[vi+2]);
-            int by   = (int) std::stod(V[vi+3]);
+            int from = readInt(V[vi+1], false);
+            int to   = readInt(V[vi+2], false);
+            int by   = readInt(V[vi+3], false);
 
             for (auto i = from ; i <= to; i += by)
             {
@@ -788,65 +857,45 @@ void InputReader::interpretKeywords()
                 
         } else if (currentKeyword == "rep" || currentKeyword == "repeach")
         {
-            auto whatToRepeat_original = V[vi+1];
+            if (V.size() < vi+3)
+            {
+                std::cout << ErrorMessage << "received keyword 'rep' or 'repeach' but could not find two elements (whatToRepeat nbRepeats) following the keyword\n";
+                abort();
+            }
+            auto whatToRepeat = V[vi+1];
             auto nbRepeats    = (int) std::stod(V[vi+2]);
             //std::cout << "whatToRepeat_original = " << whatToRepeat_original << "\n";
             //std::cout << "nbRepeats = " << nbRepeats << "\n";
-            std::vector<std::string> whatToRepeat;
-            assert(whatToRepeat_original.size() >= 1);
+
             
-            
-
-            if (whatToRepeat_original[0] == '{')
-            {
-                if (whatToRepeat_original.back() != '}')
-                {
-                    std::cout << "In InputReader::interpretKeywords, received the keyword 'rep'. The first element starts with '{' (indicating a vector of things to repeat) but does not finish with '}'\n";
-                    std::cout << "The string received is "<< whatToRepeat_original <<".\n";
-                    abort();
-                }
-                if (whatToRepeat_original.size() <= 2)
-                {
-                    std::cout << "In InputReader::interpretKeywords, received the keyword 'rep'. The first element starts with '{' (indicating a vector of things to repeat) but seems to be immediately followd by '}'\n";
-                    std::cout << "The string received is "<< whatToRepeat_original <<".\n";
-                    abort();   
-                }
-
-                whatToRepeat_original.pop_back();
-                whatToRepeat_original.erase(whatToRepeat_original.begin());
-
-                boost::char_separator<char> sep(",");
-                boost::tokenizer<boost::char_separator<char>> tokens(whatToRepeat_original, sep);
-                for (const auto& t : tokens) {
-                    whatToRepeat.push_back(t);
-                }
-
-            } else
-            {
-                whatToRepeat.push_back(whatToRepeat_original);
-            }
 
             if (currentKeyword == "rep")
             {
-                for (size_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
+                for (uint32_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
                 {
-                    for (auto& elem : whatToRepeat)
+                    std::istringstream iss (whatToRepeat );
+                    auto str_toRep = std::string{};
+
+                    while (iss >> str_toRep)
                     {
-                        toInsert.push_back(elem);
+                        toInsert.push_back(str_toRep);
                     }
                 }
             } else if (currentKeyword == "repeach")
             {
-                for (auto& elem : whatToRepeat)
+                std::istringstream iss (whatToRepeat);
+                auto str_toRep = std::string{};
+
+                while (iss >> str_toRep)
                 {
-                    for (size_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
+                    for (uint32_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
                     {
-                        toInsert.push_back(elem);
-                    }
+                        toInsert.push_back(str_toRep);
+                    }   
                 }
             } else
             {
-                std::cout << "internal error with keywords in InputReader::interpretKeywords\n";
+                std::cout << ErrorMessage << "internal error with keywords in InputReader::interpretKeywords\n";
                 abort();
             }
                 
@@ -866,21 +915,24 @@ void InputReader::interpretKeywords()
             // replace the string
             if (currentKeyword == "rep" || currentKeyword == "repeach")
             {
-                std::vector<int> toRemove = {vi, vi+1, vi+2};
-                removeIndicesFromVector(V, toRemove);
+                V.erase(V.begin() + vi, V.begin() + vi + 3);
             } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
             {
-                std::vector<int> toRemove = {vi, vi+1, vi+2, vi+3};
-                removeIndicesFromVector(V, toRemove);
+                V.erase(V.begin() + vi, V.begin() + vi + 4);
             } else
             {
-                std::cout << "Internal error in 'InputReader::interpretKeywords'. Unkown keyword\n";
+                std::cout << ErrorMessage << "internal error in 'InputReader::interpretKeywords'. Unkown keyword\n";
                 abort();
             }
                 
             V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
         }
     }
+    /*
+    std::cout << "\nEXITING interpretKeywords\n";
+    this->print();
+    std::cout << "\n\n\n";
+    */
 }
 
 
@@ -889,7 +941,7 @@ int InputReader::getVIndex()
     return VIndex;
 }
 
-size_t InputReader::getSizeOfV()
+uint32_t InputReader::getSizeOfV()
 {
     return V.size();
 }

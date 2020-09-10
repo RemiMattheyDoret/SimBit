@@ -461,6 +461,24 @@ void GeneralParameters::update(int generation_index)
     }
 }
 
+void GeneralParameters::readBurnInUntilT4Coal(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        burnInUntilT4Coal_check_every_N_generations = -1;
+    } else
+    {
+        burnInUntilT4Coal_check_every_N_generations = input.GetNextElementInt();
+        if (burnInUntilT4Coal_check_every_N_generations <= 0 && burnInUntilT4Coal_check_every_N_generations != -1 )
+        {
+            std::cout << "For option '--burnInUntilT4Coal (--burnIn)', received a value that is not strictly positive and different from -1 (received " << burnInUntilT4Coal_check_every_N_generations << "). Note -1 is the default and means no burnIn. Any strictly positive number indicate how often should SimBit check if the entire population (of all species) has coalesced.\n";
+            abort();
+        }
+    }
+}
+
+
 void GeneralParameters::readSeed(InputReader& input)
 {
     //std::cout << "in readSeed: VIndex = " << input.getVIndex() << "\n";
@@ -479,7 +497,7 @@ void GeneralParameters::readSeed(InputReader& input)
         if (input.PeakNextElementString() == "default")
         {
             input.skipElement();
-            unsigned int time_ui = time(NULL) ;
+            uint32_t time_ui = time(NULL) ;
             srand(time_ui);
             random_seed = rand();
         } else
@@ -491,6 +509,63 @@ void GeneralParameters::readSeed(InputReader& input)
     }
     //std::cout << "GP->random_seed = " << GP->random_seed << "\n";
 
+}
+
+void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool>& neutralBurnIn_hasSpeciesCoalesced)
+{
+    //std::cout << "enters testIfEndOfT4BurnIn\n";
+    //std::cout << "burnInUntilT4Coal_check_every_N_generations = " << burnInUntilT4Coal_check_every_N_generations << "\n";
+    //std::cout << "GP->CurrentGeneration modulo GP->burnInUntilT4Coal_check_every_N_generations = " << GP->CurrentGeneration % GP->burnInUntilT4Coal_check_every_N_generations << "\n";
+    auto positiveGeneration = GP->CurrentGeneration - std::numeric_limits<int>::lowest();
+    assert(positiveGeneration >= 0);
+    if (
+        GP->burnInUntilT4Coal_check_every_N_generations != -1
+        &&
+        positiveGeneration % GP->burnInUntilT4Coal_check_every_N_generations == 0
+    )
+    {
+
+        SSP->T4Tree.simplify(pop_Offspring);
+
+        if (SSP->T4Tree.haveAllLociCoallesced_ifKnown())
+        {
+            neutralBurnIn_hasSpeciesCoalesced[SSP->speciesIndex] = true;
+
+            if (GP->nbSpecies > 1)
+            {
+                if (SSP->speciesIndex == GP->nbSpecies - 1)
+                {
+                    bool haveAllCoalesced = true;
+                    for (size_t i = 0 ; i < GP->nbSpecies ; ++i)
+                    {
+                        if (!neutralBurnIn_hasSpeciesCoalesced[i])
+                        {
+                            haveAllCoalesced = false;
+                            break;
+                        }
+                    }
+                    
+                    if (haveAllCoalesced)
+                    {
+                        for (size_t i = 0 ; i < GP->nbSpecies ; ++i)
+                        {
+                            allParameters.SSPs[i].T4Tree.shift_generations_after_burn_in();
+                        }
+                        outputWriter.PrintGenerationEndOfBurnIn();
+                        GP->CurrentGeneration = GP->startAtGeneration ;
+                    }
+                }
+            } else
+            {
+                //std::cout << "Burn in has ended\n";
+                SSP->T4Tree.shift_generations_after_burn_in();
+                outputWriter.PrintGenerationEndOfBurnIn();
+                GP->CurrentGeneration = GP->startAtGeneration ;
+            }
+        }
+    }
+
+    //std::cout << "exits testIfEndOfT4BurnIn\n";
 }
 
 

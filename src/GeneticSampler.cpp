@@ -5,25 +5,25 @@ GeneticSampler::GeneticSampler(){}
 void GeneticSampler::set_nbRecombinations(const double& rate)
 {
 	recombinationtotalRate = rate;
-	poisson_nbRecombinations =  std::poisson_distribution<size_t>(rate);
+	poisson_nbRecombinations =  std::poisson_distribution<uint32_t>(rate);
 }
 
 void GeneticSampler::set_T1_nbMuts(const double& rate)
 {
 	T1_mut_totalRate = rate;
-	poisson_T1_nbMuts =  std::poisson_distribution<size_t>(rate);
+	poisson_T1_nbMuts =  std::poisson_distribution<uint32_t>(rate);
 }
 
 void GeneticSampler::set_T2_nbMuts(const double& rate)
 {
 	T2_mut_totalRate = rate;
-	poisson_T2_nbMuts =  std::poisson_distribution<size_t>(rate);
+	poisson_T2_nbMuts =  std::poisson_distribution<uint32_t>(rate);
 }
 
 void GeneticSampler::set_T3_nbMuts(const double& rate)
 {
 	T3_mut_totalRate = rate;
-	poisson_T3_nbMuts =  std::poisson_distribution<size_t>(rate);
+	poisson_T3_nbMuts =  std::poisson_distribution<uint32_t>(rate);
 }
 
 void GeneticSampler::set_T4_nbMuts(const double& rate)
@@ -35,14 +35,14 @@ void GeneticSampler::set_T4_nbMuts(const double& rate)
 void GeneticSampler::set_T56_nbMuts(const double& rate)
 {
 	T56_mut_totalRate = rate;
-	poisson_T56_nbMuts =  std::poisson_distribution<size_t>(rate);
+	poisson_T56_nbMuts =  std::poisson_distribution<uint32_t>(rate);
 }
 
 
 void GeneticSampler::set_recombinationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->TotalNbLoci-1);
-	if (SSP->TotalNbLoci > 1) 
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.TotalNbLoci-1);
+	if (SSP->Gmap.TotalNbLoci > 1) 
 	{
 		/*
 		std::cout << "recombinationtotalRate = " << recombinationtotalRate << "\n";
@@ -50,7 +50,7 @@ void GeneticSampler::set_recombinationPosition(const std::vector<double>& cumSum
 		std::cout << "cumSumRates.back() = " << cumSumRates.back() << "\n";
 		*/
 		isCstRate_recombinationPosition = false;
-		if (SSP->TotalNbLoci <= 2)
+		if (SSP->Gmap.TotalNbLoci <= 2)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -70,11 +70,11 @@ void GeneticSampler::set_recombinationPosition(const std::vector<double>& cumSum
 
 void GeneticSampler::set_T1_mutationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->T1_nbLoci);
-	if (SSP->T1_nbLoci > 1)
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.T1_nbLoci);
+	if (SSP->Gmap.T1_nbLoci > 1)
 	{
 		isCstRate_T1_mutationPosition = false;
-		if (SSP->T1_nbLoci == 1)
+		if (SSP->Gmap.T1_nbLoci == 1)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -94,11 +94,11 @@ void GeneticSampler::set_T1_mutationPosition(const std::vector<double>& cumSumRa
 
 void GeneticSampler::set_T2_mutationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->T2_nbLoci);
-	if (SSP->T2_nbLoci > 1)
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.T2_nbLoci);
+	if (SSP->Gmap.T2_nbLoci > 1)
 	{
 		isCstRate_T2_mutationPosition = false;
-		if (SSP->T2_nbLoci == 1)
+		if (SSP->Gmap.T2_nbLoci == 1)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -118,11 +118,11 @@ void GeneticSampler::set_T2_mutationPosition(const std::vector<double>& cumSumRa
 
 void GeneticSampler::set_T3_mutationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->T3_nbLoci);
-	if (SSP->T3_nbLoci > 1) 
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.T3_nbLoci);
+	if (SSP->Gmap.T3_nbLoci > 1) 
 	{
 		isCstRate_T3_mutationPosition = false;
-		if (SSP->T3_nbLoci == 1)
+		if (SSP->Gmap.T3_nbLoci == 1)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -143,11 +143,11 @@ void GeneticSampler::set_T3_mutationPosition(const std::vector<double>& cumSumRa
 
 void GeneticSampler::set_T4_mutationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->T4_nbLoci);
-	if (SSP->T4_nbLoci > 1) 
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.T4_nbLoci);
+	if (SSP->Gmap.T4_nbLoci > 1) 
 	{
 		isCstRate_T4_mutationPosition = false;
-		if (SSP->T4_nbLoci == 1)
+		if (SSP->Gmap.T4_nbLoci == 1)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -165,11 +165,11 @@ void GeneticSampler::set_T4_mutationPosition(const std::vector<double>& cumSumRa
 
 void GeneticSampler::set_T56_mutationPosition(const std::vector<double>& cumSumRates)
 {
-	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->T56_nbLoci);
-	if (SSP->T56_nbLoci > 1)
+	assert(cumSumRates.size() == 1 || cumSumRates.size() == SSP->Gmap.T56_nbLoci);
+	if (SSP->Gmap.T56_nbLoci > 1)
 	{
 		isCstRate_T56_mutationPosition = false;
-		if (SSP->T56_nbLoci == 1)
+		if (SSP->Gmap.T56_nbLoci == 1)
 		{
 			// nothing to do
 		} else if (cumSumRates.size() == 1) // meaning constant rate
@@ -191,7 +191,7 @@ void GeneticSampler::set_T56_mutationPosition(const std::vector<double>& cumSumR
 
 
 
-size_t GeneticSampler::get_nbRecombinations()
+uint32_t GeneticSampler::get_nbRecombinations()
 {
 	if (recombinationtotalRate > 0.0)
 	{
@@ -205,7 +205,7 @@ size_t GeneticSampler::get_nbRecombinations()
 
 
 
-size_t GeneticSampler::get_T1_nbMuts()
+uint32_t GeneticSampler::get_T1_nbMuts()
 {
 	if (T1_mut_totalRate > 0.0)
 	{
@@ -217,7 +217,7 @@ size_t GeneticSampler::get_T1_nbMuts()
 		
 }
 
-size_t GeneticSampler::get_T2_nbMuts()
+uint32_t GeneticSampler::get_T2_nbMuts()
 {
 	if (T2_mut_totalRate > 0.0)
 	{
@@ -229,7 +229,7 @@ size_t GeneticSampler::get_T2_nbMuts()
 		
 }
 
-size_t GeneticSampler::get_T3_nbMuts()
+uint32_t GeneticSampler::get_T3_nbMuts()
 {
 	if (T3_mut_totalRate > 0.0)
 	{
@@ -241,26 +241,26 @@ size_t GeneticSampler::get_T3_nbMuts()
 		
 }
 
-size_t GeneticSampler::get_T4_nbMuts(const size_t nbGenerationsInBetween, const size_t left, const size_t right)
+uint32_t GeneticSampler::get_T4_nbMuts(const uint32_t nbGenerationsInBetween, const uint32_t left, const uint32_t right)
 {
 	/*
 	std::cout << "left = " << left << "\n";
 	std::cout << "right = " << right << "\n";
-	std::cout << "SSP->T4_nbLoci = " << SSP->T4_nbLoci << "\n";
+	std::cout << "SSP->Gmap.T4_nbLoci = " << SSP->Gmap.T4_nbLoci << "\n";
 	*/
 
-	assert(nbGenerationsInBetween <= GP->CurrentGeneration);
+	//assert(nbGenerationsInBetween <= GP->CurrentGeneration);
 	assert(left <= right);
-	assert(right <= SSP->T4_nbLoci);
+	assert(right <= SSP->Gmap.T4_nbLoci);
 	if (T4_mut_totalRate > 0.0)
 	{
-		if (left == 0 && right == SSP->T4_nbLoci)
+		if (left == 0 && right == SSP->Gmap.T4_nbLoci)
 		{
 			//std::cout << "T4_mut_totalRate = " << T4_mut_totalRate << "\n";
 			T4_lastComputedTotalRate = T4_mut_totalRate;
 		} else
 		{
-			if (SSP->T4_nbLoci != 1 && cumSumProbs_T4_mutationPosition.size() == 1)
+			if (SSP->Gmap.T4_nbLoci != 1 && cumSumProbs_T4_mutationPosition.size() == 1)
 			{
 				//std::cout << "cumSumProbs_T4_mutationPosition[0] = " << cumSumProbs_T4_mutationPosition[0] << "\n";
 				T4_lastComputedTotalRate = cumSumProbs_T4_mutationPosition[0] * (right - left);
@@ -273,7 +273,7 @@ size_t GeneticSampler::get_T4_nbMuts(const size_t nbGenerationsInBetween, const 
 			}
 		}
 
-		std::poisson_distribution<size_t> d(T4_lastComputedTotalRate * nbGenerationsInBetween);
+		std::poisson_distribution<uint32_t> d(T4_lastComputedTotalRate * nbGenerationsInBetween);
 		auto r = d(GP->rngw.getRNG());
 		//std::cout << "nbGenerationsInBetween = " << nbGenerationsInBetween << "\n";
 		//std::cout << "T4_lastComputedTotalRate = " << T4_lastComputedTotalRate << "\n";
@@ -285,7 +285,7 @@ size_t GeneticSampler::get_T4_nbMuts(const size_t nbGenerationsInBetween, const 
 	}		
 }
 
-size_t GeneticSampler::get_T56_nbMuts()
+uint32_t GeneticSampler::get_T56_nbMuts()
 {
 	if (T56_mut_totalRate > 0.0)
 	{
@@ -299,16 +299,16 @@ size_t GeneticSampler::get_T56_nbMuts()
 
 
 
-size_t GeneticSampler::get_recombinationPosition()
+uint32_t GeneticSampler::get_recombinationPosition()
 {
-	if (SSP->TotalNbLoci <= 2)
+	if (SSP->Gmap.TotalNbLoci <= 2)
 	{
-		assert(SSP->TotalNbLoci==2);
+		assert(SSP->Gmap.TotalNbLoci==2);
 		return 0;
 	}
 	if (isCstRate_recombinationPosition)
 	{
-		return GP->rngw.uniform_int_distribution(SSP->TotalNbLoci - 1);
+		return GP->rngw.uniform_int_distribution(SSP->Gmap.TotalNbLoci - 1);
 	} else
 	{
 		if (SSP->geneticSampling_withWalker)
@@ -318,7 +318,7 @@ size_t GeneticSampler::get_recombinationPosition()
 		{
 			double rnd = GP->rngw.uniform_real_distribution(recombinationtotalRate);
 			auto index = std::upper_bound(cumSumProbs_recombinationPosition.begin(), cumSumProbs_recombinationPosition.end(), rnd) - cumSumProbs_recombinationPosition.begin();
-			assert(index >= 0 && index < SSP->TotalNbLoci - 1);
+			assert(index >= 0 && index < SSP->Gmap.TotalNbLoci - 1);
 			return index;
 		}
 	}
@@ -327,15 +327,15 @@ size_t GeneticSampler::get_recombinationPosition()
 
 
 
-size_t GeneticSampler::get_T1_mutationPosition()
+uint32_t GeneticSampler::get_T1_mutationPosition()
 {
-	if (SSP->T1_nbLoci == 1)
+	if (SSP->Gmap.T1_nbLoci == 1)
 	{
 		return 0;
 	}
 	if (isCstRate_T1_mutationPosition)
 	{
-		return GP->rngw.uniform_int_distribution(SSP->T1_nbLoci);
+		return GP->rngw.uniform_int_distribution(SSP->Gmap.T1_nbLoci);
 	} else
 	{
 		if (SSP->geneticSampling_withWalker)
@@ -345,22 +345,22 @@ size_t GeneticSampler::get_T1_mutationPosition()
 		{
 			double rnd = GP->rngw.uniform_real_distribution(T1_mut_totalRate);
 			auto index = std::upper_bound(cumSumProbs_T1_mutationPosition.begin(), cumSumProbs_T1_mutationPosition.end(), rnd) - cumSumProbs_T1_mutationPosition.begin();
-			assert(index >= 0 && index < SSP->T1_nbLoci);
+			assert(index >= 0 && index < SSP->Gmap.T1_nbLoci);
 			return index;
 		}
 	}
 
 }
 
-size_t GeneticSampler::get_T2_mutationPosition()
+uint32_t GeneticSampler::get_T2_mutationPosition()
 {
-	if (SSP->T2_nbLoci == 1)
+	if (SSP->Gmap.T2_nbLoci == 1)
 	{
 		return 0;
 	}
 	if (isCstRate_T2_mutationPosition)
 	{
-		return GP->rngw.uniform_int_distribution(SSP->T2_nbLoci);
+		return GP->rngw.uniform_int_distribution(SSP->Gmap.T2_nbLoci);
 	} else
 	{
 		if (SSP->geneticSampling_withWalker)
@@ -370,22 +370,22 @@ size_t GeneticSampler::get_T2_mutationPosition()
 		{
 			double rnd = GP->rngw.uniform_real_distribution(T2_mut_totalRate);
 			auto index = std::upper_bound(cumSumProbs_T2_mutationPosition.begin(), cumSumProbs_T2_mutationPosition.end(), rnd) - cumSumProbs_T2_mutationPosition.begin();
-			assert(index >= 0 && index < SSP->T2_nbLoci);
+			assert(index >= 0 && index < SSP->Gmap.T2_nbLoci);
 			return index;
 		}
 	}
 
 }
 
-size_t GeneticSampler::get_T3_mutationPosition()
+uint32_t GeneticSampler::get_T3_mutationPosition()
 {
-	if (SSP->T3_nbLoci == 1)
+	if (SSP->Gmap.T3_nbLoci == 1)
 	{
 		return 0;
 	}
 	if (isCstRate_T3_mutationPosition)
 	{
-		return GP->rngw.uniform_int_distribution(SSP->T3_nbLoci);
+		return GP->rngw.uniform_int_distribution(SSP->Gmap.T3_nbLoci);
 	} else
 	{
 		if (SSP->geneticSampling_withWalker)
@@ -395,14 +395,14 @@ size_t GeneticSampler::get_T3_mutationPosition()
 		{
 			double rnd = GP->rngw.uniform_real_distribution(T3_mut_totalRate);
 			auto index = std::upper_bound(cumSumProbs_T3_mutationPosition.begin(), cumSumProbs_T3_mutationPosition.end(), rnd) - cumSumProbs_T3_mutationPosition.begin();
-			assert(index >= 0 && index < SSP->T3_nbLoci);
+			assert(index >= 0 && index < SSP->Gmap.T3_nbLoci);
 			return index;
 		}
 	}
 
 }
 
-size_t GeneticSampler::get_T4_mutationPosition(const size_t left, const size_t right)
+uint32_t GeneticSampler::get_T4_mutationPosition(const uint32_t left, const uint32_t right)
 {
 	if (left + 1 == right)
 	{
@@ -426,15 +426,15 @@ size_t GeneticSampler::get_T4_mutationPosition(const size_t left, const size_t r
 	}
 }
 
-size_t GeneticSampler::get_T56_mutationPosition()
+uint32_t GeneticSampler::get_T56_mutationPosition()
 {
-	if (SSP->T56_nbLoci == 1)
+	if (SSP->Gmap.T56_nbLoci == 1)
 	{
 		return 0;
 	}
 	if (isCstRate_T56_mutationPosition)
 	{
-		return GP->rngw.uniform_int_distribution(SSP->T56_nbLoci);
+		return GP->rngw.uniform_int_distribution(SSP->Gmap.T56_nbLoci);
 	} else
 	{
 		if (SSP->geneticSampling_withWalker)
@@ -444,7 +444,7 @@ size_t GeneticSampler::get_T56_mutationPosition()
 		{
 			double rnd = GP->rngw.uniform_real_distribution(T56_mut_totalRate);
 			auto index = std::upper_bound(cumSumProbs_T56_mutationPosition.begin(), cumSumProbs_T56_mutationPosition.end(), rnd) - cumSumProbs_T56_mutationPosition.begin();
-			assert(index >= 0 && index < SSP->T56_nbLoci);
+			assert(index >= 0 && index < SSP->Gmap.T56_nbLoci);
 			return index;
 		}
 	}

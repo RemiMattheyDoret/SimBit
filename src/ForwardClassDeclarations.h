@@ -58,5 +58,7 @@ class SimulationTracker;
 class LifeCycle;
 class SmallOrderingSortingFunctions;
 class T4TreeRec;
+class GeneticMap;
+class T56_memoryManager;
 
 #endif

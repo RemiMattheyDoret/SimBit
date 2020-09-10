@@ -14,7 +14,7 @@ int main()
 {
 	std::cout << "Start testing...\n";
 
-	std::vector<unsigned int> stdv = {65, 90, 9380, 9384, 27685, 35000, 35040, 85040, 125040, 185040, 355360, 1553000, 1853000, 1853002};
+	std::vector<uint32_t> stdv = {65, 90, 9380, 9384, 27685, 35000, 35040, 85040, 125040, 185040, 355360, 1553000, 1853000, 1853002};
 
 	std::cout << "print stdv\n";
 	for (auto& elem : stdv)

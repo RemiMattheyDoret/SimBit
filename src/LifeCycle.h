@@ -57,7 +57,7 @@ private:
     static void findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration);
     static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD);
 
-    static std::vector<int> recombination_breakpoints; // for performance reason. It makes things a little messy though
+    static std::vector<uint32_t> recombination_breakpoints; // for performance reason. It makes things a little messy though
     static ParentsData PD;
 
 

@@ -95,7 +95,7 @@ void codeToInsert(Pop& pop)
 		{
 			Individual& individual patch.getInd(ind_index);
 
-			for (unsigned locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+			for (unsigned locus = 0 ; locus < SSP->Gmap.T1_nbLoci ; ++locus)
 			{
 				T1allFreqs[locus] += individual.haplo0.getT1_Allele(locus);
 				T1allFreqs[locus] += individual.haplo1.getT1_Allele(locus);
@@ -104,7 +104,7 @@ void codeToInsert(Pop& pop)
 	}
 
 	// Divide by the total number of possible alleles
-	for (unsigned locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+	for (unsigned locus = 0 ; locus < SSP->Gmap.T1_nbLoci ; ++locus)
 	{
 		T1allFreqs[locus] /= 2.0 * SSP->totalPatchSize;
 	}

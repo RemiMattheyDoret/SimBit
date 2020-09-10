@@ -27,6 +27,7 @@ public:
         {{"L","Loci"},                           		{"S", "nbSubGens", "T5_fit", "T5_approximationForNtrl", "T5_compress", "PN", "N"}, false},
         {{"ploidy"},                      				{"S"}, false},
         {{"fec","fecundityForFitnessOfOne"},            {"S"}, false},
+        {{"fecundityDependentOfFitness"},               {"S"}, false},
 
         // Dispersal
         {{"m", "DispMat"},                              {"PN","S"}, false},
@@ -38,6 +39,7 @@ public:
         {{"cloningRate"},                               {"S"}, false},
         {{"selfingRate"},                               {"S"}, false},
         {{"matingSystem"},                              {"S","fec","N","PN"}, false}, // if fec != -1.0, then I must make sure that there will be at least one male and one female in every patch at all times. This assumption might be relaxed later
+        {{"killIndividuals"},                           {"S","fec","N","PN"}, false},
 
         // Other stuff about outputs
         {{"LogfileType"},                               {}, false},
@@ -51,6 +53,7 @@ public:
         // Genetics and Selection T1
         {{"T1_mu", "T1_MutationRate"},                  {"S", "L"}, false},
         {{"T1_epistasis","T1_EpistaticFitnessEffects"}, {"H","S", "L"}, false},
+        {{"T1_mutDirection"},                           {"L","S"}, false},
         //{{"T1mutsDirectional"},                         {"S", "L"}, false},
 
         // Genetics and Selection T2
@@ -58,9 +61,11 @@ public:
 
         // Genetics and Selection T4
         {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
+        {{"T4_mutDirection"},                           {"L","S"}, false},
 
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
+        {{"T56_mutDirection"},                           {"L","S"}, false},
         // T5_fit appears before --L
         {{"T5_toggleMutsEveryNGeneration"},                   {"S", "L"}, false},
         {{"T5_freqThreshold", "T5_frequencyThresholdForFlippingMeaning"},              {"S", "L","PN","N"}, false},
@@ -83,14 +88,16 @@ public:
         //{{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
 
-        {{"T4_maxNbEdges"},                             {"S", "L", "N", "r"}, false},
+        {{"T4_simplifyEveryNGenerations"},               {"S", "L", "N", "r"}, false},
 
         // Initializer
-        {{"indTypes","individualTypes"},                {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
+        {{"indTypes","individualTypes"},                {"L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize", "nbGenerations"}, false},
+        {{"redefIndTypes"},                             {"indTypes"}, false},
         {{"resetGenetics"},                             {"indTypes","L","nbGenerations","S","PN","N", "T5_MutationRate"}, false},
         {{"indIni","individualInitialization"},         {"indTypes", "L", "T5_fit", "T1_fit", "T2_fit", "T3_fit", "FitnessMapInfo", "InitialpatchSize"}, false},
         {{"T1_ini", "T1_Initial_AlleleFreqs"},          {"S", "L","PN","indIni"}, false},
         {{"T5_ini", "T5_Initial_AlleleFreqs"},          {"S", "L","PN", "indIni"}, false},
+        {{"burnInUntilT4Coal", "burnIn"},                         {"S","L"}, false},
 
 
         // Outputs
@@ -121,7 +128,10 @@ public:
         {{"T4_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_vcf_file","T4_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T4_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T4_SNPfreq_file"},                       {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"Tx_SNPfreq_file"},                       {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T1_haplotypeFreqs_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
 
@@ -131,6 +141,16 @@ public:
         {{"T5_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
 
         {{"outputSFSbinSize"},                      {"T4_SFS_file", "T1_SFS_file", "GP", "S", "startAtGeneration", "L"}, true},
+        {{"sampleSeq_file"},                        {"GP", "S", "PN", "L"}, true},
+
+        {{"T4_paintedHaplo_ignorePatchSizeSecurityChecks"},                  {}, true},
+        {{"T4_paintedHaplo_file"},                  {"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
+        {{"T4_paintedHaploSegmentsDiversity_file"},{"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
+
+        
+        {{"T4_nbMutationPlacingsPerOutput"},                        {"S", "L"}, true},
+        {{"T4_respectPreviousMutationsOutputs"},                    {"S", "L", "T4_nbMutationPlacingsPerOutput", "T4_paintedHaplo_file","T4_paintedHaploSegmentsDiversity_file"}, true},
+        
 
         // Species interaction
         {{"eco","speciesEcologicalRelationships"},	{"S","seed"}, false},
@@ -146,7 +166,8 @@ public:
         {{"centralT1LocusForExtraGeneticInfo"},             {}, false},
         {{"killOnDemand"},                                  {}, false},
         {{"geneticSampling_withWalker"},                    {}, false},
-        {{"individualSampling_withWalker"},                 {}, false}
+        {{"individualSampling_withWalker"},                 {"PN", "N"}, false},
+        {{"shrinkT56EveryNGeneration"},                      {}, false}
     };
 
     //void received(std::string& optionNameReceived);
@@ -160,7 +181,7 @@ public:
     std::string renameFlag(std::string flag);
 
 
-    unsigned int minVector(const std::vector<unsigned int> v);
+    uint32_t minVector(const std::vector<uint32_t> v);
     double mean_levenshtein_distance(const std::string& s1, const std::string& s2);
 };
 

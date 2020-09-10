@@ -29,6 +29,7 @@
 
 class Haplotype // a Haplotype is a whole halotype but can correspond to several independent chromosomes.
 {
+friend class T56_memoryManager;
 private:
     std::vector<unsigned char> T1_Alleles;   // Type 1 Each bit is a binary site
     std::vector<unsigned char> T2_Alleles;   // Type 2 Each byte is a locus for which number of mutations are counted.
@@ -36,8 +37,8 @@ private:
 
     // T4 types are tracked with T4Tree
 
-    std::vector<unsigned int> T5sel_Alleles;          // Type 5 SLimM style. Just like T1 except that only mutations are keeping tracked of
-    std::vector<unsigned int> T5ntrl_Alleles;
+    std::vector<uint32_t> T5sel_Alleles;          // Type 5 SLimM style. Just like T1 except that only mutations are keeping tracked of
+    std::vector<uint32_t> T5ntrl_Alleles;
 
     CompressedSortedDeque T6sel_Alleles;       // Tyoe 6 is like Type 5 except that it tries to reduce RAM by separating values into prefix and suffix
     CompressedSortedDeque T6ntrl_Alleles;
@@ -48,19 +49,19 @@ private:
     // No W_T3 as the fitness makes sense for the individual only
 
     
-    std::vector<unsigned int> getT56ntrlTrueHaplotype();
-    std::vector<unsigned int> getT56selTrueHaplotype();
+    std::vector<uint32_t> getT56ntrlTrueHaplotype();
+    std::vector<uint32_t> getT56selTrueHaplotype();
 
 public:
     // Used for T4Tree
     // ID is a little bit of a weird attribute because Haplotype does not manage its value but T4Tree and LifeCycle do. It will remain uninitialized unless T4Tree wants to do something with it
-    size_t T4ID;
+    uint32_t T4ID;
 
 
-    ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T5ntrl_AllelesBegin();
-    ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T5ntrl_AllelesEnd();
-    std::vector<unsigned int>::iterator T5sel_AllelesBegin();
-    std::vector<unsigned int>::iterator T5sel_AllelesEnd();
+    ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T5ntrl_AllelesBegin();
+    ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T5ntrl_AllelesEnd();
+    std::vector<uint32_t>::iterator T5sel_AllelesBegin();
+    std::vector<uint32_t>::iterator T5sel_AllelesEnd();
 
 
     ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> T6ntrl_AllelesBegin();
@@ -69,18 +70,18 @@ public:
     CompressedSortedDeque::iterator T6sel_AllelesEnd();
 
 
-    ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T56ntrl_AllelesBegin(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing);
-    ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T56ntrl_AllelesEnd(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing);
-    std::vector<unsigned int>::iterator T56sel_AllelesBegin(std::vector<unsigned int>::iterator& nothing);
-    std::vector<unsigned int>::iterator T56sel_AllelesEnd(std::vector<unsigned int>::iterator& nothing);
+    ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T56ntrl_AllelesBegin(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing);
+    ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T56ntrl_AllelesEnd(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing);
+    std::vector<uint32_t>::iterator T56sel_AllelesBegin(std::vector<uint32_t>::iterator& nothing);
+    std::vector<uint32_t>::iterator T56sel_AllelesEnd(std::vector<uint32_t>::iterator& nothing);
 
     ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> T56ntrl_AllelesBegin(ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> nothing);
     ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> T56ntrl_AllelesEnd(ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> nothing);
     CompressedSortedDeque::iterator T56sel_AllelesBegin(CompressedSortedDeque::iterator& nothing);
     CompressedSortedDeque::iterator T56sel_AllelesEnd(CompressedSortedDeque::iterator& nothing);
 
-    ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> T56ntrl_AllelesIterator(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing, unsigned value);
-    std::vector<unsigned int>::iterator T56sel_AllelesIterator(std::vector<unsigned int>::iterator& nothing, unsigned value);
+    ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T56ntrl_AllelesIterator(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing, unsigned value);
+    std::vector<uint32_t>::iterator T56sel_AllelesIterator(std::vector<uint32_t>::iterator& nothing, unsigned value);
 
     ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> T56ntrl_AllelesIterator(ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator> nothing, unsigned value);
     CompressedSortedDeque::iterator T56sel_AllelesIterator(CompressedSortedDeque::iterator& nothing, unsigned value);
@@ -95,96 +96,137 @@ public:
     void setW_T1(double w, int fitnessMapIndex);
     void setW_T2(double w, int fitnessMapIndex);
     void setW_T56(double w, int fitnessMapIndex);
+    size_t getW_T56_size();
 
-    template<typename INT>
+    template<typename INT = uint32_t>
     unsigned char getT1_char(INT T1_char_index);
-    bool getT1_Allele(const int T1Locus);
-    bool getT1_Allele(const int char_index, const int bit_index);
-    unsigned char getT2_Allele(const int char_index);
-    double getT3_Allele(const int index);
+    template<typename INT = uint32_t>
+    bool getT1_Allele(const INT T1Locus);
+    template<typename INT1 = uint32_t, typename INT2 = uint32_t>
+    bool getT1_Allele(const INT1 char_index, const INT2 bit_index);
+    template<typename INT = uint32_t>
+    unsigned char getT2_Allele(const INT char_index);
+    template<typename INT = uint32_t>
+    double getT3_Allele(const INT index);
     //bool getT56_Allele(const int Locus);
     //bool getT5ntrl_Allele(const int Locus);
     //bool getT5sel_Allele(const int Locus);
     //int getT5ntrl_nthMutation(const int n);
     //int getT5sel_nthMutation(const int n);
 
-    template<typename valueType>
-    void setT1_Allele(const int& char_index, const int& bit_index, const valueType& value);
-    void setT1_AlleleToOne(int& char_index, int& bit_index);
-    void setT1_AlleleToZero(int& char_index, int& bit_index);
-    void setT1_char(int& T1_char_index, unsigned char& c);
-    void setT1_char(int& T1_char_index, unsigned char&& c);
-    void setT2_Allele(const int char_index, const unsigned char value);
-    void setT3_Allele(const int index, const double value);
+    template<typename valueType, typename INT = uint32_t>
+    void setT1_Allele(const INT char_index, const INT bit_index, const valueType& value);
+    template<typename INT = uint32_t>
+    void setT1_AlleleToOne(INT char_index, INT bit_index);
+    template<typename INT = uint32_t>
+    void setT1_AlleleToZero(INT char_index, INT bit_index);
+    template<typename INT = uint32_t>
+    void setT1_char(INT T1_char_index, unsigned char& c);
+    template<typename INT = uint32_t>
+    void setT1_char(INT T1_char_index, unsigned char&& c);
+    template<typename INT = uint32_t>
+    void setT2_Allele(const INT char_index, const unsigned char value);
+    template<typename INT = uint32_t>
+    void setT3_Allele(const INT index, const double value);
     
-    void setEntireT5_Allele(std::vector<unsigned int>& t5a);
-    void setT5_Allele(const int& locus, const bool& value);
-    void setT5ntrl_Allele(const int& locus, const bool& value);
-    void setT5sel_Allele(const int& locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setEntireT5_Allele(std::vector<INT>& t5a);
+    template<typename INT = uint32_t>
+    void setT5_Allele(const INT locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setT5ntrl_Allele(const INT locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setT5sel_Allele(const INT locus, const bool& value);
 
-    void setT5sel_AlleleToOne(int& locus);
-    void setT5sel_AlleleToZero(int& locus);
-    void setT5sel_AlleleToOne_JustPushBack(unsigned& locus);
-    void setT5ntrl_AlleleToOne(int& locus);
-    void setT5ntrl_AlleleToZero(int& locus);
-    void setT5ntrl_AlleleToOne_JustPushBack(unsigned& locus);
+    template<typename INT = uint32_t>
+    void setT5sel_AlleleToOne(INT locus);
+    template<typename INT = uint32_t>
+    void setT5sel_AlleleToZero(INT locus);
+    template<typename INT = uint32_t>
+    void setT5sel_AlleleToOne_JustPushBack(INT locus);
+    template<typename INT = uint32_t>
+    void setT5ntrl_AlleleToOne(INT locus);
+    template<typename INT = uint32_t>
+    void setT5ntrl_AlleleToZero(INT locus);
+    template<typename INT = uint32_t>
+    void setT5ntrl_AlleleToOne_JustPushBack(INT locus);
 
-    void setEntireT6_Allele(std::vector<unsigned int>& t6a);
-    void setT6_Allele(const int& locus, const bool& value);
-    void setT6ntrl_Allele(const int& locus, const bool& value);
-    void setT6sel_Allele(const int& locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setEntireT6_Allele(std::vector<INT>& t6a);
+    template<typename INT = uint32_t>
+    void setT6_Allele(const INT locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setT6ntrl_Allele(const INT locus, const bool& value);
+    template<typename INT = uint32_t>
+    void setT6sel_Allele(const INT locus, const bool& value);
 
-    void setT6sel_AlleleToOne(int& locus);
-    void setT6sel_AlleleToZero(int& locus);
-    void setT6sel_AlleleToOne_JustPushBack(unsigned& locus);
-    void setT6ntrl_AlleleToOne(int& locus);
-    void setT6ntrl_AlleleToZero(int& locus);
-    void setT6ntrl_AlleleToOne_JustPushBack(unsigned& locus);
+    template<typename INT = uint32_t>
+    void setT6sel_AlleleToOne(INT locus);
+    template<typename INT = uint32_t>
+    void setT6sel_AlleleToZero(INT locus);
+    template<typename INT = uint32_t>
+    void setT6sel_AlleleToOne_JustPushBack(INT locus);
+    template<typename INT = uint32_t>
+    void setT6ntrl_AlleleToOne(INT locus);
+    template<typename INT = uint32_t>
+    void setT6ntrl_AlleleToZero(INT locus);
+    template<typename INT = uint32_t>
+    void setT6ntrl_AlleleToOne_JustPushBack(INT locus);
 
-    void mutateT1_Allele(int MutPosition, int& Habitat);
-    void toggleT1_Allele(int& byte_index, int& bit_index);
-    void AddMutT2_Allele(int char_index);
-    void AddMutT2_Allele(int char_index, int Habitat);
-    void mutateT3_Allele(int index);
+    template<typename INT = uint32_t>
+    void mutateT1_Allele(INT MutPosition, int& Habitat);
+    template<typename INT = uint32_t>
+    void toggleT1_Allele(INT byte_index, INT bit_index);
+    template<typename INT = uint32_t>
+    void AddMutT2_Allele(INT char_index);
+    template<typename INT = uint32_t>
+    void AddMutT2_Allele(INT char_index, int Habitat);
+    template<typename INT = uint32_t>
+    void mutateT3_Allele(INT index);
     
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT56ntrl_Allele(INT MutPosition);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT56sel_Allele(INT MutPosition, int Habitat);
 
 
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT5ntrl_Allele(std::vector<INT>& MutPositions);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT5ntrl_Allele(INT MutPosition);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT5sel_Allele(INT MutPosition, int Habitat);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void toggleT5ntrl_Allele(INT MutPosition);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void toggleT5sel_Allele(INT MutPosition);
 
 
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT6ntrl_Allele(INT MutPosition);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void mutateT6sel_Allele(INT MutPosition, int Habitat);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void toggleT6ntrl_Allele(INT MutPosition);
-    template<typename INT>
+    template<typename INT = uint32_t>
     void toggleT6sel_Allele(INT MutPosition);
     
 
-    void copyIntoT1(int from, int to, Haplotype& SourceChromo);
-    void copyIntoT2(int from, int to, Haplotype& SourceChromo);
-    void copyIntoT3(int from, int to, Haplotype& SourceChromo);
+    template<typename INT = uint32_t>
+    void copyIntoT1(INT from, INT to, Haplotype& SourceChromo);
+    template<typename INT = uint32_t>
+    void copyIntoT2(INT from, INT to, Haplotype& SourceChromo);
+    template<typename INT = uint32_t>
+    void copyIntoT3(INT from, INT to, Haplotype& SourceChromo);
     void clearT56Alleles();
-    void copyIntoT56ntrl(int from, int to, Haplotype& SourceChromo);
-    void copyIntoT56sel(int from, int to, Haplotype& SourceChromo);
+    template<typename INT = uint32_t>
+    void copyIntoT56ntrl(INT from, INT to, Haplotype& SourceChromo);
+    template<typename INT = uint32_t>
+    void copyIntoT56sel(INT from, INT to, Haplotype& SourceChromo);
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
-    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, std::vector<unsigned int> T56_info);
+    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);
@@ -204,29 +246,31 @@ public:
     bool isFreeFromMutations();
     bool isFreeFromMutations(int T1_locusFrom, int T1_locusTo);
 /*
-    std::vector<unsigned int>::const_iterator T5sel_AllelesCBegin();
-    std::vector<unsigned int>::const_iterator T5sel_AllelesCEnd();
-    std::vector<unsigned int>::const_iterator T5sel_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
-    std::vector<unsigned int>::const_iterator T5sel_AllelesCiterator(int locus);
+    std::vector<uint32_t>::const_iterator T5sel_AllelesCBegin();
+    std::vector<uint32_t>::const_iterator T5sel_AllelesCEnd();
+    std::vector<uint32_t>::const_iterator T5sel_AllelesCiterator(int locus, std::vector<uint32_t>::const_iterator from);
+    std::vector<uint32_t>::const_iterator T5sel_AllelesCiterator(int locus);
 
 
-    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCBegin();
-    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCEnd();
-    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from);
-    std::vector<unsigned int>::const_iterator T5ntrl_AllelesCiterator(int locus);*/
+    std::vector<uint32_t>::const_iterator T5ntrl_AllelesCBegin();
+    std::vector<uint32_t>::const_iterator T5ntrl_AllelesCEnd();
+    std::vector<uint32_t>::const_iterator T5ntrl_AllelesCiterator(int locus, std::vector<uint32_t>::const_iterator from);
+    std::vector<uint32_t>::const_iterator T5ntrl_AllelesCiterator(int locus);*/
 
     //int T5_AllelesPosition(int locus, int from);
     //int T5_AllelesPosition(int locus);
     //int T5_howManyMutations();
     void toggleT56ntrlLoci(std::vector<int>& lociToToggle);
     //void toggleT56selLoci(std::vector<int>& lociToToggle, int Habitat);
-    void toggleFromT5ntrl_Allele(int& MutPosition, unsigned int& from);
-    void toggleFromT6ntrl_Allele(int& MutPosition, unsigned int& blockIndexFrom, unsigned int& fromInBlock);
-    void toggleFromT5sel_Allele(int& MutPosition, unsigned int& from, int Habitat);
-    void toggleFromT6sel_Allele(int& MutPosition, unsigned int& blockIndexFrom, unsigned int& fromInBlock, int Habitat);
+    void toggleFromT5ntrl_Allele(int& MutPosition, uint32_t& from);
+    void toggleFromT6ntrl_Allele(int& MutPosition, uint32_t& blockIndexFrom, uint32_t& fromInBlock);
+    void toggleFromT5sel_Allele(int& MutPosition, uint32_t& from, int Habitat);
+    void toggleFromT6sel_Allele(int& MutPosition, uint32_t& blockIndexFrom, uint32_t& fromInBlock, int Habitat);
 
     int getNbT5ntrl();
     int getNbT6ntrl();
+    int getNbT5sel();
+    int getNbT6sel();
 
     void printT5sel_Alleles();
     void printT5ntrl_Alleles();
@@ -239,12 +283,12 @@ public:
     bool isT6selMutation(int locus);
 
     void assertT5orderAndUniqueness();
-    template<typename INT>
+    template<typename INT = uint32_t>
     void updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundInAlleles, int Habitat);
-    template<typename ITERATOR, typename CONTAINER, typename INT>
-    bool T56finishMutation(ITERATOR& haploP, CONTAINER& container, INT MutPosition);
-    size_t nbT56muts();
-    size_t nbT56muts(int fitnessMapIndex);
+    template<typename ITERATOR, typename CONTAINER, typename INT = uint32_t>
+    char T56finishMutation(ITERATOR& haploP, CONTAINER& container, INT MutPosition);
+    uint32_t nbT56muts();
+    uint32_t nbT56muts(int fitnessMapIndex);
 
 
     // Multiplicity fitness calculator
@@ -262,6 +306,6 @@ public:
     template<typename Iterator>
     double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd);
     double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-
+    void freeT56Memory();
 };
 

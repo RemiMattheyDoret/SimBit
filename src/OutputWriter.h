@@ -65,6 +65,8 @@ private:
     void ExtendStringForAdvancedLogFile(std::string& s, std::string entry, int depth, bool willMoreCome);*/
 
 public:
+
+
     // Will contain all the T1_loci that must be outputted
     int                                 LogfileType;
 
@@ -78,6 +80,7 @@ public:
 
     // Clear All files content
     void ClearAllFileContent();
+    void RemoveAllFiles();
 
     // For warning and error messages
     bool AreThereAnyOutput();
@@ -125,10 +128,17 @@ public:
     void WriteOutputs_T2_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T1_LargeOutput(Pop& pop, OutputFile& file);
-    void WriteOutputs_T4_LargeOutput_header(OutputFile& file);
-    void WriteOutputs_T4_LargeOutput(OutputFile& file, Pop& pop);
+    void WriteOutputs_T4_LargeOutput_header(OutputFile& file, size_t mutPlacingIndex);
+    void WriteOutputs_T4_LargeOutput(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
     void WriteOutputs_T56_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T56_LargeOutput(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_paintedHaplo_file(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_paintedHaploSegmentsDiversity_file(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(OutputFile& file);
+    void WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
+    void WriteOutputs_T4_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
+    void WriteOutputs_Tx_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
+    void WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& T4data, size_t mutPlacingIndex, Pop& pop);
     template<typename ntrlIterator, typename selIterator>
     void WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, selIterator selIt, ntrlIterator ntrlItEnd, selIterator selItEnd, OutputFile& file, bool printNA);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
@@ -138,17 +148,18 @@ public:
     void WriteOutputs_T1_ExpectiMinRec_header(OutputFile& file);
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
-    void WriteOutputs_T4_vcf(OutputFile& file, Pop& pop);
+    void WriteOutputs_T4_vcf(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
     //void WriteOutputs_T4CoalescenceFst_header(OutputFile& file);
     //void WriteOutputs_T4CoalescenceFst(OutputFile& file);
     void WriteOutputs_T56_vcf(Pop& pop, OutputFile& file);
     //void WriteOutputs_T56_vcf_writeData(Pop& pop, std::vector<unsigned>& obsFreqs, OutputFile& file);
     //template<typename ntrlIteratorType, typename selIteratorType>
-    //void write_T56vcf_forGroupOfLoci(std::vector<size_t>& groupOfLoci, std::vector<double>& relFreqsForGroupOfLoci, Pop& pop, ntrlIteratorType& ntrlIteratorTypeInfo, selIteratorType& selIteratorTypeInfo, OutputFile& file);
+    //void write_T56vcf_forGroupOfLoci(std::vector<uint32_t>& groupOfLoci, std::vector<double>& relFreqsForGroupOfLoci, Pop& pop, ntrlIteratorType& ntrlIteratorTypeInfo, selIteratorType& selIteratorTypeInfo, OutputFile& file);
     void WriteOutputs_T3_LargeOutput_header(OutputFile& file);
     void WriteOutputs_T3_LargeOutput(Pop& pop, OutputFile& file);
     void WriteOutputs_T3_MeanVar_header(OutputFile& file);
     void WriteOutputs_T3_MeanVar(Pop& pop, OutputFile& file);
+    void WriteOutputs_T1_haplotypeFreqs(Pop& pop, OutputFile& file);
     void WriteOutputs_extraGeneticInfo(OutputFile& file);
     void WriteOutputs_T1_FST_header(OutputFile& file);
     void WriteOutputs_Tx_FST_header(OutputFile& file);
@@ -157,18 +168,30 @@ public:
     void WriteOutputs_T1_FST_complex(Pop& pop, OutputFile& file);
     void WriteOutputs_T1SFS(Pop& pop, OutputFile& file);
     void WriteOutputs_T1SFS_header(OutputFile& file);
-    void WriteOutputs_T4SFS(OutputFile& file, Pop& pop);
-    void WriteOutputs_T4SFS_header(OutputFile& file);
+    void WriteOutputs_T4SFS(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
+    void WriteOutputs_T4SFS_header(OutputFile& file, size_t mutPlacingIndex);
     void WriteOutputs_T56SFS(Pop& pop, OutputFile& file);
     void WriteOutputs_T56SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4or56SFS_header(OutputFile& file);
-    void WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& obsFreqs, OutputFile& file);
+    void WriteOutputs_T1or4or56SFS_header(OutputFile& file, size_t mutPlacingIndex = 0);
+    void WriteOutputs_T1or4or5SFS(std::vector<std::vector<double>>& obsFreqs, OutputFile& file, size_t mutPlacingIndex = 0);
     void WriteOutputs_extinction(OutputFile& file);
+    template<typename ntrlit_t, typename selit_t>
+    void WriteOutputs_sampleSequences_process(OutputFile& file, std::vector<uint32_t>& T4data, ntrlit_t it_ntrlBegin, selit_t it_selBegin, ntrlit_t it_ntrlEnd, selit_t it_selEnd, SampleSequenceData& SSD, Haplotype& haplo);
+    void WriteOutputs_sampleSequences(std::vector<std::vector<std::vector<uint32_t>>>& T4data, Pop& pop, OutputFile& file, size_t mutPlacingIndex);
+
+    void WriteOutputs_forDefinedPop_general(Pop& pop);
+    void WriteOutputs_forDefinedPop_T1(Pop& pop);
+    void WriteOutputs_forDefinedPop_T2(Pop& pop);
+    void WriteOutputs_forDefinedPop_T3(Pop& pop);
+    void WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop);
+    void WriteOutputs_forDefinedPop_T56(Pop& pop);
+
     void WriteOutputs(Pop& realPop);
     void WriteOutputs_forDefinedPop(Pop& pop);
     void imitateSequencingError(Pop& pop);
     void imitateSequencingError(Haplotype& TransmittedChrom);
     void PrintGeneration();
+    void PrintGenerationEndOfBurnIn();
 
     bool shouldNABePrinted(int patch_index);
     bool shouldNABePrinted(int patch_index, int ind_index);

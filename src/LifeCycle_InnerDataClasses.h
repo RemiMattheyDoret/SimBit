@@ -41,7 +41,7 @@ public:
 
     void resizeCloneInfo(const std::vector<int>& patchSizeNextGeneration);
 
-    bool shouldIClone(size_t patch_index, size_t ind_index);
-    bool isLastOffspring(HaplotypeData& parent, size_t patch_index, size_t ind_index, size_t segregationIndex);
+    bool shouldIClone(uint32_t patch_index, uint32_t ind_index);
+    bool isLastOffspring(HaplotypeData& parent, uint32_t patch_index, uint32_t ind_index, uint32_t segregationIndex);
 };
 

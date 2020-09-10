@@ -36,7 +36,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
     
-    //size_t nbSwaps = 0;
+    SSP->T56_memManager.setGenerationInfo();
+
+    //uint32_t nbSwaps = 0;
 
     //std::cout << "\nBEGIN: Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Offspring_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
     //std::cout << "BEGIN: Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
@@ -48,6 +50,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     // 0. ReSet Dispersal info if patch size may vary and // 2. Compute patch size for next generation
     const std::vector<int>& patchSizeNextGeneration = SSP->dispersalData.setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(Parent_pop.CumSumFits);
     assert(patchSizeNextGeneration.size() == GP->PatchNumber);
+    //std::cout << "patchSizeNextGeneration[0] = " << patchSizeNextGeneration[0] << "\n";
+    //std::cout << "SSP->patchSize[0] = " << SSP->patchSize[0] << "\n";
+    //SSP->dispersalData.print();
 
 
     // 4.5 Genealogy
@@ -87,6 +92,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             Individual& Offspring = Offspring_pop.getPatch(patch_index).getInd(offspring_index);
             Haplotype& Offspring_mHaplo = Offspring.getHaplo(0); // maternally inherited haplotype
             Haplotype& Offspring_fHaplo = Offspring.getHaplo(1); // paternally inherited haplotype
+
             //std::cout << "Before: Offspring_mHaplo.T4ID = " << Offspring_mHaplo.T4ID << "\n";
             //std::cout << "Offspring_fHaplo.T4ID = " << Offspring_fHaplo.T4ID << "\n";
 
@@ -112,7 +118,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             
 
             // Clear T56 vectors
-            if (SSP->T56sel_nbLoci || SSP->T56ntrl_nbLoci)
+            if (SSP->Gmap.T56sel_nbLoci || SSP->Gmap.T56ntrl_nbLoci)
             {
                 Offspring_mHaplo.clearT56Alleles();
                 Offspring_fHaplo.clearT56Alleles();
@@ -127,7 +133,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 assert(CD.mother.nbRecs == 0);
                 assert(CD.father.nbRecs == 0);
 
-                std::vector<int> breakpoints = {INT_MAX};
+                std::vector<uint32_t> breakpoints = {std::numeric_limits<uint32_t>::max()};
                 
                 if (SSP->SwapInLifeCycle && CD.mother.nbRecs == 0 && PD.isLastOffspring(CD.mother, patch_index, offspring_index,0))
                 {
@@ -257,6 +263,9 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 }
             }
 
+            SSP->T56_memManager.doStuff(Offspring_mHaplo);
+            SSP->T56_memManager.doStuff(Offspring_fHaplo);
+
 
             // 4.5 Genealogy. Will do something only if the last isTime was true
             SSP->genealogy.addOffspringIfIsTime(patch_index, offspring_index, CD.mother.patch, CD.mother.ind, CD.father.patch, CD.father.ind);
@@ -300,16 +309,16 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     //std::cout << "END0: Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID = " << Parent_pop.getPatch(0).getInd(2).getHaplo(0).T4ID << "\n";
     
 
-    if (SSP->T4_nbLoci > 0)
+    if (SSP->whenDidExtinctionOccur == -1 && SSP->Gmap.T4_nbLoci > 0)
     {
         SSP->T4Tree.simplify_ifNeeded(Offspring_pop);
     }
 
-    if (SSP->T56_nbLoci)
+    if (SSP->whenDidExtinctionOccur == -1 && SSP->Gmap.T56_nbLoci)
     {
         Offspring_pop.toggleT56MutationsIfNeeded();
     }
-    
+
 
     //std::cout << "nbSwaps = " << nbSwaps << "\n";
 }
@@ -322,11 +331,11 @@ void LifeCycle::reproduceThroughSwap(Individual& parent, Haplotype& offspringHap
     auto parentalT4ID = parentalHaplo.T4ID; // only used for T4
     parentalHaplo.swap(offspringHaplotype);
 
-    if (SSP->T4_nbLoci > 0)
+    if (SSP->Gmap.T4_nbLoci > 0)
     {
-        //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->T4_nbLoci = "<<SSP->T4_nbLoci<<"\n";
-        std::vector<int> RecPos = {INT_MAX};
-        offspringHaplotype.T4ID = SSP->T4Tree.addHaplotype(RecPos, {parentalT4ID, std::numeric_limits<std::size_t>::max()});
+        //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->Gmap.T4_nbLoci = "<<SSP->Gmap.T4_nbLoci<<"\n";
+        std::vector<uint32_t> RecPos = {std::numeric_limits<uint32_t>::max()};
+        offspringHaplotype.T4ID = SSP->T4Tree.addHaplotype(RecPos, {parentalT4ID, std::numeric_limits<std::uint32_t>::max()}, patch_index);
     }
 }
 
@@ -358,7 +367,7 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
     if (nbRecs == 0)
     {
         recombination_breakpoints.resize(1);
-        recombination_breakpoints[0] = INT_MAX;
+        recombination_breakpoints[0] = std::numeric_limits<uint32_t>::max();
     } else
     {
         recombination_breakpoints.resize(0);
@@ -381,7 +390,7 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
                     RecPosition = SSP->runiform_int_ForRecPos(GP->rngw.getRNG()); // is bounded between 0 and size - 1.
                 } else // Not constant
                 {
-                    assert(SSP->RecombinationRate.size() == SSP->TotalNbLoci - 1);
+                    assert(SSP->RecombinationRate.size() == SSP->Gmap.TotalNbLoci - 1);
 
                     rnd = SSP->runiform_double_ForRecPos(GP->rngw.getRNG()); // is bounded between 0 and total_recombinationRate.
                     
@@ -396,13 +405,13 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
                                 );
 
                 }
-                assert(RecPosition >= 0 && RecPosition < SSP->TotalNbLoci - 1);
+                assert(RecPosition >= 0 && RecPosition < SSP->Gmap.TotalNbLoci - 1);
 
                 
                 if (SSP->recRateOnMismatch_bool)
                 {
                     int fromT1Locus = std::max(0,RecPosition - SSP->recRateOnMismatch_halfWindow);
-                    int toT1Locus   = std::min(SSP->T1_nbLoci,RecPosition + SSP->recRateOnMismatch_halfWindow);
+                    int toT1Locus   = std::min(SSP->Gmap.T1_nbLoci,RecPosition + SSP->recRateOnMismatch_halfWindow);
                     //std::cout << fromT1Locus << " " << toT1Locus << " | ";
                     double sumAtExponentTerm = 0.0;
                     for (int T1Locus = fromT1Locus ; T1Locus < toT1Locus ; T1Locus++)
@@ -435,6 +444,7 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
         // Keep only odd number of recombinations
         assert(RecPositions.size() == nbRecs);
         int nbRepeats = 1;
+        
         for (int i = 1 ; i < RecPositions.size() ; i++)
         {
             if (RecPositions[i-1] == RecPositions[i])
@@ -453,13 +463,14 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
         if (nbRepeats % 2)
         {
             //std::cout << RecPositions.back() << "\n";
-            assert(RecPositions.back() >= 0 && RecPositions.back() < SSP->TotalNbLoci);
+            assert(RecPositions.back() >= 0 && RecPositions.back() < SSP->Gmap.TotalNbLoci);
             recombination_breakpoints.push_back(RecPositions.back());
         }
         
         // Add segregation   
-        //if (SSP->ChromosomeBoundaries.size() != 0) assert(SSP->ChromosomeBoundaries.back() != INT_MAX);
-        //if (breakpoints.size()!=0) assert(breakpoints.back() != INT_MAX);
+        //if (SSP->ChromosomeBoundaries.size() != 0) assert(SSP->ChromosomeBoundaries.back() != std::numeric_limits<uint32_t>::max());
+        //if (breakpoints.size()!=0) assert(breakpoints.back() != std::numeric_limits<uint32_t>::max());
+        /*
         for (int b : SSP->ChromosomeBoundaries)
         {
             if (GP->rngw.get_1b())
@@ -470,9 +481,10 @@ std::cout << "Enters in 'recombination_RecPositions'\n";
                 );
             }
         }
+        */
 
         // add upper bound
-        recombination_breakpoints.push_back(INT_MAX);
+        recombination_breakpoints.push_back(std::numeric_limits<uint32_t>::max());
     }
 }
 
@@ -492,38 +504,38 @@ std::cout << "Enters in 'copyOver'\n";
     {
         //std::cout << "breakpoints.size() " << breakpoints.size() << "\n";
         #ifdef DEBUG
-        int Safety_T1_Absolutefrom = INT_MAX;
-        int Safety_T1_Absoluteto   = -1;
+        long long Safety_T1_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T1_Absoluteto   = -1;
         
-        int Safety_T2_Absolutefrom = INT_MAX;
-        int Safety_T2_Absoluteto   = -1;
+        long long Safety_T2_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T2_Absoluteto   = -1;
         
-        int Safety_T3_Absolutefrom = INT_MAX;
-        int Safety_T3_Absoluteto   = -1;
+        long long Safety_T3_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T3_Absoluteto   = -1;
 
-        int Safety_T4_Absolutefrom = INT_MAX;
-        int Safety_T4_Absoluteto   = -1;
+        long long Safety_T4_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T4_Absoluteto   = -1;
         
-        int Safety_T56ntrl_Absolutefrom = INT_MAX;
-        int Safety_T56ntrl_Absoluteto   = -1;
+        long long Safety_T56ntrl_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T56ntrl_Absoluteto   = -1;
 
-        int Safety_T56sel_Absolutefrom = INT_MAX;
-        int Safety_T56sel_Absoluteto   = -1;
+        long long Safety_T56sel_Absolutefrom = std::numeric_limits<uint32_t>::max();
+        long long Safety_T56sel_Absoluteto   = -1;
         #endif
         
-        int T1_from = 0;
-        int T2_from = 0;
-        int T3_from = 0;
-        int T4_from = 0;
-        int T56ntrl_from = 0;
-        int T56sel_from = 0;
-        int T1_to = 0;
-        int T2_to = 0;
-        int T3_to = 0;
-        int T4_to = 0;
-        int T56ntrl_to = 0;
-        int T56sel_to = 0;
-        int fitnessMapIndexFrom = 0;
+        uint32_t T1_from = 0;
+        uint32_t T2_from = 0;
+        uint32_t T3_from = 0;
+        uint32_t T4_from = 0;
+        uint32_t T56ntrl_from = 0;
+        uint32_t T56sel_from = 0;
+        uint32_t T1_to = 0;
+        uint32_t T2_to = 0;
+        uint32_t T3_to = 0;
+        uint32_t T4_to = 0;
+        uint32_t T56ntrl_to = 0;
+        uint32_t T56sel_to = 0;
+        uint32_t fitnessMapIndexFrom = 0;
 
         int haplo_index = segregationIndex; // There is really no reason for copying segregationIndex. I could just use segregationIndex all the way through...but he.... whatever!
 
@@ -538,36 +550,36 @@ std::cout << "Enters in 'copyOver'\n";
         for (auto b : recombination_breakpoints)
         {
             // Get positions for the two traits
-            if (b == INT_MAX)
+            if (b == std::numeric_limits<uint32_t>::max())
             {
                 // Copy is over the range [from, to)
-                T1_to = SSP->T1_nbLoci;
-                T2_to = SSP->T2_nbLoci;
-                T3_to = SSP->T3_nbLoci;
-                T4_to = SSP->T4_nbLoci;
-                T56ntrl_to = SSP->T56ntrl_nbLoci;
-                T56sel_to = SSP->T56sel_nbLoci;
-                b = SSP->TotalNbLoci - 1;
+                T1_to = SSP->Gmap.T1_nbLoci;
+                T2_to = SSP->Gmap.T2_nbLoci;
+                T3_to = SSP->Gmap.T3_nbLoci;
+                T4_to = SSP->Gmap.T4_nbLoci;
+                T56ntrl_to = SSP->Gmap.T56ntrl_nbLoci;
+                T56sel_to = SSP->Gmap.T56sel_nbLoci;
+                b = SSP->Gmap.TotalNbLoci - 1;
             } else
             {
                 assert(b >= 0);
                 // because copy is over the range [from, to) and if recombination happens at position 4, then the 4th element belongs to the previous stretch of DNA while the 5th element belongs to the next stretch of DNA.
-                T1_to = SSP->FromLocusToTXLocus[b].T1;
-                T2_to = SSP->FromLocusToTXLocus[b].T2;
-                T3_to = SSP->FromLocusToTXLocus[b].T3;
-                T4_to = SSP->FromLocusToTXLocus[b].T4;
-                T56ntrl_to = SSP->FromLocusToTXLocus[b].T56ntrl;
-                T56sel_to = SSP->FromLocusToTXLocus[b].T56sel;
+                T1_to = SSP->Gmap.FromLocusToNextT1Locus(b);
+                T2_to = SSP->Gmap.FromLocusToNextT2Locus(b);
+                T3_to = SSP->Gmap.FromLocusToNextT3Locus(b);
+                T4_to = SSP->Gmap.FromLocusToNextT4Locus(b);
+                T56ntrl_to = SSP->Gmap.FromLocusToNextT56ntrlLocus(b);
+                T56sel_to = SSP->Gmap.FromLocusToNextT56selLocus(b);
             }
 
             #ifdef DEBUG
             
-            assert(T1_to <= SSP->T1_nbLoci);
-            assert(T2_to <= SSP->T2_nbLoci);
-            assert(T3_to <= SSP->T3_nbLoci);
-            assert(T4_to <= SSP->T4_nbLoci);
-            assert(T56ntrl_to <= SSP->T56ntrl_nbLoci);
-            assert(T56sel_to <= SSP->T56sel_nbLoci);
+            assert(T1_to <= SSP->Gmap.T1_nbLoci);
+            assert(T2_to <= SSP->Gmap.T2_nbLoci);
+            assert(T3_to <= SSP->Gmap.T3_nbLoci);
+            assert(T4_to <= SSP->Gmap.T4_nbLoci);
+            assert(T56ntrl_to <= SSP->Gmap.T56ntrl_nbLoci);
+            assert(T56sel_to <= SSP->Gmap.T56sel_nbLoci);
             
             #endif
 
@@ -588,7 +600,7 @@ std::cout << "Enters in 'copyOver'\n";
 
                 // After
                 int fitnessMapIndexAfter;
-                if (b == SSP->TotalNbLoci-1)
+                if (b == SSP->Gmap.TotalNbLoci-1)
                 {
                     fitnessMapIndexAfter = SSP->NbElementsInFitnessMap;
                     assert(SSP->FromLocusToFitnessMapIndex[b]+1 == fitnessMapIndexAfter);
@@ -601,7 +613,7 @@ std::cout << "Enters in 'copyOver'\n";
                 if (fitnessMapIndexBefore == fitnessMapIndexAfter && fitnessMapIndexBefore >= fitnessMapIndexFrom) // ' && fitnessMapIndexBefore >= fitnessMapIndexFrom' is actually not needed normally
                 {
                     fitnessMapIndexToRecompute = fitnessMapIndexBefore; // Must force recalculation of fitness
-                    assert(b < SSP->TotalNbLoci-1);
+                    assert(b < SSP->Gmap.TotalNbLoci-1);
                 } else
                 {
                     fitnessMapIndexToRecompute = -1; // no need to recompute fitness
@@ -711,33 +723,33 @@ std::cout << "Enters in 'copyOver'\n";
             // Copy for T1. from included, to excluded
             if (T1_from < T1_to)
             {
-                assert(T1_to > 0 && T1_to <= SSP->T1_nbLoci + 1);
+                assert(T1_to > 0 && T1_to <= SSP->Gmap.T1_nbLoci + 1);
                 TransmittedChrom.copyIntoT1(T1_from, T1_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
-                Safety_T1_Absolutefrom = std::min(Safety_T1_Absolutefrom, T1_from);
-                Safety_T1_Absoluteto = std::max(Safety_T1_Absoluteto, T1_to);
+                Safety_T1_Absolutefrom = myMin(Safety_T1_Absolutefrom, T1_from);
+                Safety_T1_Absoluteto = myMax(Safety_T1_Absoluteto, T1_to);
                 #endif
             }       
             
             // Copy for T2. from included, to excluded
             if (T2_from < T2_to)
             {
-                assert(T2_to > 0 && T2_to <= SSP->T2_nbLoci + 1);
+                assert(T2_to > 0 && T2_to <= SSP->Gmap.T2_nbLoci + 1);
                 TransmittedChrom.copyIntoT2(T2_from, T2_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
-                Safety_T2_Absolutefrom = std::min(Safety_T2_Absolutefrom, T2_from);
-                Safety_T2_Absoluteto = std::max(Safety_T2_Absoluteto, T2_to);
+                Safety_T2_Absolutefrom = myMin(Safety_T2_Absolutefrom, T2_from);
+                Safety_T2_Absoluteto = myMax(Safety_T2_Absoluteto, T2_to);
                 #endif
             }
 
             // Copy for T3. from included, to excluded
             if (T3_from < T3_to)
             {
-                assert(T3_to > 0 && T3_to <= SSP->T3_nbLoci + 1);
+                assert(T3_to > 0 && T3_to <= SSP->Gmap.T3_nbLoci + 1);
                 TransmittedChrom.copyIntoT3(T3_from, T3_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
-                Safety_T3_Absolutefrom = std::min(Safety_T3_Absolutefrom, T3_from);
-                Safety_T3_Absoluteto = std::max(Safety_T3_Absoluteto, T3_to);
+                Safety_T3_Absolutefrom = myMin(Safety_T3_Absolutefrom, T3_from);
+                Safety_T3_Absoluteto = myMax(Safety_T3_Absoluteto, T3_to);
                 #endif
             }
 
@@ -746,36 +758,36 @@ std::cout << "Enters in 'copyOver'\n";
             {
                 // nothing to do
 
-                assert(T4_to > 0 && T4_to <= SSP->T4_nbLoci + 1);
+                assert(T4_to > 0 && T4_to <= SSP->Gmap.T4_nbLoci + 1);
                 //std::cout <<"\tLIFECYCLE!! b = "<<b<<" T4_from = "<<T4_from<<" T4_to = "<<T4_to<<"\n";
                 #ifdef DEBUG
-                Safety_T4_Absolutefrom = std::min(Safety_T4_Absolutefrom, T4_from);
-                Safety_T4_Absoluteto = std::max(Safety_T4_Absoluteto, T4_to);
+                Safety_T4_Absolutefrom = myMin(Safety_T4_Absolutefrom, T4_from);
+                Safety_T4_Absoluteto = myMax(Safety_T4_Absoluteto, T4_to);
                 #endif
             }
 
             // Copy for T56ntrl. from included, to excluded
             if (T56ntrl_from < T56ntrl_to)
             {
-                assert(T56ntrl_to > 0 && T56ntrl_to <= SSP->T56ntrl_nbLoci + 1);
+                assert(T56ntrl_to > 0 && T56ntrl_to <= SSP->Gmap.T56ntrl_nbLoci + 1);
 
                 
                 TransmittedChrom.copyIntoT56ntrl(T56ntrl_from, T56ntrl_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
-                Safety_T56ntrl_Absolutefrom = std::min(Safety_T56ntrl_Absolutefrom, T56ntrl_from);
-                Safety_T56ntrl_Absoluteto = std::max(Safety_T56ntrl_Absoluteto, T56ntrl_to);
+                Safety_T56ntrl_Absolutefrom = myMin(Safety_T56ntrl_Absolutefrom, T56ntrl_from);
+                Safety_T56ntrl_Absoluteto = myMax(Safety_T56ntrl_Absoluteto, T56ntrl_to);
                 #endif
             }
 
             // Copy for T56sel. from included, to excluded
             if (T56sel_from < T56sel_to)
             {
-                assert(T56sel_to > 0 && T56sel_to <= SSP->T56sel_nbLoci + 1);
+                assert(T56sel_to > 0 && T56sel_to <= SSP->Gmap.T56sel_nbLoci + 1);
                 
                 TransmittedChrom.copyIntoT56sel(T56sel_from, T56sel_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
-                Safety_T56sel_Absolutefrom = std::min(Safety_T56sel_Absolutefrom, T56sel_from);
-                Safety_T56sel_Absoluteto = std::max(Safety_T56sel_Absoluteto, T56sel_to);
+                Safety_T56sel_Absolutefrom = myMin(Safety_T56sel_Absolutefrom, T56sel_from);
+                Safety_T56sel_Absoluteto = myMax(Safety_T56sel_Absoluteto, T56sel_to);
                 #endif
             }
             
@@ -793,45 +805,45 @@ std::cout << "Enters in 'copyOver'\n";
 
 #ifdef DEBUG
         // Security Checks
-        if (SSP->T1_nbChars)
+        if (SSP->Gmap.T1_nbChars)
         {
-            assert(T1_to == SSP->T1_nbLoci);
-            assert(Safety_T1_Absoluteto == SSP->T1_nbLoci);
+            assert(T1_to == SSP->Gmap.T1_nbLoci);
+            assert(Safety_T1_Absoluteto == SSP->Gmap.T1_nbLoci);
             assert(Safety_T1_Absolutefrom == 0);
         }
 
-        if (SSP->T2_nbLoci)
+        if (SSP->Gmap.T2_nbLoci)
         {
-            assert(T2_to == SSP->T2_nbLoci);
-            assert(Safety_T2_Absoluteto == SSP->T2_nbLoci);
+            assert(T2_to == SSP->Gmap.T2_nbLoci);
+            assert(Safety_T2_Absoluteto == SSP->Gmap.T2_nbLoci);
             assert(Safety_T2_Absolutefrom == 0);
         }
 
-        if (SSP->T3_nbLoci)
+        if (SSP->Gmap.T3_nbLoci)
         {
-            assert(T3_to == SSP->T3_nbLoci);
-            assert(Safety_T3_Absoluteto == SSP->T3_nbLoci);
+            assert(T3_to == SSP->Gmap.T3_nbLoci);
+            assert(Safety_T3_Absoluteto == SSP->Gmap.T3_nbLoci);
             assert(Safety_T3_Absolutefrom == 0);
         }
 
-        if (SSP->T4_nbLoci)
+        if (SSP->Gmap.T4_nbLoci)
         {
-            assert(T4_to == SSP->T4_nbLoci);
-            assert(Safety_T4_Absoluteto == SSP->T4_nbLoci);
+            assert(T4_to == SSP->Gmap.T4_nbLoci);
+            assert(Safety_T4_Absoluteto == SSP->Gmap.T4_nbLoci);
             assert(Safety_T4_Absolutefrom == 0);
         }
 
-        if (SSP->T56ntrl_nbLoci)
+        if (SSP->Gmap.T56ntrl_nbLoci)
         {
-            assert(T56ntrl_to == SSP->T56ntrl_nbLoci);
-            assert(Safety_T56ntrl_Absoluteto == SSP->T56ntrl_nbLoci);
+            assert(T56ntrl_to == SSP->Gmap.T56ntrl_nbLoci);
+            assert(Safety_T56ntrl_Absoluteto == SSP->Gmap.T56ntrl_nbLoci);
             assert(Safety_T56ntrl_Absolutefrom == 0);
         }
 
-        if (SSP->T56sel_nbLoci)
+        if (SSP->Gmap.T56sel_nbLoci)
         {
-            assert(T56sel_to == SSP->T56sel_nbLoci);
-            assert(Safety_T56sel_Absoluteto == SSP->T56sel_nbLoci);
+            assert(T56sel_to == SSP->Gmap.T56sel_nbLoci);
+            assert(Safety_T56sel_Absoluteto == SSP->Gmap.T56sel_nbLoci);
             assert(Safety_T56sel_Absolutefrom == 0);
         }
 #endif
@@ -839,7 +851,7 @@ std::cout << "Enters in 'copyOver'\n";
         
     } else
     {
-        std::cout << "Internal error. 'breakpoints' has size of zero. It should always contain at least the element INT_MAX\n";
+        std::cout << "Internal error. 'breakpoints' has size of zero. It should always contain at least the element std::numeric_limits<uint32_t>::max()\n";
         abort();
     }
 
@@ -863,9 +875,9 @@ std::cout << "Enters in 'reproduceThroughCopy'\n";
     // copy from parents chromosomes to TransmittedChrom. The function also set the new values for W_T1 and W_T2
     copyOver(parent, TransmittedChrom, parentData.segregationIndex); // This will copy data from parents to offspring so it must always run
 
-    if (SSP->T4_nbLoci > 0)
+    if (SSP->Gmap.T4_nbLoci > 0)
     {
-        TransmittedChrom.T4ID = SSP->T4Tree.addHaplotype(recombination_breakpoints, {parent.getHaplo(parentData.segregationIndex).T4ID, parent.getHaplo(!parentData.segregationIndex).T4ID});
+        TransmittedChrom.T4ID = SSP->T4Tree.addHaplotype(recombination_breakpoints, {parent.getHaplo(parentData.segregationIndex).T4ID, parent.getHaplo(!parentData.segregationIndex).T4ID}, patch_index);
     }
 }
 
@@ -910,8 +922,8 @@ std::cout << "Enters in 'Mutate_T2'\n";
         auto MutPosition = SSP->geneticSampler.get_T2_mutationPosition();
         
         // Make the mutation
-        //std::cout << "MutPosition = " <<  MutPosition << "    SSP->T2_nbLoci = " << SSP->T2_nbLoci << "\n";
-        assert(MutPosition < SSP->T2_nbLoci);
+        //std::cout << "MutPosition = " <<  MutPosition << "    SSP->Gmap.T2_nbLoci = " << SSP->Gmap.T2_nbLoci << "\n";
+        assert(MutPosition < SSP->Gmap.T2_nbLoci);
         TransmittedChrom.AddMutT2_Allele(MutPosition, Habitat);  // add 1 and changes T2_W
     }
 }
@@ -927,8 +939,8 @@ std::cout << "Enters in 'Mutate_T3'\n";
         auto MutPosition = SSP->geneticSampler.get_T3_mutationPosition();
 
         // Make the mutation
-        //std::cout << "MutPosition = " <<  MutPosition << "    SSP->T3_nbLoci = " << SSP->T3_nbLoci << "\n";
-        assert(MutPosition < SSP->T3_nbLoci);   
+        //std::cout << "MutPosition = " <<  MutPosition << "    SSP->Gmap.T3_nbLoci = " << SSP->Gmap.T3_nbLoci << "\n";
+        assert(MutPosition < SSP->Gmap.T3_nbLoci);   
         TransmittedChrom.mutateT3_Allele(MutPosition);  // add 1 and changes T2_W   
     }  
 }
@@ -941,7 +953,7 @@ std::cout << "Enters in 'Mutate_T56'\n";
     int nbMuts = SSP->T56_rpois_nbMut(GP->rngw.getRNG());
     //std::cout << "nbMuts = " << nbMuts << "\n";
     std::vector<int> T5ntrlMutations;
-    if (SSP->T5ntrl_nbLoci)
+    if (SSP->Gmap.T5ntrl_nbLoci)
         T5ntrlMutations.reserve(nbMuts);
     
     for (int i = 0 ; i < nbMuts ; i++)
@@ -971,7 +983,7 @@ std::cout << "Enters in 'Mutate_T56'\n";
         //std::cout << "locusGender.second = " << locusGender.second << "\n";
         if (locusGender.first)
         {
-            if (SSP->T56ntrl_compress)
+            if (SSP->Gmap.isT56ntrlCompress)
             {
                 TransmittedChrom.mutateT56ntrl_Allele(locusGender.second);
             } else
@@ -1018,14 +1030,14 @@ std::cout << "Enters in 'Mutate_T56'\n";
         // Make the mutation - toggle bit
         //std::cout << "MutPosition = " << MutPosition << "\n";
 
-        auto& locusGender = SSP->FromT56LocusToT56genderLocus[MutPosition];
+        auto locusGender = SSP->Gmap.FromT56LocusToT56genderLocus(MutPosition);
         //std::cout << "locusGender.second = " << locusGender.second << "\n";
-        if (locusGender.first)
+        if (locusGender.isNtrl)
         {
-            TransmittedChrom.mutateT56ntrl_Allele(locusGender.second);
+            TransmittedChrom.mutateT56ntrl_Allele(locusGender.locusInGender);
         } else
         {
-            TransmittedChrom.mutateT56sel_Allele(locusGender.second, Habitat);
+            TransmittedChrom.mutateT56sel_Allele(locusGender.locusInGender, Habitat);
         }
     }
 }
@@ -1064,27 +1076,27 @@ void LifeCycle::findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGe
     /*{
         assert(GP->PatchNumber == 1);
 
-        std::vector<size_t> count(2*SSP->TotalpatchSize,0);
-        for (size_t ind_index = 0 ; ind_index < patchSizeNextGeneration[0] ; ++ind_index)
+        std::vector<uint32_t> count(2*SSP->TotalpatchSize,0);
+        for (uint32_t ind_index = 0 ; ind_index < patchSizeNextGeneration[0] ; ++ind_index)
         {
             auto& CD = PD.couples[0][ind_index];
             ++(count[2 * CD.mother.ind + CD.mother.segregationIndex]);
             ++(count[2 * CD.father.ind + CD.father.segregationIndex]);
         }
 
-        std::vector<size_t> dist(2*SSP->TotalpatchSize,0);
-        for (size_t i = 0 ; i < count.size(); ++i)
+        std::vector<uint32_t> dist(2*SSP->TotalpatchSize,0);
+        for (uint32_t i = 0 ; i < count.size(); ++i)
         {
             ++(dist[count[i]]);
         }
 
         std::cout << "\n";
-        size_t nbChildren = 0;
-        for (size_t i = 0 ; i < dist.size(); ++i)
+        uint32_t nbChildren = 0;
+        for (uint32_t i = 0 ; i < dist.size(); ++i)
         {
             nbChildren += i * dist[i];
             if (dist[i]) std::cout << i << ": " << dist[i] << "\n";
-            //for (size_t j = 0 ; j < dist[i] ; ++j)
+            //for (uint32_t j = 0 ; j < dist[i] ; ++j)
             //{
              //   std::cout << "*";
             //}

@@ -392,3 +392,14 @@ SimBit_4.9.11
 SimBit_4.10.8
 	Improve performance of simulation initialization
 	Many other changes have happened since 4.9.11. Oops, I have been bad at tracking changes recently! Sorry!
+
+SimBit_4.13.0
+	God am I bad to update this file regularly! So many version are missing. Sorry about that!
+	Paining haplotypes (current not patch index info)
+
+SimBit_4.13.1
+	Slightly changed demography when fec -1 and changing number of patches. Now, the new patch is copied from the closest (defined in terms of forward migration rate) patch and not just naively from patch 0. It still remain that setting fec != -1 is more realistic when playing out with demography
+	
+SimBit_4.13.2
+	T4 now also tracks the 
+

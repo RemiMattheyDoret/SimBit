@@ -57,14 +57,14 @@ double Individual::CalculateT1FitnessNoMultiplicity(const int& Habitat)
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
 #endif   
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbLoci * THREE);
+    assert(fits.size() == SSP->Gmap.T1_nbLoci * THREE);
 
 
     double W_T1_WholeIndividual = 1.0;
 
     // All but the last byte
     int fitPosStart = 0;
-    for (int byte = 0 ; byte < (SSP->T1_nbChars - 1) ; ++byte)
+    for (int byte = 0 ; byte < (SSP->Gmap.T1_nbChars - 1) ; ++byte)
     {    
         for (auto bit = 0 ; bit < 8 ; ++bit)       
         {
@@ -79,8 +79,8 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
     }
 
     // Last byte
-    auto lastByte = SSP->T1_nbChars - 1;
-    for (auto bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit)       
+    auto lastByte = SSP->Gmap.T1_nbChars - 1;
+    for (auto bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit)       
     {
         /*
         assert(fitPosStart == (lastByte * 8 + bit) * 3);
@@ -96,7 +96,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
             ];
         fitPosStart += 3;
     }
-    assert(fitPosStart == SSP->T1_nbLoci * 3);
+    assert(fitPosStart == SSP->Gmap.T1_nbLoci * 3);
 
     /*for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessNoMultiplicityCalculation)
     {
@@ -174,7 +174,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
     }
 
     // Calculate phenotype
-    for (int byte_index = 0 ; byte_index < SSP->T3_nbLoci; byte_index++)
+    for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
     {
         double allele = (double) haplo0.getT3_Allele(byte_index);
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
@@ -288,13 +288,13 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
             rT56 *= haplo1.CalculateT56FitnessMultiplicity(Habitat);
         } else
         {
-            if (SSP->T5sel_nbLoci)
+            if (SSP->Gmap.T5sel_nbLoci)
             {
                 //std::cout << "haplo0.T5sel_Alleles.size() = " << haplo0.T5sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T5sel_Alleles.size() = " << haplo1.T5sel_Alleles.size() << "\n";
                 rT56 = this->CalculateT56FitnessNoMultiplicity(Habitat, haplo0.T5sel_AllelesBegin(), haplo1.T5sel_AllelesBegin(), haplo0.T5sel_AllelesEnd(), haplo1.T5sel_AllelesEnd());
             }
-            else if (SSP->T6sel_nbLoci)
+            else if (SSP->Gmap.T6sel_nbLoci)
             {
                 //std::cout << "haplo0.T6sel_Alleles.size() = " << haplo0.T6sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T6sel_Alleles.size() = " << haplo1.T6sel_Alleles.size() << "\n";
@@ -445,7 +445,7 @@ double Individual::CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Hab
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
 #endif   
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbLoci * THREE);
+    assert(fits.size() == SSP->Gmap.T1_nbLoci * THREE);
 
 
     double W_T1_WholeIndividual = 1.0;
@@ -455,7 +455,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
         int byte_index = locus / 8;
         int bit_index = locus % 8;
         //std::cout << "locus = " << locus << "\n";
-        assert(locus >= 0 && locus < SSP->T1_nbLoci);
+        assert(locus >= 0 && locus < SSP->Gmap.T1_nbLoci);
 
         W_T1_WholeIndividual *= 
             fits[
@@ -590,7 +590,7 @@ double Individual::CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterato
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
 #endif   
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56sel_nbLoci * 2);
+    assert(fits.size() == SSP->Gmap.T56sel_nbLoci * 2);
 
     double w = 1.0;
 
@@ -706,13 +706,13 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
             rT56 *= haplo1.CalculateT56FitnessMultiplicityOnSubsetOfLoci(Habitat, lociSet);
         } else
         {
-            if (SSP->T5sel_nbLoci)
+            if (SSP->Gmap.T5sel_nbLoci)
             {
                 //std::cout << "haplo0.T5sel_Alleles.size() = " << haplo0.T5sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T5sel_Alleles.size() = " << haplo1.T5sel_Alleles.size() << "\n";
                 rT56 = this->CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(Habitat, lociSet, haplo0.T5sel_AllelesBegin(), haplo1.T5sel_AllelesBegin(), haplo0.T5sel_AllelesEnd(), haplo1.T5sel_AllelesEnd());
             }
-            else if (SSP->T6sel_nbLoci)
+            else if (SSP->Gmap.T6sel_nbLoci)
             {
                 //std::cout << "haplo0.T6sel_Alleles.size() = " << haplo0.T6sel_Alleles.size() << "\n";
                 //std::cout << "haplo1.T6sel_Alleles.size() = " << haplo1.T6sel_Alleles.size() << "\n";
@@ -739,23 +739,23 @@ double Individual::CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Ha
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
 #endif   
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56_nbLoci * 2);
+    assert(fits.size() == SSP->Gmap.T56_nbLoci * 2);
 
     double r = 1.0;
 
     for (auto& locus : LociSet)
     {
-        unsigned int impossibleValue = SSP->T56_nbLoci;
+        uint32_t impossibleValue = SSP->Gmap.T56_nbLoci;
         assert(locus < impossibleValue);
-        unsigned int ValueFromH0It = impossibleValue;
-        size_t value = *itHaplo0;
+        uint32_t ValueFromH0It = impossibleValue;
+        uint32_t value = *itHaplo0;
         while (itHaplo0 != itHaplo0End && locus > value)
         {
             ++itHaplo0;
             ValueFromH0It = value;
         }
 
-        unsigned int ValueFromH1It = impossibleValue;
+        uint32_t ValueFromH1It = impossibleValue;
         value = *itHaplo0;
         while (itHaplo1 != itHaplo1End && locus > value)
         {
@@ -795,4 +795,11 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
     }
 
     return r;
+}
+
+
+void Individual::freeT56Memory()
+{
+    haplo0.freeT56Memory();
+    haplo1.freeT56Memory();
 }

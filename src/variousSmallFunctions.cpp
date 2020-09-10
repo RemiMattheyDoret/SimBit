@@ -43,31 +43,64 @@ void printVector(std::vector<T> v)
 
 
 template <typename T>
-std::vector<size_t> reverse_sort_indexes(const std::vector<T> &v) {
+std::vector<uint32_t> reverse_sort_indexes(const std::vector<T> &v) {
 
   // initialize original index locations
-  std::vector<size_t> idx(v.size());
-  iota(idx.begin(), idx.end(), 0);
+  std::vector<uint32_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
 
   // sort indexes based on comparing values in v
   std::sort(idx.begin(), idx.end(),
-       [&v](size_t i1, size_t i2) {return v[i1] > v[i2];});
+       [&v](uint32_t i1, uint32_t i2) {return v[i1] > v[i2];});
 
   return idx;
 }
 
 template <typename T>
-void reorder(std::vector<T>& v, std::vector<size_t>& order)  
+std::vector<uint32_t> sort_indexes(const std::vector<T> &v) {
+
+  // initialize original index locations
+  std::vector<uint32_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  std::sort(idx.begin(), idx.end(),
+       [&v](uint32_t i1, uint32_t i2) {return v[i1] < v[i2];});
+
+  return idx;
+}
+
+template <typename T>
+void reorderNoAssertions(std::vector<T>& v, std::vector<uint32_t>& order)  
 {   
     auto v2 = v;
-    for (size_t i = 0 ; i < v.size() ; i++)
+    for (uint32_t i = 0 ; i < v.size() ; i++)
     {
         v[i] = v2[order[i]];
     }
 }
 
+
+template <typename T>
+void reorder(std::vector<T>& v, std::vector<uint32_t>& order, unsigned char assertions = 0, int PatchNumber = -1)  
+{   
+    auto v2 = v;
+    T sum = 0;
+    for (uint32_t i = 0 ; i < v.size() ; i++)
+    {
+        v[i] = v2[order[i]];
+        if (assertions == 1)
+        {
+          assert(v[i] >= 0.0 && v[i] <= 1.0 );
+          sum += v[i];
+        }
+        if (assertions == 2) assert(v[i] >= 0 && v[i] < PatchNumber);
+    }
+    if (v.size() && assertions == 1) assert(abs(sum - 1.0) < 0.00000001);
+}
+
 /*template< class T >
-void reorder(std::vector<T> &v, std::vector<size_t> const &order )  {   
+void reorder(std::vector<T> &v, std::vector<uint32_t> const &order )  {   
     for ( int s = 1, d; s < order.size(); ++ s ) {
         for ( d = order[s]; d < s; d = order[d] ) ;
         if ( d == s ) while ( d = order[d], d != s ) swap( v[s], v[d] );
@@ -256,10 +289,10 @@ void sortAndRemoveDuplicates(std::vector<T>& vec)
   vec.erase( unique( vec.begin(), vec.end() ), vec.end() );
 }
 
-template <typename INT, typename T> // INT could be int, unsigned int, char, size_t, etc...
+template <typename INT, typename T> // INT could be int, uint32_t, char, uint32_t, etc...
 void removeIndicesFromVector(std::vector<T>& v, std::vector<INT>& rm )
 {
-  size_t rm_index = 0;
+  uint32_t rm_index = 0;
   v.erase(
     std::remove_if(std::begin(v), std::end(v), [&](T& elem)
     {
@@ -275,9 +308,9 @@ void removeIndicesFromVector(std::vector<T>& v, std::vector<INT>& rm )
 }
 
 
-std::vector<unsigned int> whichUnsignedInt(std::vector<bool> b)
+std::vector<uint32_t> whichUnsignedInt(std::vector<bool> b)
 {
-  std::vector<unsigned int> r;
+  std::vector<uint32_t> r;
   for (unsigned i = 0 ; i < b.size() ; ++i)
   {
     if (b[i])
@@ -292,7 +325,7 @@ std::vector<unsigned int> whichUnsignedInt(std::vector<bool> b)
 std::vector<T1_locusDescription> whichT1_locusDescription(std::vector<bool> b)
 {
   std::vector<T1_locusDescription> r;
-  for (size_t i = 0 ; i < b.size() ; ++i)
+  for (uint32_t i = 0 ; i < b.size() ; ++i)
   {
     if (b[i])
     {
@@ -325,11 +358,11 @@ std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<doubl
   auto nbPatches = rates.size(); // Cannot use GP as we aregoing through different generation index
   std::vector<std::vector<double>> r(nbPatches);
 
-  for (size_t from_patch_index = 0 ; from_patch_index < nbPatches ; ++from_patch_index)
+  for (uint32_t from_patch_index = 0 ; from_patch_index < nbPatches ; ++from_patch_index)
   {
     r[from_patch_index].resize(nbPatches, 0.0); // important to initialize to zero
     assert(rates[from_patch_index].size() == indices[from_patch_index].size());
-    for (size_t fake_to_patch_index = 0 ; fake_to_patch_index < rates[from_patch_index].size() ; ++fake_to_patch_index)
+    for (uint32_t fake_to_patch_index = 0 ; fake_to_patch_index < rates[from_patch_index].size() ; ++fake_to_patch_index)
     {
       auto& to_patch_index = indices[from_patch_index][fake_to_patch_index];
       auto& rate = rates[from_patch_index][fake_to_patch_index];
@@ -338,7 +371,7 @@ std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<doubl
     }
 
     double sum = 0.0;
-    for (size_t to_patch_index = 0 ; to_patch_index < nbPatches ; ++to_patch_index)
+    for (uint32_t to_patch_index = 0 ; to_patch_index < nbPatches ; ++to_patch_index)
     {
       sum += r[from_patch_index][to_patch_index];
     }
@@ -353,7 +386,7 @@ std::vector<std::vector<std::vector<double>>> getFullFormMatrix(std::vector<std:
 {
   assert(__rates.size() == __indices.size());
   std::vector<std::vector<std::vector<double>>> __r(__indices.size());
-  for (size_t generation_index = 0 ; generation_index < __rates.size() ; ++generation_index)
+  for (uint32_t generation_index = 0 ; generation_index < __rates.size() ; ++generation_index)
   {
     __r[generation_index] = getFullFormMatrix(__rates[generation_index], __indices[generation_index]);
   }
@@ -361,3 +394,50 @@ std::vector<std::vector<std::vector<double>>> getFullFormMatrix(std::vector<std:
   return __r;
 }
 
+
+template<typename A, typename B>
+A myMin(A& a, B& b)
+{
+  if (a < (A) b)
+    return a;
+  else
+    return (A) b;
+}
+
+template<typename A, typename B>
+A myMax(A& a, B& b)
+{
+  if (a < (A) b)
+    return (A) b;
+  else
+    return a;
+}
+
+template<typename A, typename B>
+A myAbs(A& a, B& b)
+{
+  if (a > b)
+  {
+    return a - b;
+  } else
+  {
+    return b - a;
+  }
+}
+
+void tokenize(std::vector<std::string>& tokens, const std::string& s, const char sep)
+{
+  size_t pos = 0;
+  while (true)
+  {
+    size_t nextPos = s.find(pos, sep);
+    //std::cout << "pos = " << pos << "\n";
+    //std::cout << "nextPos = " << nextPos << "\n";
+    assert(nextPos > pos);
+    //std::cout << "substr is '" << token.substr(pos, nextPos-pos) << "'\n";
+    tokens.push_back(s.substr(pos, nextPos-pos));
+    if (nextPos == std::string::npos)
+      break;
+    pos = nextPos + 1;
+  }
+}

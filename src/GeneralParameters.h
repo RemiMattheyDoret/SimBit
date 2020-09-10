@@ -79,6 +79,7 @@ public:
     int                                             nbGenerations;
     int                                             startAtGeneration;
     int                                             CurrentGeneration;
+    int                                             burnInUntilT4Coal_check_every_N_generations;
 
     // SpeciesStuff
     int                                             nbSpecies;
@@ -105,6 +106,8 @@ public:
     void readSpeciesEcologicalRelationships(InputReader& input);
     void readT1_FST_info(InputReader& input);
     void readSeed(InputReader& input);
+    void readBurnInUntilT4Coal(InputReader& input);
+    void testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool>& neutralBurnIn_hasSpeciesCoalesced);
     //void saveSSPPatchSize_toGP();
     //void saveSSPPatchSize_toGP_lowerSecurity();
     //void UpdateParametersallSpeciesPatchSizes();

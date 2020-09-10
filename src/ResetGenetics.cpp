@@ -103,9 +103,9 @@ ResetGeneticsEvent_A::ResetGeneticsEvent_A(
             std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) received T3locus index of "<<T3locus<<" for an event happening at generation "<<generation<<".\n";
             abort();
         }
-        if (T3locus >= SSP->T3_nbLoci)
+        if (T3locus >= SSP->Gmap.T3_nbLoci)
         {
-            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->T3_nbLoci<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
+            std::cout << "For option --resetGenetics (error found in the constructor of ResetGeneticsEvent) for an event happening at generation "<<generation<<", received T3 locus index of "<<T3locus<<" while there are only "<<SSP->Gmap.T3_nbLoci<<" T3 loci in total. As a reminder, the first locus has index 0.\n";
             abort();
         }
     }
@@ -319,30 +319,30 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                     }
 
                     // T5
+                    if (event.T5loci.size() && SSP->T56_isMultiplicitySelection)
+                    {
+                        haplo.setAllW_T56(-1.0);
+                    }
+
                     for (int& T5locus : event.T5loci)
                     {
-                        auto& T5genderlocus = SSP->FromT56LocusToT56genderLocus[T5locus];
-                        int T5locusInGender = (int) T5genderlocus.second;
+                        assert(T5locus < SSP->Gmap.T56_nbLoci);
+                        auto T5genderlocus = SSP->Gmap.FromT56LocusToT56genderLocus(T5locus);
+                        int T5locusInGender = (int) T5genderlocus.locusInGender;
 
                         // Security
-                        if (T5genderlocus.first)
+                        if (T5genderlocus.isNtrl)
                         {
-                            assert(T5locusInGender < SSP->T5ntrl_nbLoci);
+                            assert(T5locusInGender < SSP->Gmap.T5ntrl_nbLoci);
                         } else
                         {
-                            assert(T5locusInGender < SSP->T5sel_nbLoci);
-                        }
-
-
-                        if (SSP->T56_isMultiplicitySelection)
-                        {
-                            haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
+                            assert(T5locusInGender < SSP->Gmap.T5sel_nbLoci);
                         }
 
 
                         if (event.mutationType == 2)
                         {
-                            if (T5genderlocus.first)
+                            if (T5genderlocus.isNtrl)
                             {
                                 haplo.toggleT5ntrl_Allele(T5locusInGender);
                             } else
@@ -352,7 +352,7 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                                 
                         } else if (event.mutationType == 0)
                         {
-                            if (T5genderlocus.first)
+                            if (T5genderlocus.isNtrl)
                             {
                                 // ntrl
                                 haplo.setT5ntrl_AlleleToZero(T5locusInGender); // setT5ntrl_AlleleToZero should be able to deal with flip meaning system thingy
@@ -360,14 +360,10 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                             {   
                                 // sel
                                 haplo.setT5sel_AlleleToZero(T5locusInGender);
-                                if (SSP->T56_isMultiplicitySelection)
-                                {
-                                    haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
-                                }
                             }
                         } else if (event.mutationType == 1)
                         {
-                            if (T5genderlocus.first)
+                            if (T5genderlocus.isNtrl)
                             {
                                 // ntrl
                                 haplo.setT5ntrl_AlleleToOne(T5locusInGender); // setT5ntrl_AlleleToOne should be able to deal with flip meaning system thingy
@@ -375,10 +371,6 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                             {   
                                 // sel
                                 haplo.setT5sel_AlleleToOne(T5locusInGender);
-                                if (SSP->T56_isMultiplicitySelection)
-                                {
-                                    haplo.setW_T56(-1.0, SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[T5locus]]);
-                                }
                             }
                         }
                         

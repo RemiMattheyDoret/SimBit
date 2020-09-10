@@ -72,7 +72,9 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "T5_AlleleFreqFile",
     "T5_LargeOutputFile",
     "T4CoalescenceFst",
-    "T1_AverageHybridIndexFile"
+    "T1_AverageHybridIndexFile",
+    "T1_haplotypeFreqs_file",
+    "sampleSeq_file"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -106,7 +108,9 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     // not T5_AlleleFreqFile
     // not T5_LargeOutputFile
     // not T4CoalescenceFst
-    T1_AverageHybridIndexFile
+    T1_AverageHybridIndexFile,
+    T1_haplotypeFreqs_file,
+    // not sampleSeq_file
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -120,7 +124,7 @@ void OutputFile::mergeFiles(std::vector<std::string> listOfFiles)
     // https://stackoverflow.com/questions/19564450/concatenate-two-huge-files-in-c
     std::string path = this->getPathWithoutGenerationDespiteBeingGenerationSpecific();
 
-    remove(path.c_str());
+    std::remove(path.c_str());
     ofs.open(path, std::ios_base::app);
     if (!ofs.is_open())
     {
@@ -160,6 +164,7 @@ bool OutputFile::isLocusInSubset(T1_locusDescription L, int speciesIndex)
     // 'operator==' between 'T1_locusDescription' and 'int' compares with the attribute 'locus'
 }
 
+
 bool OutputFile::isLocusInSubset(int locus, int speciesIndex)
 {
     T1_locusDescription L(locus); // minimalist instantiation (no division by eight) used only to search in 'subset'
@@ -172,30 +177,61 @@ std::string OutputFile::getPathForSeed()
     return GeneralPath + filename + "_seed" + std::string("_G") + std::to_string(GP->CurrentGeneration) + sequencingErrorStringToAddToFilnames + extension;
 }
 
-std::string OutputFile::getPath(std::string patchIndexString)
+std::string OutputFile::getPath(std::string patchIndexString, size_t mutPlacementIndex)
 {
     if (this->isSpeciesSpecific)
     {
         assert(SSP != nullptr);
         if (this->isGenerationSpecific)
         {
-            // This is the complete path!
             if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
             {
-                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+                if (isT4MutationPlacementSpecific)
+                {
+                    assert(mutPlacementIndex >= 0);
+                    return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+                } else
+                {
+                    assert(mutPlacementIndex == 0);
+                    return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+                }
             } else
             {
-                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;    
+                if (isT4MutationPlacementSpecific)
+                {
+                    assert(mutPlacementIndex >= 0);
+                    return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;    
+                } else
+                {
+                    assert(mutPlacementIndex == 0);
+                    return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;    
+                }
             }
             
         } else
         {
             if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
             {
-                return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+                if (isT4MutationPlacementSpecific)
+                {
+                    assert(mutPlacementIndex >= 0);
+                    return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+                } else
+                {
+                    assert(mutPlacementIndex == 0);
+                    return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+                }
             } else
             {
-                return GeneralPath + filename + "_" + SSP->speciesName + patchIndexString + sequencingErrorStringToAddToFilnames + extension;    
+                if (isT4MutationPlacementSpecific)
+                {
+                    assert(mutPlacementIndex >= 0);
+                    return GeneralPath + filename + "_" + SSP->speciesName + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;    
+                } else
+                {
+                    assert(mutPlacementIndex == 0);
+                    return GeneralPath + filename + "_" + SSP->speciesName + patchIndexString + sequencingErrorStringToAddToFilnames + extension;    
+                }
             }
             
         }
@@ -204,15 +240,23 @@ std::string OutputFile::getPath(std::string patchIndexString)
     {
         if (this->isGenerationSpecific)
         {
-            return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+            if (isT4MutationPlacementSpecific)
+            {
+                assert(mutPlacementIndex >= 0);
+                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+            } else
+            {
+                assert(mutPlacementIndex == 0);
+                return GeneralPath + filename + std::string("_G") + std::to_string(GP->CurrentGeneration) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+            }
         } else
         {
-            return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+            return GeneralPath + filename + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
         }
     }       
 }
 
-std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific()
+std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific(size_t mutPlacementIndex)
 {
     if (this->isSpeciesSpecific)
     {
@@ -220,19 +264,43 @@ std::string OutputFile::getPathWithoutGenerationDespiteBeingGenerationSpecific()
 
         if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
         {
-            return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+            if (isT4MutationPlacementSpecific)
+            {
+                assert(mutPlacementIndex >= 0);
+                return GeneralPath + filename + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+            } else
+            {
+                assert(mutPlacementIndex == 0);
+                return GeneralPath + filename + sequencingErrorStringToAddToFilnames  + extension;
+            }
         } else
         {
-            return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + extension;    
+            if (isT4MutationPlacementSpecific)
+            {
+                assert(mutPlacementIndex >= 0);
+                return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+            } else
+            {
+                assert(mutPlacementIndex == 0);
+                return GeneralPath + filename + "_" + SSP->speciesName + sequencingErrorStringToAddToFilnames  + extension;    
+            }
         }
         
     } else
     {
-        return GeneralPath + filename + sequencingErrorStringToAddToFilnames + extension;
+        if (isT4MutationPlacementSpecific)
+        {
+            assert(mutPlacementIndex >= 0);
+            return GeneralPath + filename + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+        } else
+        {
+            assert(mutPlacementIndex == 0);
+            return GeneralPath + filename + sequencingErrorStringToAddToFilnames  + extension;
+        }
     }
 }
 
-std::string OutputFile::getPath(int generation, std::string patchIndexString)
+std::string OutputFile::getPath(int generation, std::string patchIndexString, size_t mutPlacementIndex)
 {
     assert(this->isGenerationSpecific);
     if (this->isSpeciesSpecific)
@@ -241,18 +309,249 @@ std::string OutputFile::getPath(int generation, std::string patchIndexString)
 
         if (GP->nbSpecies == 1 && SSP->speciesName == "sp")
         {
-            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+            if (isT4MutationPlacementSpecific)
+            {
+                assert(mutPlacementIndex >= 0);
+                return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+            } else
+            {
+                assert(mutPlacementIndex == 0);
+                return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+            }
         } else
         {
-            return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+            if (isT4MutationPlacementSpecific)
+            {
+                assert(mutPlacementIndex >= 0);
+                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+            } else
+            {
+                assert(mutPlacementIndex == 0);
+                return GeneralPath + filename + "_" + SSP->speciesName + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+            }
         }
         
     } else
     {
-        return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + extension;
+        if (isT4MutationPlacementSpecific)
+        {
+            assert(mutPlacementIndex >= 0);
+            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames + std::string("_mutPlac") + std::to_string(mutPlacementIndex) + extension;
+        } else
+        {
+            assert(mutPlacementIndex == 0);
+            return GeneralPath + filename + std::string("_G") + std::to_string(generation) + patchIndexString + sequencingErrorStringToAddToFilnames  + extension;
+        }
     }
 }
 
+void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
+{
+    std::vector<int> observedGenerations;
+    while (input.IsThereMoreToRead())
+    {
+        // Assert I get keyword 'generations'
+        {
+            auto keywordgenerations = input.GetNextElementString();
+            if (keywordgenerations != "generations")
+            {
+                std::cout << "For outputs concerning painted haplotypes, expected the keyword 'generations' but received " << keywordgenerations << " instead.\n";
+                abort();
+            }
+        }
+   
+
+        auto token = input.GetNextElementString();
+        auto sepPos = token.find("-");
+        if (sepPos == std::string::npos)
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration->observedGeneration' (e.g. '50-200'). Received token " << token << " that did not include any '-' (dash) sign. Note if you wrote something like '50 - 200' (note the spaces), then the tokens will be read as '50', '-' and '200' which does not work. So please, don't put spaces around '-'.";
+            abort();
+        }
+        std::string paintedGeneration_s  = token.substr(0, sepPos);
+        std::string observedGeneration_s = token.substr(sepPos + 1);
+   
+        int paintedGeneration;
+        int observedGeneration;
+        if (paintedGeneration_s == "end")
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50->200'). The paintedGeneration received is 'end' (end = " << GP->CurrentGeneration << "). Sorry, you cannot paint the haplotype at the last generation as you need to leave at least one generation between the generation when you paint the haplotypes and the generation when you observe how the painted piece have segregated.\n";
+            abort();
+        } else
+        {
+            if (paintedGeneration_s == "anc")
+            {
+                paintedGeneration = std::numeric_limits<int>::lowest();
+            } else
+            {
+                paintedGeneration = (int) std::stod(paintedGeneration_s);
+            }
+        }
+   
+        if (observedGeneration_s == "end")
+        {
+            observedGeneration = GP->nbGenerations;
+        } else
+        {
+            observedGeneration = (int) std::stod(observedGeneration_s);
+        }
+
+        if (observedGeneration > GP->nbGenerations)
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is "<<paintedGeneration<<" and the observedGeneration received is "<<observedGeneration<<"'. observedGeneration must be lower or equal to the total nuumber of generations simulated (as indicated with option --nbGens (--nbGenerations), the total number of generations simulated is "<< GP->nbGenerations<<")\n";
+            abort();
+        }
+   
+        if (paintedGeneration >= observedGeneration)
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is "<<paintedGeneration<<" and the observedGeneration received is "<<observedGeneration<<"'. observedGeneration must be strictly greater than paintedGeneration\n";
+            abort();
+        }
+
+
+        auto generation_index = std::upper_bound(GP->__GenerationChange.begin(), GP->__GenerationChange.end(),  observedGeneration) - GP->__GenerationChange.begin() - 1;
+        assert(generation_index < GP->__PatchNumber.size());
+        
+        // Assert I get keyword 'patch'
+        {
+            auto keywordPatch = input.GetNextElementString();
+            if (keywordPatch != "patch")
+            {
+                std::cout << "For outputs concerning painted haplotypes, expected the keyword 'patch' but received " << keywordPatch << " instead.\n";
+                abort();
+            }
+        }
+
+        std::vector<int> patch_indices;
+        while (input.IsThereMoreToRead() && input.PeakNextElementString() != "nbHaplos" && input.PeakNextElementString() != "generations" && input.PeakNextElementString() != "patch")
+        {
+            auto patch_index = input.GetNextElementInt();
+            patch_indices.push_back(patch_index);
+
+            if (patch_index >= GP->__PatchNumber[generation_index])
+            {
+                std::cout << "For outputs concerning painted haplotypes, received the patch_index " << patch_index << " for observation at generation " << observedGeneration << " of haplotypes painted at generation " << paintedGeneration << ". generation " << observedGeneration << " there are however only " << GP->__PatchNumber[generation_index] << " patches. It is therefore impossible to sample from patch " << patch_index << ". As a reminder, the patch_index (just like any other indices in SimBit) is zero-based counting.\n";
+                abort();
+            }
+        }
+
+
+        if (patch_indices.size() == 0)
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected some input (different from keywords 'patch', 'nbHaplos' or 'generations') after the keyword 'patch'\n";
+            abort();
+        }
+
+
+        // Assert I got keyword 'nbHaplos'
+        {
+            auto keywordnbHaplos = input.GetNextElementString();
+            if (keywordnbHaplos != "nbHaplos")
+            {
+                std::cout << "For outputs concerning painted haplotypes, expected the keyword 'nbHaplos' but received " << keywordnbHaplos << " instead. Note this sounds like an internal bug as the code should have been able to run this line only if the keyword 'nbHaplos' had been found. Weird! Even if you end up finding it is caused by a non-sense input of yours, please let Remi know about it.\n";
+                abort();
+            }
+        }
+        
+
+        assert(patch_indices.size());
+        std::vector<int> nbHaplotypes;
+        while (input.IsThereMoreToRead() && input.PeakNextElementString() != "nbHaplos" && input.PeakNextElementString() != "generations" && input.PeakNextElementString() != "patch")
+        {
+            auto nbH = input.GetNextElementInt();
+            nbHaplotypes.push_back(nbH);
+
+            if (nbHaplotypes.size() > patch_indices.size())
+            {
+                std::cout << "For outputs concerning painted haplotypes, received more values following the keyword 'nbHaplos' than values following the keyword 'patch'\n";
+                abort();
+            }
+
+            assert(nbHaplotypes.size() - 1 < patch_indices.size());
+
+            if (GP->nbSpecies == 1)
+            {
+                if (!allParameters.SSPs[0].T4_paintedHaplo_shouldIgnorePatchSizeSecurityChecks)
+                {
+                    auto patch_index = patch_indices[nbHaplotypes.size() - 1];
+
+                    if (nbH > 2 * allParameters.SSPs[0].__patchCapacity[generation_index][patch_index])
+                    {
+                        std::cout << "For outputs concerning painted haplotypes, received the patch_index " << patch_index << " for observation at generation " << observedGeneration << " of haplotypes painted at generation " << paintedGeneration << ". You asked for sampling " << nbH << " haplotypes. The carrying capacity for the patch " << patch_index << " at generation " << observedGeneration << " is only " << allParameters.SSPs[0].__patchCapacity[generation_index][patch_index] << " individuals (or " << 2 * allParameters.SSPs[0].__patchCapacity[generation_index][patch_index]<< " haplotypes).\n";
+                        abort();
+                    }
+                }
+            }
+        }
+        
+        if (nbHaplotypes.size() == 0)
+        {
+            std::cout << "For outputs concerning painted haplotypes, expected some input (different from keywords 'patch', 'nbHaplos' or 'generations') after the keyword 'patch'\n";
+            abort();
+        }
+        if (nbHaplotypes.size() != patch_indices.size())
+        {
+            std::cout << "For outputs concerning painted haplotypes, received " << patch_indices.size() << " patches (after keyword 'patch') but " << nbHaplotypes.size() << " number of haplotypes per patch values (after keyword 'nbHaplos').\n";
+            abort();
+        }
+        
+    
+        observedGenerations.push_back(observedGeneration);
+        T4TreeRec::generationsToKeepInTheTree.push_back(paintedGeneration);
+        this->T4_paintedHaplo_information.push_back(
+            {
+                (int) paintedGeneration,
+                (int) observedGeneration,
+                patch_indices,
+                nbHaplotypes
+            }
+        );
+    }
+
+    std::sort(observedGenerations.begin(), observedGenerations.end());
+    observedGenerations.erase( std::unique( observedGenerations.begin(), observedGenerations.end() ), observedGenerations.end() );    
+
+    this->setTimes(observedGenerations);
+
+    std::sort(T4TreeRec::generationsToKeepInTheTree.begin(), T4TreeRec::generationsToKeepInTheTree.end());
+    T4TreeRec::generationsToKeepInTheTree.erase( std::unique( T4TreeRec::generationsToKeepInTheTree.begin(), T4TreeRec::generationsToKeepInTheTree.end() ), T4TreeRec::generationsToKeepInTheTree.end() );
+
+
+    assert(this->T4_paintedHaplo_information.size());
+    std::sort(
+        this->T4_paintedHaplo_information.begin(),
+        this->T4_paintedHaplo_information.end(),
+        [](const OutputFile::T4_paintedHaplo_info& lhs, const OutputFile::T4_paintedHaplo_info& rhs)
+        {
+            if (lhs.observedGeneration == rhs.observedGeneration)
+            {
+                return lhs.paintedGeneration < rhs.paintedGeneration;
+            } else
+            {
+                return lhs.observedGeneration < rhs.observedGeneration;
+            }
+        }
+    );
+
+    assert(this->T4_paintedHaplo_information.size());
+    for (size_t i = 1 ; i < this->T4_paintedHaplo_information.size() ; ++i)
+    {
+        auto& curr = this->T4_paintedHaplo_information[i];
+        auto& prev = this->T4_paintedHaplo_information[i-1];
+        if (curr.observedGeneration == prev.observedGeneration && curr.paintedGeneration == prev.paintedGeneration && curr.patch_indices == prev.patch_indices)
+        {
+            std::cout << "For outputs concerning painted haplotypes, received twice the information to sample the sames patches at generation " << prev.observedGeneration << " of haplotypes painted at generation " << curr.paintedGeneration << ". Maybe you only meant to add up the number of haplotypes but I am unsure that's what you meant so I prefer to just raise an error message just in case.\n";
+            abort();
+        }
+    }
+
+    assert(this->T4_paintedHaplo_information.size());
+}
+
+bool OutputFile::getIsT4MutationPlacementSpecific()
+{
+    return isT4MutationPlacementSpecific;
+}
 
 void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
 {
@@ -265,7 +564,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
     std::vector<int> v;
     while (input.IsThereMoreToRead())
     {
-        if (input.PeakNextElementString() == "subset")
+        if (input.PeakNextElementString() == "subset" || input.PeakNextElementString() == "sequence")
         {
             break;
         }
@@ -289,6 +588,7 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             {
                 v.push_back(t);
             }
+            if (v.back() < to) v.push_back(to);
         } else
         {
             if (input.PeakNextElementString() == "end")
@@ -304,7 +604,10 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
     }
     this->setTimes(v);
     
-    if (input.IsThereMoreToRead())
+
+
+    
+    if (input.IsThereMoreToRead() && input.PeakNextElementString() != "sequence")
     {
         assert(input.GetNextElementString() == "subset");
 
@@ -338,20 +641,18 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
                 int locus = inputOneSpecies.GetNextElementInt();
                 oneSpeciesSubset.push_back({locus/8, locus%8, locus});
             }  
-	    inputOneSpecies.workDone(); 
+        inputOneSpecies.workDone(); 
             this->subset.push_back(oneSpeciesSubset);
 
         }
         SSP = SSP_toReset;
-
     } else
     {
-        
         // must list all loci in subset
         std::vector<T1_locusDescription> oneSpeciesSubset;
         for (int speciesIndex = 0 ; speciesIndex < GP->nbSpecies; speciesIndex++)
         {
-            for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->T1_nbLoci; locus++)
+            for (int locus = 0 ; locus < allParameters.getSSPaddress(speciesIndex)->Gmap.T1_nbLoci; locus++)
             {
                 /*
                 std::cout << "locus = " << locus << "\n";
@@ -362,9 +663,8 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             }
             this->subset.push_back(oneSpeciesSubset);
         }
-    }
+    }            
     assert(this->subset.size() == GP->nbSpecies);
-    input.consideredFullyRead();
 }
 
 bool OutputFile::isEmpty(std::ifstream& pFile)
@@ -498,11 +798,24 @@ bool OutputFile::isTime()
     if (std::find(times.begin(), times.end(),  GP->CurrentGeneration) != times.end())
         std::cout << "time has been found!";
     */
-    return std::find(times.begin(), times.end(),  GP->CurrentGeneration) != times.end();
+
+    if (KillOnDemand::justAboutToKill)
+    {
+        if (times.back() > GP->CurrentGeneration)
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    } else
+    {
+        return std::find(times.begin(), times.end(),  GP->CurrentGeneration) != times.end();
+    }
 }
 
 OutputFile::OutputFile(OutputFile&& f)
-: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isPatchSpecific(f.isPatchSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet), subset(f.subset)
+: filename(std::move(f.filename)), extension(f.extension), OutputFileType(f.OutputFileType), times(f.times), isGenerationSpecific(f.isGenerationSpecific), isSpeciesSpecific(f.isSpeciesSpecific), isPatchSpecific(f.isPatchSpecific), isNbLinesEqualNbOutputTimes(f.isNbLinesEqualNbOutputTimes), doesTimeNeedsToBeSet(f.doesTimeNeedsToBeSet), isT4MutationPlacementSpecific(f.isT4MutationPlacementSpecific), subset(f.subset), T4_paintedHaplo_information(std::move(f.T4_paintedHaplo_information))
 {}
 
 OutputFile::OutputFile(std::string f, OutputFileTypes t)
@@ -521,6 +834,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T1_vcfFile)
     {
         this->extension = std::string(".T1vcf");
@@ -529,6 +843,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T1_LargeOutputFile)
     {
         this->extension = std::string(".T1LO");
@@ -537,6 +852,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T1_AlleleFreqFile)
     {
         this->extension = std::string(".T1AllFreq");
@@ -545,6 +861,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == MeanLDFile)
     {
         this->extension = std::string(".T1LD");
@@ -561,6 +878,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == HybridIndexFile)
     {
         this->extension = std::string(".T1HI");
@@ -569,6 +887,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T1_AverageHybridIndexFile)
     {
         this->extension = std::string(".T1AverageHI");
@@ -577,6 +896,16 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    } else if (t == T1_haplotypeFreqs_file)
+    {
+        this->extension = std::string(".T1haploFreqs");
+        isGenerationSpecific = true; // Generation specific because the number of columns will vary
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = true;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == ExpectiMinRecFile)
     {
         this->extension = std::string(".T1EMR");
@@ -585,6 +914,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T2_LargeOutputFile)
     {
         this->extension = std::string(".T2LO");
@@ -593,6 +923,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == SaveBinaryFile)
     {
         this->extension = std::string(".bin");
@@ -601,6 +932,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T3_MeanVarFile)
     {
         this->extension = std::string(".T3MeanVar");
@@ -609,6 +941,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T3_LargeOutputFile)
     {
         this->extension = std::string(".T3LO");
@@ -617,6 +950,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == fitness)
     {
         this->extension = std::string(".fit");
@@ -625,6 +959,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == fitnessStats)
     {
         this->extension = std::string(".fitStats");
@@ -633,6 +968,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T1_FST)
     {
         this->extension = std::string(".T1_FST");
@@ -641,6 +977,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == extraGeneticInfo)
     {
         this->extension = std::string(".extraGeneticInfo");
@@ -649,6 +986,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
+        isT4MutationPlacementSpecific = false;
     }  else if (t == patchSize)
     {
         this->extension = std::string(".patchSize");
@@ -657,6 +995,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == extinction)
     {
         this->extension = std::string(".extinction");
@@ -665,6 +1004,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
+        isT4MutationPlacementSpecific = false;
     } else if (t == genealogy)
     {
         this->extension = std::string(".genealogy");
@@ -673,6 +1013,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == fitnessSubsetLoci)
     {
         this->extension = std::string(".fitSubLoci");
@@ -681,6 +1022,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T4_LargeOutputFile)
     {
         this->extension = std::string(".T4LO");
@@ -689,6 +1031,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
     } else if (t == T4_vcfFile)
     {
         this->extension = std::string(".T4vcf");
@@ -697,6 +1040,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
     } else if (t == T4_SFS_file)
     {
         this->extension = std::string(".T4SFS");
@@ -705,6 +1049,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
     } else if (t == T1_SFS_file)
     {
         this->extension = std::string(".T1SFS");
@@ -713,6 +1058,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T4_printTree)
     {
         this->extension = std::string(".T4tree");
@@ -721,6 +1067,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isSpeciesSpecific = true;
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = false;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T56_vcfFile)
     {
         this->extension = std::string(".T5vcf");
@@ -729,6 +1076,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = true;
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T56_SFS_file)
     {
         this->extension = std::string(".T5SFS");
@@ -737,7 +1085,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
-
+        isT4MutationPlacementSpecific = false;
     } else if (t == T56_AlleleFreqFile)
     {
         this->extension = std::string(".T5AllFreq");
@@ -746,6 +1094,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T56_LargeOutputFile)
     {
         this->extension = std::string(".T5LO");
@@ -754,6 +1103,7 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else if (t == T4CoalescenceFst)
     {
         this->extension = std::string(".T4CoalescenceFst");
@@ -762,6 +1112,52 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isPatchSpecific = false;
         isNbLinesEqualNbOutputTimes = true;
         doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    } else if (t == sampleSeq_file)
+    {
+        this->extension = std::string(".seq");
+        isGenerationSpecific = true;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
+    } else if (t == T4_paintedHaplo_file)
+    {
+        this->extension = std::string(".paintedHaplo");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    } else if (t == T4_paintedHaploSegmentsDiversity_file)
+    {
+        this->extension = std::string(".paintedHaploDiversity");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    } else if (t == T4_SNPfreq_file)
+    {
+        this->extension = std::string(".T4_SNPfreq");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
+    } else if (t == Tx_SNPfreq_file)
+    {
+        this->extension = std::string(".Tx_SNPfreq");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = true;
     } else 
     {
         std::cout << "Internal Error: In class 'OutputFile' in 'set_path', unknown fileType\n";
@@ -827,6 +1223,22 @@ void OutputFile::open()
     }
 }
 
+
+void OutputFile::openT4(size_t mutPlacementIndex)
+{
+    std::string emptyString("");       
+    std::string path = this->getPath(emptyString, mutPlacementIndex);
+    
+    
+    ofs.open(path, std::ios_base::app);
+
+    if (!ofs.is_open())
+    {
+        std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+        abort();
+    }
+}
+
 void OutputFile::openWithoutGenerationDespiteBeingGenerationSpecific()
 {
     std::string path = this->getPathWithoutGenerationDespiteBeingGenerationSpecific();
@@ -854,13 +1266,72 @@ void OutputFile::open(int generation)
     }
 }
 
+void OutputFile::remove()
+{
+    std::string path;
+    
+    if (this->isPatchSpecific)
+    {
+        for (uint32_t patch_index = 0 ; patch_index < GP->maxEverPatchNumber; ++patch_index)
+        {
+            assert(!isT4MutationPlacementSpecific);
+            std::string patchIndexString = std::string("_P") + std::to_string(patch_index);
+
+            path = this->getPath(patchIndexString);
+
+            ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+            if (!ofs.is_open())
+            {
+                std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+                abort();
+            }
+            ofs.close();
+        
+            std::remove(path.c_str());
+        }
+    } else
+    {
+        if (isT4MutationPlacementSpecific)
+        {
+            for (size_t mutPlacingIndex = 0 ; mutPlacingIndex < SSP->T4_nbMutationPlacingsPerOutput ; ++mutPlacingIndex)
+            {
+                std::string emptyString("");
+                path = this->getPath(emptyString, mutPlacingIndex);
+
+                ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+                if (!ofs.is_open())
+                {
+                    std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+                    abort();
+                }
+                ofs.close();
+                
+                std::remove(path.c_str());
+            }
+        } else
+        {
+            path = this->getPath();
+
+            ofs.open(path, std::ofstream::out | std::ofstream::trunc);
+            if (!ofs.is_open())
+            {
+                std::cout << "OutputFileType " << getFileTypeName(OutputFileType) << "(index "<< OutputFileType <<")" << " with path '" << path << "' failed to open!" << "\n";
+                abort();
+            }
+            ofs.close();
+            
+            std::remove(path.c_str());
+        }
+    }
+}
+
 void OutputFile::clearContent()
 {
     std::string path;
     
     if (this->isPatchSpecific)
     {
-        for (size_t patch_index = 0 ; patch_index < GP->maxEverPatchNumber; ++patch_index)
+        for (uint32_t patch_index = 0 ; patch_index < GP->maxEverPatchNumber; ++patch_index)
         {
             std::string patchIndexString = std::string("_P") + std::to_string(patch_index);
 
@@ -912,6 +1383,12 @@ void OutputFile::write(const std::string& s)
     assert(this->isOpen());
     ofs << s;
 }
+
+void OutputFile::write(const std::vector<std::string>& s)
+{
+    for (const auto& elem : s) write(elem);
+}
+
 
 void OutputFile::writeBinary(const char* first, int second)
 {

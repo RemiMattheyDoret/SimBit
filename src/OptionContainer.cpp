@@ -80,23 +80,23 @@ std::string OptionContainer::renameFlag(std::string flag)
     abort();
 }
 
-unsigned int OptionContainer::minVector(const std::vector<unsigned int> v)
+uint32_t OptionContainer::minVector(const std::vector<uint32_t> v)
 {
-    unsigned int min = INT_MAX;
+    uint32_t min = INT_MAX;
     for (auto& elem : v) min = std::min(min,elem);
     return min;
 }
 
 double OptionContainer::mean_levenshtein_distance(const std::string& s1, const std::string& s2) 
 {
-    const std::size_t len1 = s1.size(), len2 = s2.size();
-    std::vector<unsigned int> col(len2+1), prevCol(len2+1);
+    const std::uint32_t len1 = s1.size(), len2 = s2.size();
+    std::vector<uint32_t> col(len2+1), prevCol(len2+1);
     
-    for (unsigned int i = 0; i < prevCol.size(); i++)
+    for (uint32_t i = 0; i < prevCol.size(); i++)
         prevCol[i] = i;
-    for (unsigned int i = 0; i < len1; i++) {
+    for (uint32_t i = 0; i < len1; i++) {
         col[0] = i+1;
-        for (unsigned int j = 0; j < len2; j++)
+        for (uint32_t j = 0; j < len2; j++)
                         // note that std::min({arg1, arg2, arg3}) works only in C++11,
                         // for C++98 use std::min(std::min(arg1, arg2), arg3)
             col[j+1] = minVector({ prevCol[1 + j] + 1, col[j] + 1, prevCol[j] + (tolower(s1[i])==tolower(s2[j]) ? 0 : 1) });

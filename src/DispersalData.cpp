@@ -37,8 +37,9 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
 {
     
     double nbOffs = 0.0;
-    
-    //std::cout << "SSP->growthK["<<patch_index<<"] = " << SSP->growthK[patch_index] << "\n";
+    if (SSP->patchSize[patch_from] == 0) {return 0;}
+    //std::cout << "SSP->growthK["<<patch_from<<"] = " << SSP->growthK[patch_from] << "\n";
+    assert(SSP->growthK.size() > patch_from);
 
     if (GP->nbSpecies == 1)
     {
@@ -46,7 +47,7 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
         {
             nbOffs = rn_t;
         }
-        else if (SSP->growthK[patch_from] == -2.0) // -2 means always at true carrying capacity
+        else if (SSP->growthK[patch_from] == -2.0) // -2 means logistic with true carrying capacity
         {
             if (r <= 1) // if decline
             {
@@ -151,10 +152,13 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
         std::cout << "nbOffs = " << nbOffs << "\n";
     }*/
 
+    assert(nbOffs >= 0);
+    assert(!std::isnan(nbOffs));
+
     return nbOffs;
 }
 
-void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>& CumSumFits, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
+void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
 {
 #ifdef DEBUG
     std::cout << "Enters in DispersalData::getMigrationEventsForEachDestinationPatch\n";
@@ -183,8 +187,10 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
         //////////////////////////////////
         double totalFitness;
         double meanFitness;
-        if (SSP->isAnySelection)
+        if (SSP->DispWeightByFitness && SSP->isAnySelection)
         {
+            assert(CumSumFits_p != nullptr);
+            auto& CumSumFits = *CumSumFits_p;
             if (SSP->malesAndFemales)
             {
                 assert(SSP->patchSize[patch_from] == CumSumFits[patch_from][0].size() + CumSumFits[patch_from][1].size());
@@ -205,7 +211,10 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
             }*/
 
             totalFitness = CumSumFits[patch_from][0].back();
-            meanFitness = totalFitness / SSP->patchSize[patch_from];
+            if (SSP->patchSize[patch_from] > 0)
+                meanFitness = totalFitness / SSP->patchSize[patch_from];
+            else
+                meanFitness = 0;
         } else
         {
             totalFitness = SSP->patchSize[patch_from];
@@ -222,8 +231,18 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
         if (SSP->fecundityForFitnessOfOne != -1)
         {
             double n_t  = SSP->patchSize[patch_from];
-            double rn_t = totalFitness * SSP->fecundityForFitnessOfOne;
-            double r    = meanFitness * SSP->fecundityForFitnessOfOne;
+            double r, rn_t;
+            if (SSP->fecundityDependentOfFitness)
+            {
+                rn_t = totalFitness * SSP->fecundityForFitnessOfOne;
+                r    = meanFitness * SSP->fecundityForFitnessOfOne;
+            } else
+            {
+                rn_t = n_t * SSP->fecundityForFitnessOfOne;
+                r    = SSP->fecundityForFitnessOfOne;
+            }
+            
+            
             /*if (patch_from == 1003)
             {
                 std::cout << "meanFitness = " << meanFitness << "\n";
@@ -234,10 +253,9 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
         } else
         {
             nbOffs = totalFitness;
+            assert(nbOffs == SSP->patchCapacity[patch_from]);
         }
             
-        
-        
 
         //if (patch_from == 1003) std::cout << "nbOffs of patch "<< patch_from << " = " << nbOffs << ":\n";
 
@@ -248,7 +266,9 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
             auto patch_to = forwardMigrationIndex[patch_from][FMpatchToFakeIndex];
             assert(patch_to >= 0 && patch_to < GP->PatchNumber);
             double forwardMigrationRate = (double) forwardMigration[patch_from][FMpatchToFakeIndex];
-            assert(forwardMigrationRate >= 0.0);
+            assert(forwardMigrationRate >= 0.0 && forwardMigrationRate <= 1.0);
+
+            assert(!std::isnan(forwardMigrationRate));
             //if (patch_from == 1003) std::cout << "\t" << forwardMigrationRate * nbOffs << " of them go to " << patch_to << "\n";
             migrationEventsForEachDestinationPatch[patch_to].addMigrationEvent(forwardMigrationRate * nbOffs, patch_from); // Will only be considered if greater than 0 migrants
         }
@@ -277,34 +297,15 @@ void DispersalData::setOriginalBackwardMigrationIfNeeded()
     {
         assert(SSP->fecundityForFitnessOfOne == -1);
 
-        std::vector<ListMigrationEvents> migrationEventsForEachDestinationPatch(GP->PatchNumber);
-
-
-        // Set backward migration rates
-        for (unsigned patch_from = 0 ; patch_from < GP->PatchNumber ; patch_from++)
-        {
-            assert(forwardMigrationIndex.size() > patch_from);
-            assert(forwardMigration[patch_from].size() == forwardMigrationIndex[patch_from].size());
-
-            for (unsigned FMpatchToFakeIndex = 0 ; FMpatchToFakeIndex < forwardMigration[patch_from].size() ; ++FMpatchToFakeIndex)
-            {
-                auto patch_to = forwardMigrationIndex[patch_from][FMpatchToFakeIndex];
-                assert(patch_to >= 0 && patch_to < GP->PatchNumber);
-                double forwardMigrationRate = (double) forwardMigration[patch_from][FMpatchToFakeIndex];
-                migrationEventsForEachDestinationPatch[patch_to].addMigrationEvent(forwardMigrationRate, patch_from); // Will only be considered if rate is greater than 0
-            }
-        }
-
+        std::vector<ListMigrationEvents> migrationEventsForEachDestinationPatch; // migrationEventsForEachDestinationPatch[patch_to]
+        
+        getMigrationEventsForEachDestinationPatch(nullptr, migrationEventsForEachDestinationPatch);
         computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(migrationEventsForEachDestinationPatch);
 
-        // assert
-        for (unsigned patch_to = 0 ; patch_to < GP->PatchNumber ; patch_to++)
+        /*for (size_t patch_to = 0 ; patch_to < GP->PatchNumber; ++patch_to)
         {
-            double totalProb = 0.0;
-            for (auto& prob : BackwardMigration[patch_to]) totalProb+=prob;
-            assert(fabs(totalProb - 1.0) < 0.000000001);
-
-        }
+            std::cout << "From patch " << BackwardMigrationIndex[patch_to][0] << " to patch " << patch_to << " = " << BackwardMigration[patch_to][0] << "\n";
+        }*/
 
     }
 }
@@ -365,11 +366,37 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
     ////////////////////////////////////////////////////
 
     std::vector<ListMigrationEvents> migrationEventsForEachDestinationPatch; // migrationEventsForEachDestinationPatch[patch_to]
-    getMigrationEventsForEachDestinationPatch(CumSumFits, migrationEventsForEachDestinationPatch);
+    
+    getMigrationEventsForEachDestinationPatch(&CumSumFits, migrationEventsForEachDestinationPatch);
     computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(migrationEventsForEachDestinationPatch); // will set nextGenerationPatchSizes if fec != -1
 
+    
     if (SSP->fecundityForFitnessOfOne != -1.0)
     {
+        /*for (size_t patch_index = 0 ; patch_index < nextGenerationPatchSizes.size(); ++patch_index)
+        {
+            bool isAnyoneComeFromPatch = false;
+            for (size_t i = 0 ; i < BackwardMigrationIndex.size(); ++i)
+            {
+                for (size_t j = 0 ; j < BackwardMigrationIndex[i].size(); ++j)   
+                {
+                    if (BackwardMigrationIndex[i][j] == patch_index)
+                    {
+                        assert(BackwardMigration[i][j] >= 0.0 && BackwardMigration[i][j] <= 1.0);
+                        isAnyoneComeFromPatch = true;
+                        break;
+                    }
+                }
+            } 
+            if (nextGenerationPatchSizes[patch_index] == 0)
+            {
+                assert(!isAnyoneComeFromPatch);
+            } else
+            {
+                assert(isAnyoneComeFromPatch); // This does not always have to be true but it is just for a test.
+            }
+        }*/
+
         return nextGenerationPatchSizes;
     } else
     {
@@ -388,6 +415,7 @@ void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDes
     {   
         // sum number of migrants to patch_to
         double sumOfIncomingMigrants = migrationEventsForEachDestinationPatch[patch_to].getSumOfIncomingMigrants();
+
         /*if (patch_to == 0 || (patch_to > 1e3 && patch_to < 1e3+5))
         {
             std::cout << sumOfIncomingMigrants << " incoming migrants in patch " << patch_to << "\n";   
@@ -415,29 +443,54 @@ void DispersalData::computeBackwardMigrationRates_from_migrationEventsForEachDes
         }
             
 
-        // Reset to zero
-        BackwardMigration[patch_to].resize(migrationEventsForEachDestinationPatch[patch_to].size());
-        BackwardMigrationIndex[patch_to].resize(migrationEventsForEachDestinationPatch[patch_to].size());
+        // resize
+        auto nbEvents = migrationEventsForEachDestinationPatch[patch_to].size();
+        BackwardMigration[patch_to].resize(nbEvents);
+        BackwardMigrationIndex[patch_to].resize(nbEvents);
+        
 
         // Set backward migration rates
         //if (patch_to == 0)
             //std::cout << sumOfIncomingMigrants << " migrants incoming to " << patch_to << "\n";
-        for (unsigned migrantEventIndex = 0 ; migrantEventIndex < migrationEventsForEachDestinationPatch[patch_to].size() ; ++migrantEventIndex)
+        for (unsigned migrantEventIndex = 0 ; migrantEventIndex < nbEvents ; ++migrantEventIndex)
         {
             MigrationEvent& migrationEvent = migrationEventsForEachDestinationPatch[patch_to].getMigrationEvent(migrantEventIndex);
 
-            //if (patch_to == 0)
-            //    std::cout << "\t" << migrationEvent.nbInds << " migrants incoming from " << migrationEvent.comingFrom << " ("<<(double)migrationEvent.nbInds / (double)sumOfIncomingMigrants<<")\n";
+            //std::cout << "from patch " << migrationEvent.comingFrom << " to patch " << patch_to << ", migration event announces a migration rate of " << migrationEvent.nbInds / sumOfIncomingMigrants << "\n";
+    
+                BackwardMigration[patch_to][migrantEventIndex] = migrationEvent.nbInds / sumOfIncomingMigrants;
+                BackwardMigrationIndex[patch_to][migrantEventIndex] = migrationEvent.comingFrom;
 
-            BackwardMigration[patch_to][migrantEventIndex] =  migrationEvent.nbInds / sumOfIncomingMigrants;
-            BackwardMigrationIndex[patch_to][migrantEventIndex] = migrationEvent.comingFrom;
-        }
+            /*{
+                auto rate = BackwardMigration[patch_to][migrantEventIndex];
+                bool cond = BackwardMigration[patch_to][migrantEventIndex] >= 0.0 && BackwardMigration[patch_to][migrantEventIndex] <= 1.0;
+                if (!cond)
+                {
+                    std::cout << "BackwardMigration["<<patch_to<<"]["<<migrantEventIndex<<"] = " << BackwardMigration[patch_to][migrantEventIndex] << "\n";
+                    std::cout << "sumOfIncomingMigrants = " << sumOfIncomingMigrants << "\n";
+                    std::cout << "migrationEvent.nbInds = " << migrationEvent.nbInds << "\n";
+                }
+
+                assert(cond);
+            }*/
+
             
 
+            assert(BackwardMigration[patch_to][migrantEventIndex] >= 0.0 && BackwardMigration[patch_to][migrantEventIndex] <= 1.0);
+            assert(BackwardMigrationIndex[patch_to][migrantEventIndex] >= 0.0 && BackwardMigrationIndex[patch_to][migrantEventIndex] < GP->PatchNumber);
+        
+        }
+
         // Reorder
+        /*std::cout << "---\n";
+        for (size_t fakeFrom = 0 ; fakeFrom < BackwardMigrationIndex[patch_to].size() ; ++fakeFrom)
+        {
+            std::cout << patch_to << "->" << BackwardMigrationIndex[patch_to][fakeFrom] << " = " << BackwardMigration[patch_to][fakeFrom] << "\n";
+        }*/
+            
         auto idx = reverse_sort_indexes(BackwardMigration[patch_to]);
-        reorder(BackwardMigration[patch_to], idx);
-        reorder(BackwardMigrationIndex[patch_to], idx);
+        reorder(BackwardMigration[patch_to], idx, 1);
+        reorder(BackwardMigrationIndex[patch_to], idx, 2, GP->PatchNumber);
     }
 
     // Security
@@ -489,10 +542,10 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
 
 
     // Loop through all patch from
-    for (size_t patch_from=0 ; patch_from < CurrentPatchNumber ; patch_from++)
+    for (uint32_t patch_from=0 ; patch_from < CurrentPatchNumber ; patch_from++)
     {
         std::vector<double> probsFromPatch(CurrentPatchNumber,-1.0);
-        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+        for (uint32_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
             int positionRelativeToCenter = patch_to - patch_from;
             int indexInProbs = center + positionRelativeToCenter;
@@ -507,7 +560,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
 
         // Rescale
         double currentSumProbs = 0.0;
-        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+        for (uint32_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
             assert(probsFromPatch[patch_to] >= 0.0 && probsFromPatch[patch_to] <= 1.0);
             currentSumProbs += probsFromPatch[patch_to];
@@ -516,7 +569,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
         {
             assert(currentSumProbs < 1.0);
             assert(currentSumProbs > 0.0);
-            for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+            for (uint32_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
             {
                 probsFromPatch[patch_to] /= currentSumProbs;
             }
@@ -524,7 +577,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
 
         // assert
         double sumOfProbs = 0.0;
-        for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+        for (uint32_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
         {
             sumOfProbs += probsFromPatch[patch_to];
         }
@@ -559,9 +612,127 @@ void DispersalData::readDispMat(InputReader& input)
 
         std::string Mode = input.GetNextElementString();
 
-        std::vector<std::vector<double>> FFFM; // Stands fir FullFormForwardMigration
+        std::vector<std::vector<double>> FFFM; // Stands for FullFormForwardMigration
+        FFFM.reserve(CurrentPatchNumber);
         
-        if (Mode.compare("LSS") == 0) // Linear Stepping Stone (but with as many stones as we want and potential assymetry). First value is the number of probabilities that will follow. Then are the probabilities which must sum to one, the last value is an integer which indicate which of the probabilities (0 based counting) correspond to the probability of not migrating
+        if (Mode.compare("isolate") == 0)
+        {
+            for (size_t patch_from = 0 ; patch_from < CurrentPatchNumber ; ++patch_from)
+            {
+                std::vector<double> FFMi;
+                FFMi.reserve(CurrentPatchNumber);
+                for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+                {
+                    if (patch_to == patch_from)
+                        FFMi.push_back(1.0);
+                    else
+                        FFMi.push_back(0.0);
+                }
+                FFFM.push_back(FFMi);
+            }
+        } else if (Mode.compare("2DSS") == 0)
+        {
+            size_t nbRows = input.GetNextElementInt();
+            size_t nbCols = input.GetNextElementInt();
+            double migRate = input.GetNextElementDouble();
+            
+            
+            // Diagonal migration is currently not allowed
+            /*
+            auto diagonalString = input.GetNextElementString();
+            bool isDiagonal;
+            if (diagonalString == "diag")
+            {
+                isDiagonal = true;
+            } else
+            {
+                if (diagonalString != "nodiag")
+                {
+                    std::cout << "In option --m (--DispMat), expected information about whether migration should be allowed in diagonal. Expected either 'diag' or 'nodiag' but received '" << diagonalString << "' instead\n";
+                    abort();
+                }
+                isDiagonal = false;
+            }
+            size_t maxNbNeighbours = isDiagonal ? 8 : 4;
+            */
+                
+
+            size_t maxNbNeighbours = 4;
+            double notMigRate = 1 - maxNbNeighbours * migRate;
+
+            if (nbRows * nbCols != CurrentPatchNumber)
+            {
+                std::cout << "In option --m (--DispMat), mode 2DSS, received " << nbRows << " rows and " << nbCols << " columns with a migration rate to an adjacent patch of " << migRate << ". Note btw that patch are numbered by column.\nThe number of patches asked with option PN at this generation is " << CurrentPatchNumber << " and is not equal to "  << nbRows << " X " << nbCols << " = " << nbRows * nbCols << "\n";
+                abort();
+            }
+
+            if (!(notMigRate >= 0.0 && notMigRate <= 1.0))
+            {
+                std::cout << "In option --m (--DispMat), mode 2DSS, received " << nbRows << " rows and " << nbCols << " columns with a migration rate to an adjacent patch of " << migRate << ". Note btw that patch are numbered by column.\n";
+                /*if (isDiagonal)
+                {
+                    std::cout << "Because you chose to allow diagonal migration, the migration rate should be bounded between 0 and 1/8 = 0.125\n";
+                } else
+                {
+                    std::cout << "Because you chose to not allow diagonal migration, the migration rate should be bounded between 0 and 1/4 = 0.25\n";
+                }*/
+                std::cout << "The migration rate should be bounded between 0 (included) and 1/4 = 0.25 (included)\n";
+                    
+                abort();
+            }
+
+
+            /*
+                3 X 10
+                    0  3  6  9  12 15 18 21 24 27
+                    1  4  7  10 13 16 19 22 25 28
+                    2  5  8  11 14 17 20 23 26 29
+            */
+
+
+            
+            for (size_t patch_from = 0 ; patch_from < CurrentPatchNumber ; ++patch_from)
+            {
+                std::vector<double> FFFMi;
+                FFFMi.reserve(CurrentPatchNumber);
+                for (size_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
+                {
+                    double m = 0;
+
+                    size_t patch_from_col = patch_from / nbRows;
+                    size_t patch_from_row = patch_from % nbRows;
+                    size_t patch_to_col = patch_to / nbRows;
+                    size_t patch_to_row = patch_to % nbRows;
+
+                    if (patch_from == patch_to)
+                    {
+                        size_t nbBorders = 0;
+                        if (patch_from_col == 0) ++nbBorders;
+                        if (patch_from_row == 0) ++nbBorders;
+                        if (patch_from_col == nbCols - 1) ++nbBorders;
+                        if (patch_from_row == nbRows - 1) ++nbBorders;
+                        m = notMigRate + nbBorders * migRate;
+                    } else if (
+                            (
+                                myAbs(patch_from_col, patch_to_col) == 1
+                                &&
+                                myAbs(patch_from_row, patch_to_row) == 0
+                            )
+                            ||
+                            (
+                                myAbs(patch_from_col, patch_to_col) == 0
+                                &&
+                                myAbs(patch_from_row, patch_to_row) == 1
+                            )
+                        )
+                    {
+                        m = migRate;
+                    }
+                    FFFMi.push_back(m);
+                }
+                FFFM.push_back(FFFMi); 
+            }
+        } else if (Mode.compare("LSS") == 0) // Linear Stepping Stone (but with as many stones as we want and potential assymetry). First value is the number of probabilities that will follow. Then are the probabilities which must sum to one, the last value is an integer which indicate which of the probabilities (0 based counting) correspond to the probability of not migrating
         {
             // Gather values
             int center = input.GetNextElementInt();
@@ -749,7 +920,7 @@ void DispersalData::readDispMat(InputReader& input)
         }
         else
         {
-            std::cout << "Sorry, for DispMat Mode only Mode 'A', 'LSS', 'OnePatch' (or 'NA'), 'LinearNormal' and 'Island' are recognized so far. Mode received (" << Mode << ") is unknown" << std::endl;
+            std::cout << "Sorry, for DispMat Mode only Mode 'A', 'LSS', '2DSS', 'isolate', 'OnePatch' (or 'NA'), 'LinearNormal' and 'Island' are recognized so far. Mode received (" << Mode << ") is unknown" << std::endl;
             abort();
         }
 
@@ -817,3 +988,100 @@ void DispersalData::pushBack__ForwardMigrationRate(const std::vector<std::vector
 }
 
 
+void DispersalData::print()
+{
+
+    /*
+    std::cout << "\n\nConstant forward migration states:\n";
+    {
+        // initialize F
+        std::vector<std::vector<double>> F(GP->PatchNumber);
+        for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+        {
+            F[patch_from].resize(GP->PatchNumber,0.0);
+        }
+
+        // compute F
+        for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+        {
+            for (size_t fakePatchTo = 0 ; fakePatchTo < forwardMigration[patch_from].size() ; ++fakePatchTo)   
+            {
+                auto patch_to = forwardMigrationIndex[patch_from][fakePatchTo];
+                assert(F[patch_from][patch_to] == 0.0);
+                F[patch_from][patch_to] = forwardMigration[patch_from][patch_to];
+            }
+        }
+
+
+        // print F
+        for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+        {
+            for (size_t patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+            {
+                auto& m = F[patch_from][patch_to];
+                if (m > 0.0)
+                    std::cout << patch_from << " -> " << patch_to << " = " << m << "\n";
+                else
+                    assert(m==0.0);
+            }
+        } 
+    }
+    */
+        
+
+
+
+
+
+
+    std::cout << "\n\nBackward migration states:\n";
+    {
+        // initialize F
+        std::vector<std::vector<double>> F(GP->PatchNumber);
+        for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+        {
+            F[patch_from].resize(GP->PatchNumber,0.0);
+        }
+
+        // compute F
+        for (size_t patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+        {
+            for (size_t fakePatchFrom = 0 ; fakePatchFrom < BackwardMigration[patch_to].size() ; ++fakePatchFrom)   
+            {
+                auto patch_from = BackwardMigrationIndex[patch_to][fakePatchFrom];
+                assert(F[patch_from][patch_to] == 0.0);
+                F[patch_from][patch_to] = BackwardMigration[patch_to][fakePatchFrom];
+            }
+        }
+
+        // print F
+        for (size_t patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+        {
+            for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from)
+            {
+                auto& m = F[patch_from][patch_to];
+                if (m > 0.0)
+                    std::cout << patch_from << " -> " << patch_to << " = " << m << "\n";
+                else
+                    assert(m==0.0);
+            }
+        }   
+    }
+
+
+
+    /*
+    std::cout << "\n\nBackward migration structure:\n";
+    {
+        for (size_t patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
+        {
+            for (size_t fakePatchFrom = 0 ; fakePatchFrom < BackwardMigration[patch_to].size() ; ++fakePatchFrom)   
+            {
+                auto patch_from = BackwardMigrationIndex[patch_to][fakePatchFrom];
+                std::cout << patch_from << " -> " << patch_to << ": " << BackwardMigration[patch_to][fakePatchFrom] << "\n";
+            }
+            std::cout << "---\n";
+        }
+    }
+    */
+}

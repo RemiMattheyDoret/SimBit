@@ -27,10 +27,9 @@
  */
 
 
-
 bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
 {
-    assert(SSP->T1_nbChars == T1_Alleles.size());
+    assert(SSP->Gmap.T1_nbChars == T1_Alleles.size());
     
     assert(T1_locusTo <= (T1_Alleles.size() * 8));
     for (int T1_locus = T1_locusFrom ; T1_locus < T1_locusTo ; T1_locus++)
@@ -46,8 +45,8 @@ bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
 
 bool Haplotype::isFreeFromMutations()
 {
-    assert(SSP->T1_nbChars == T1_Alleles.size());
-    for (int byte_index = 0 ; byte_index < SSP->T1_nbChars ; byte_index++)
+    assert(SSP->Gmap.T1_nbChars == T1_Alleles.size());
+    for (int byte_index = 0 ; byte_index < SSP->Gmap.T1_nbChars ; byte_index++)
     {
         for (int bit_index = 0 ; bit_index < 8 ; bit_index++)   
         {
@@ -69,6 +68,11 @@ double Haplotype::getW_T2(int fitnessMapIndex)
 {
     assert(fitnessMapIndex < W_T2.size());
     return W_T2[fitnessMapIndex];
+}
+
+size_t Haplotype::getW_T56_size()
+{
+    return W_T56.size();
 }
 
 void Haplotype::setAllW_T1(double w)
@@ -103,24 +107,26 @@ template<typename INT>
 unsigned char Haplotype::getT1_char(INT char_index)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     return T1_Alleles[char_index];
 }
 
-bool Haplotype::getT1_Allele(const int T1Locus)
+template<typename INT>
+bool Haplotype::getT1_Allele(const INT T1Locus)
 {
     const int char_index = T1Locus / 8;
     const int bit_index  = T1Locus % 8;
     return (this->getT1_Allele(char_index, bit_index));
 }
 
-bool Haplotype::getT1_Allele(const int char_index, const int bit_index)
+template<typename INT1, typename INT2>
+bool Haplotype::getT1_Allele(const INT1 char_index, const INT2 bit_index)
 {
     /*
     assert(bit_index < 8);
     assert(bit_index >= 0);
     assert(char_index >= 0);
-    assert(char_index < SSP->T1_nbChars);
+    assert(char_index < SSP->Gmap.T1_nbChars);
     */
     /*if ((T1_Alleles[char_index] >> bit_index) & 1)
     {
@@ -133,84 +139,92 @@ bool Haplotype::getT1_Allele(const int char_index, const int bit_index)
     return (T1_Alleles[char_index] >> bit_index) & 1;
 }
 
-unsigned char Haplotype::getT2_Allele(const int char_index)
+template<typename INT>
+unsigned char Haplotype::getT2_Allele(const INT char_index)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     return T2_Alleles[char_index];
 }
 
-double Haplotype::getT3_Allele(const int index)
+template<typename INT>
+double Haplotype::getT3_Allele(const INT index)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     return T3_Alleles[index];
 }
 
-void Haplotype::setT1_char(int& char_index, unsigned char& c)
+template<typename INT>
+void Haplotype::setT1_char(INT char_index, unsigned char& c)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     T1_Alleles[char_index] = c;
 }
 
-void Haplotype::setT1_char(int& char_index, unsigned char&& c)
+template<typename INT>
+void Haplotype::setT1_char(INT char_index, unsigned char&& c)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     T1_Alleles[char_index] = c;
 }
 
-template<typename valueType>
-void Haplotype::setT1_Allele(const int& char_index, const int& bit_index, const valueType& value)
+template<typename valueType, typename INT>
+void Haplotype::setT1_Allele(const INT char_index, const INT bit_index, const valueType& value)
 {
     //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     T1_Alleles[char_index] = (-value ^ T1_Alleles[char_index]) & (1 << bit_index);
 }
 
-
-void Haplotype::setT1_AlleleToOne(int& char_index, int& bit_index)
+template<typename INT>
+void Haplotype::setT1_AlleleToOne(INT char_index, INT bit_index)
 {
     //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     T1_Alleles[char_index] |= 1 << bit_index;
 }
 
-void Haplotype::setT1_AlleleToZero(int& char_index, int& bit_index)
+template<typename INT>
+void Haplotype::setT1_AlleleToZero(INT char_index, INT bit_index)
 {
     //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T1_nbChars);
+    //assert(char_index < SSP->Gmap.T1_nbChars);
     T1_Alleles[char_index] &= ~(1 << bit_index);
 }
 
-void Haplotype::setT2_Allele(const int char_index, const unsigned char value)
+template<typename INT>
+void Haplotype::setT2_Allele(const INT char_index, const unsigned char value)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     T2_Alleles[char_index] = value;
 }
 
-void Haplotype::setT3_Allele(const int index, const double value)
+template<typename INT>
+void Haplotype::setT3_Allele(const INT index, const double value)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     T3_Alleles[index] = value;
 }
 
-void Haplotype::toggleT1_Allele(int& byte_index, int& bit_index)
+template<typename INT>
+void Haplotype::toggleT1_Allele(INT byte_index, INT bit_index)
 {
     T1_Alleles[byte_index] ^= 1 << bit_index;
 }
 
-
-void Haplotype::mutateT1_Allele(int MutPosition, int& Habitat)
+template<typename INT>
+void Haplotype::mutateT1_Allele(INT MutPosition, int& Habitat)
 {
     #ifdef DEBUG
     NBT1MUTATIONS++;
@@ -221,66 +235,30 @@ void Haplotype::mutateT1_Allele(int MutPosition, int& Habitat)
     //assert(bit_index < 8);
     //assert(bit_index >= 0);
     //assert(byte_index >= 0);
-    //assert(byte_index < SSP->T1_nbChars);
+    //assert(byte_index < SSP->Gmap.T1_nbChars);
 
-
-    toggleT1_Allele(byte_index, bit_index);
-    //SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
-
-    if (SSP->T1_isMultiplicitySelection)
+    bool shouldIMutate = true;
+    if (SSP->T1_mutDirection != 2)
     {
-        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
-        double w = this->getW_T1(fitnessMapIndex);
-        //if (GP->CurrentGeneration >=50) std::cout << "w=" << w << " ";
-        if (w != -1.0)
+        if (getT1_Allele(byte_index, bit_index))
         {
-            // Note that Toggle already happened. If it is mutant, it is because it just happened!
-            if ( this->getT1_Allele(byte_index, bit_index) ) // mutation added
-            {
-                w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
-                assert(w >= 0.0 && w <= 1.0);
-            } else // mutation removed
-            {
-                if (SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index] == 0)
-                { 
-                    w = -1.0;
-                } else
-                {
-                    w /= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index]; 
-                    assert(w >= 0.0 && w <= 1.0);
-                }
-            }
-            this->setW_T1( w,   fitnessMapIndex );
-        }
+            if (SSP->T1_mutDirection == 1) shouldIMutate = false;
+        } else
+        {
+            if (SSP->T1_mutDirection == 0) shouldIMutate = false;
+        }  
     }
 
-   /* if (SSP->T1mutsDirectional)
-    {
-        if (!getT1_Allele(byte_index, bit_index))
-        {
-            setT1_AlleleToOne(byte_index, bit_index);
-            SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
-            if (SSP->T1_isMultiplicitySelection)
-            {
-                int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
-                double w = this->getW_T1(fitnessMapIndex);
-                if (w != -1.0)
-                {
-                    w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
-                    assert(w >= 0.0 && w <= 1.0);
-                    this->setW_T1( w,   fitnessMapIndex );
-                }
-            }
-        }            
-    } else
+
+    if (shouldIMutate)
     {
         toggleT1_Allele(byte_index, bit_index);
-        SSP->simTracker.addMutation(byte_index, bit_index, MutPosition);
 
         if (SSP->T1_isMultiplicitySelection)
         {
-            int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT1LocusToLocus[MutPosition]];
+            int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT1LocusToLocus(MutPosition)];
             double w = this->getW_T1(fitnessMapIndex);
+            //if (GP->CurrentGeneration >=50) std::cout << "w=" << w << " ";
             if (w != -1.0)
             {
                 // Note that Toggle already happened. If it is mutant, it is because it just happened!
@@ -291,7 +269,7 @@ void Haplotype::mutateT1_Allele(int MutPosition, int& Habitat)
                 } else // mutation removed
                 {
                     if (SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index] == 0)
-                    {
+                    { 
                         w = -1.0;
                     } else
                     {
@@ -302,14 +280,14 @@ void Haplotype::mutateT1_Allele(int MutPosition, int& Habitat)
                 this->setW_T1( w,   fitnessMapIndex );
             }
         }
-    }*/
+    }
 }
 
-
-void Haplotype::AddMutT2_Allele(int char_index)
+template<typename INT>
+void Haplotype::AddMutT2_Allele(INT char_index)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     // Add one to number of mutations
     if (T2_Alleles[char_index] >= 250)
     {
@@ -335,15 +313,16 @@ void Haplotype::AddMutT2_Allele(int char_index)
     }
     if (SSP->T2_isSelection)
     {
-        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT2LocusToLocus[char_index]];
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT2LocusToLocus(char_index)];
         this->setW_T2(-1.0,fitnessMapIndex);
     }
 }
 
-void Haplotype::AddMutT2_Allele(int char_index, int Habitat)
+template<typename INT>
+void Haplotype::AddMutT2_Allele(INT char_index, int Habitat)
 {
     //assert(char_index >= 0);
-    //assert(char_index < SSP->T2_nbLoci);
+    //assert(char_index < SSP->Gmap.T2_nbLoci);
     // Add one to number of mutations
     if (T2_Alleles[char_index] >= 254)
     {
@@ -371,7 +350,7 @@ void Haplotype::AddMutT2_Allele(int char_index, int Habitat)
     // Change Fitness
     if (SSP->T2_isSelection)
     {
-        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT2LocusToLocus[char_index]];
+        int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT2LocusToLocus(char_index)];
         if (this->getW_T2(fitnessMapIndex) != -1.0)
         {
             //std::cout << "SSP->T2_FitnessEffects[Habitat].size() = " << SSP->T2_FitnessEffects[Habitat].size() << "    char_index = " <<  char_index << "\n";
@@ -383,13 +362,14 @@ void Haplotype::AddMutT2_Allele(int char_index, int Habitat)
     }
 }
 
-void Haplotype::mutateT3_Allele(int index)
+template<typename INT>
+void Haplotype::mutateT3_Allele(INT index)
 {
     // Add or substract while preventing
 #ifdef DEBUG
 std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
-std::cout << "SSP->T3_nbLoci = " << SSP->T3_nbLoci << "\n";
-assert(SSP->T3_nbLoci == T3_Alleles.size());    
+std::cout << "SSP->Gmap.T3_nbLoci = " << SSP->Gmap.T3_nbLoci << "\n";
+assert(SSP->Gmap.T3_nbLoci == T3_Alleles.size());    
 assert(index < T3_Alleles.size());
 assert(index >= 0);
 #endif
@@ -408,31 +388,31 @@ assert(index >= 0);
     }
 }
 
-
-void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
+template<typename INT>
+void Haplotype::copyIntoT1(INT from, INT to, Haplotype& SourceChromo)
 {
     // copy [first, last)
     //std::cout << "In copyIntoT1 from = "<< from << "  to = "<< to << std::endl;
     assert(from >= 0);
     assert(to > from);
     
-    int ByteFrom = from / 8; // integer division. It will floor automatically
-    int ByteTo   = to / 8; // integer division. It will floor automatically
+    uint32_t ByteFrom = from / 8; // integer division. It will floor automatically
+    uint32_t ByteTo   = to / 8; // integer division. It will floor automatically
     assert(ByteTo <= SourceChromo.T1_Alleles.size() + 1);
 
-    int bitIndexFrom = from % 8;
-    int bitIndexTo = to % 8;
+    uint32_t bitIndexFrom = from % 8;
+    uint32_t bitIndexTo = to % 8;
 
-    if (ByteTo == SSP->T1_nbChars - 1) // This is to deal with the last extra bits. Note that if it copies a few extra bits, it is not an issue.
+    if (ByteTo == SSP->Gmap.T1_nbChars - 1) // This is to deal with the last extra bits. Note that if it copies a few extra bits, it is not an issue.
     {
-        bitIndexTo = std::max(bitIndexTo, SSP->T1_nbLociLastByte);
+        bitIndexTo = std::max(bitIndexTo, SSP->Gmap.T1_nbLociLastByte);
     }
 
 
     if (ByteTo == ByteFrom)
     {
         assert(bitIndexFrom < bitIndexTo);
-        for (int bit_index = bitIndexFrom ; bit_index < bitIndexTo ; bit_index++)
+        for (uint32_t bit_index = bitIndexFrom ; bit_index < bitIndexTo ; bit_index++)
         {
             if (SourceChromo.getT1_Allele(ByteFrom, bit_index))
             {
@@ -445,7 +425,7 @@ void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
     } else if (ByteTo > ByteFrom)
     {
         // Copy first bits
-        for (int bit_index = bitIndexFrom ; bit_index < 8 ; bit_index++)
+        for (uint32_t bit_index = bitIndexFrom ; bit_index < 8 ; bit_index++)
         {
             if (SourceChromo.getT1_Allele(ByteFrom, bit_index))
             {
@@ -467,7 +447,7 @@ void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
         }
         
         // Copy last bits
-        for (int bit_index = 0 ; bit_index < bitIndexTo ; bit_index++)
+        for (uint32_t bit_index = 0 ; bit_index < bitIndexTo ; bit_index++)
         {
             if (SourceChromo.getT1_Allele(ByteTo,bit_index))
             {
@@ -484,7 +464,8 @@ void Haplotype::copyIntoT1(int from, int to, Haplotype& SourceChromo)
     }
 }
 
-void Haplotype::copyIntoT2(int from, int to, Haplotype& SourceChromo)
+template<typename INT>
+void Haplotype::copyIntoT2(INT from, INT to, Haplotype& SourceChromo)
 {
     // copy [first, last)
     assert(from >= 0);
@@ -500,7 +481,8 @@ void Haplotype::copyIntoT2(int from, int to, Haplotype& SourceChromo)
               );
 }
 
-void Haplotype::copyIntoT3(int from, int to, Haplotype& SourceChromo)
+template<typename INT>
+void Haplotype::copyIntoT3(INT from, INT to, Haplotype& SourceChromo)
 {
     // copy [first, last)
     assert(from >= 0);
@@ -516,7 +498,27 @@ void Haplotype::copyIntoT3(int from, int to, Haplotype& SourceChromo)
 }
 
 
-Haplotype::Haplotype(){}
+Haplotype::Haplotype()
+{
+    if (SSP->T1_isMultiplicitySelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->Gmap.T1_nbLoci > 0);
+        W_T1.resize(SSP->NbElementsInFitnessMap,-1.0);
+    }
+    if (SSP->T2_isSelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->Gmap.T2_nbLoci > 0);
+        W_T2.resize(SSP->NbElementsInFitnessMap,-1.0);
+    }
+    if (SSP->T56_isMultiplicitySelection)
+    {
+        assert(SSP->NbElementsInFitnessMap > 0);
+        assert(SSP->Gmap.T56sel_nbLoci > 0);
+        W_T56.resize(SSP->NbElementsInFitnessMap,-1.0);
+    }
+}
 
 void Haplotype::PrintBinaryFile(OutputFile& file)
 {
@@ -530,28 +532,28 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
     file.writeBinary(reinterpret_cast<const char*>(&T3_Alleles[0]), T3_Alleles.size()*sizeof(char));
 
     // Print T4_alleles
-    if (SSP->T4_nbLoci)
+    if (SSP->Gmap.T4_nbLoci)
         std::cout << "\n\tWARNING: You are printing to a binary file while you have T4 loci. In the current version of SimBit, T4 loci cannot be printed on a binary file (sorry). The binary file will be produced ignoring T4 loci\n";
 
     // Print T5_alleles (there should not be any flipped meaning normally)
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        std::vector<unsigned int> T5ntrlTrueHaplotype = this->getT56ntrlTrueHaplotype();
+        std::vector<uint32_t> T5ntrlTrueHaplotype = this->getT56ntrlTrueHaplotype();
         T5ntrlTrueHaplotype.insert(T5ntrlTrueHaplotype.begin(), T5ntrlTrueHaplotype.size()); // insert the size of the vector as a start
 
-        file.writeBinary(reinterpret_cast<const char*>(&T5ntrlTrueHaplotype[0]), T5ntrlTrueHaplotype.size()*sizeof(unsigned int));
+        file.writeBinary(reinterpret_cast<const char*>(&T5ntrlTrueHaplotype[0]), T5ntrlTrueHaplotype.size()*sizeof(uint32_t));
     }
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        std::vector<unsigned int> T5selTrueHaplotype = this->getT56selTrueHaplotype();
+        std::vector<uint32_t> T5selTrueHaplotype = this->getT56selTrueHaplotype();
         T5selTrueHaplotype.insert(T5selTrueHaplotype.begin(), T5selTrueHaplotype.size()); // insert the size of the vector as a start
         
-        file.writeBinary(reinterpret_cast<const char*>(&T5selTrueHaplotype[0]), T5selTrueHaplotype.size()*sizeof(unsigned int));
+        file.writeBinary(reinterpret_cast<const char*>(&T5selTrueHaplotype[0]), T5selTrueHaplotype.size()*sizeof(uint32_t));
     }
 }
 
-Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, std::vector<unsigned int> T56_info)
+Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info)
 {
     assert(SSP != nullptr); 
 
@@ -562,14 +564,12 @@ Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned ch
     */
 
     T1_Alleles = T1_info;
-    assert(T1_Alleles.size() == SSP->T1_nbChars);
+    assert(T1_Alleles.size() == SSP->Gmap.T1_nbChars);
     T2_Alleles = T2_info;
-    assert(T2_Alleles.size() == SSP->T2_nbLoci);
+    assert(T2_Alleles.size() == SSP->Gmap.T2_nbLoci);
     T3_Alleles = T3_info;
-    assert(T3_Alleles.size() == SSP->T3_nbLoci);
-
-    assert(SSP->isT56neutral.size() == SSP->T56_nbLoci);
-    assert(T56_info.size() <= SSP->T56_nbLoci);
+    assert(T3_Alleles.size() == SSP->Gmap.T3_nbLoci);
+    assert(T56_info.size() <= SSP->Gmap.T56_nbLoci);
 
 
     // Assign values
@@ -584,9 +584,9 @@ Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned ch
         }
 
         // assign mutPos
-        if (SSP->isT56neutral[mutPos])
+        if (SSP->Gmap.isT56neutral(mutPos))
         {
-            if (SSP->T56ntrl_compress)
+            if (SSP->Gmap.isT56ntrlCompress)
             {
                 T6ntrl_Alleles.push_back(mutPos);
             } else
@@ -595,7 +595,7 @@ Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned ch
             }
         } else
         {
-            if (SSP->T56sel_compress)
+            if (SSP->Gmap.isT56selCompress)
             {
                 T6sel_Alleles.push_back(mutPos);
             } else
@@ -609,21 +609,23 @@ Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned ch
     if (SSP->T1_isMultiplicitySelection)
     {
         assert(SSP->NbElementsInFitnessMap > 0);
-        assert(SSP->T1_nbLoci > 0);
+        assert(SSP->Gmap.T1_nbLoci > 0);
         W_T1.resize(SSP->NbElementsInFitnessMap,-1.0);
     }
     if (SSP->T2_isSelection)
     {
         assert(SSP->NbElementsInFitnessMap > 0);
-        assert(SSP->T2_nbLoci > 0);
+        assert(SSP->Gmap.T2_nbLoci > 0);
         W_T2.resize(SSP->NbElementsInFitnessMap,-1.0);
     }
     if (SSP->T56_isMultiplicitySelection)
     {
         assert(SSP->NbElementsInFitnessMap > 0);
-        assert(SSP->T56sel_nbLoci > 0);
+        assert(SSP->Gmap.T56sel_nbLoci > 0);
         W_T56.resize(SSP->NbElementsInFitnessMap,-1.0);
     }
+
+    T4ID = t4id;
 }
 
 Haplotype::Haplotype(bool ShouldReadPopFromBinary)
@@ -634,63 +636,67 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     (void) ShouldReadPopFromBinary;
 
     //.read T1_alleles
-    T1_Alleles.resize(SSP->T1_nbChars);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T1_Alleles[0]), SSP->T1_nbChars*sizeof(unsigned char));
+    T1_Alleles.resize(SSP->Gmap.T1_nbChars);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T1_Alleles[0]), SSP->Gmap.T1_nbChars*sizeof(unsigned char));
 
     //.read T2_alleles
-    T2_Alleles.resize(SSP->T2_nbLoci);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T2_Alleles[0]), SSP->T2_nbLoci*sizeof(unsigned char));
+    T2_Alleles.resize(SSP->Gmap.T2_nbLoci);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T2_Alleles[0]), SSP->Gmap.T2_nbLoci*sizeof(unsigned char));
 
     //.read T3_alleles
-    T3_Alleles.resize(SSP->T2_nbLoci);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->T3_nbLoci*sizeof(char));
+    T3_Alleles.resize(SSP->Gmap.T2_nbLoci);
+    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->Gmap.T3_nbLoci*sizeof(char));
 
     //.read T4_alleles
-    if (SSP->T4_nbLoci)
+    if (SSP->Gmap.T4_nbLoci)
+    {
+        //std::cout << "\n\n\tERROR: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data and cannot set the ID of a haplotype as used on a T4 coalescent tree\n\n";
+        //abort();
         std::cout << "\n\n\tWARNING: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data. Those loci will be initiated as perfectly unmutated\n\n";
+    }
 
     //.read T56_alleles
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        unsigned int nbElements = 99999;
-        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(unsigned int));
+        uint32_t nbElements = 99999;
+        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(uint32_t));
         assert(nbElements >= 0);
-        assert(nbElements < SSP->T56ntrl_nbLoci);
+        assert(nbElements < SSP->Gmap.T56ntrl_nbLoci);
         
-        if (SSP->T56ntrl_compress)
+        if (SSP->Gmap.isT56ntrlCompress)
         {
-            T6ntrl_Alleles = CompressedSortedDeque(SSP->T56ntrl_nbLoci);
-            std::vector<unsigned int> tmp(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(unsigned int));
+            T6ntrl_Alleles = CompressedSortedDeque(SSP->Gmap.T56ntrl_nbLoci);
+            std::vector<uint32_t> tmp(nbElements);
+            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(uint32_t));
             assert(tmp.size() == nbElements);
-            CompressedSortedDeque tmp2(tmp, SSP->T6ntrl_nbLoci);
+            CompressedSortedDeque tmp2(tmp, SSP->Gmap.T6ntrl_nbLoci);
             T6ntrl_Alleles = tmp2;
         } else
         {
             T5ntrl_Alleles.resize(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5ntrl_Alleles[0]), nbElements*sizeof(unsigned int));
+            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5ntrl_Alleles[0]), nbElements*sizeof(uint32_t));
         }
     }
         
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
         int nbElements = -1;
-        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(unsigned int));
+        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(uint32_t));
         assert(nbElements >= 0);
-        assert(nbElements < SSP->T56sel_nbLoci);
-        if (SSP->T56sel_compress)
+        assert(nbElements < SSP->Gmap.T56sel_nbLoci);
+        if (SSP->Gmap.isT56selCompress)
         {
-            T6sel_Alleles = CompressedSortedDeque(SSP->T56sel_nbLoci);
-            std::vector<unsigned int> tmp(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(unsigned int));
+            T6sel_Alleles = CompressedSortedDeque(SSP->Gmap.T56sel_nbLoci);
+            std::vector<uint32_t> tmp(nbElements);
+            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(uint32_t));
             assert(tmp.size() == nbElements);
-            CompressedSortedDeque tmp2(tmp, SSP->T6sel_nbLoci);
+            CompressedSortedDeque tmp2(tmp, SSP->Gmap.T6sel_nbLoci);
             T6sel_Alleles = tmp2;
         } else
         {
             T5sel_Alleles.resize(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5sel_Alleles[0]), nbElements*sizeof(unsigned int));
+            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5sel_Alleles[0]), nbElements*sizeof(uint32_t));
         }
     }
         
@@ -717,14 +723,14 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
 }
 
 Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index) // indHaplo_index is a double for faster comparison
-: T1_Alleles(SSP->T1_nbChars), T2_Alleles(SSP->T2_nbLoci), T3_Alleles(SSP->T3_nbLoci) // No initilization for T5_Alleles and T6_Alleles
+: T1_Alleles(SSP->Gmap.T1_nbChars), T2_Alleles(SSP->Gmap.T2_nbLoci), T3_Alleles(SSP->Gmap.T3_nbLoci) // No initilization for T5_Alleles and T6_Alleles
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in 'Haplotype::Haplotype(const int patch_index, char Abiogenesis)'\n";
 #endif   
     (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
     assert(SSP!=nullptr);
-    assert(SSP->T1_nbChars + SSP->T2_nbLoci + SSP->T3_nbLoci + SSP->T4_nbLoci + SSP->T56_nbLoci > 0);
+    assert(SSP->Gmap.T1_nbChars + SSP->Gmap.T2_nbLoci + SSP->Gmap.T3_nbLoci + SSP->Gmap.T4_nbLoci + SSP->Gmap.T56_nbLoci > 0);
     assert(indHaplo_index < 2 * SSP->patchSize[patch_index]);
 
     // Initiate W_T1 and W_T2
@@ -741,31 +747,31 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
     //std::cout << "created at W_T56.size() = " << W_T56.size() << "\n";
     
     // Initiate T1_Alleles
-    if (SSP->T1_nbLoci > 0)
+    if (SSP->Gmap.T1_nbLoci > 0)
     {        
         if (SSP->T1_Initial_AlleleFreqs_AllZeros) // The whole chromosome must be 0s
         {
             unsigned char c = 0;
-            for (int char_index = 0 ; char_index < SSP->T1_nbChars ; char_index++)
+            for (int char_index = 0 ; char_index < SSP->Gmap.T1_nbChars ; char_index++)
             {
                 this->setT1_char(char_index,c);
             }
         } else if (SSP->T1_Initial_AlleleFreqs_AllOnes) // The whole chromosome must be 1s
         {
             unsigned char c = 255;
-            for (int char_index = 0 ; char_index < SSP->T1_nbChars ; char_index++)
+            for (int char_index = 0 ; char_index < SSP->Gmap.T1_nbChars ; char_index++)
             {
                 this->setT1_char(char_index,c);
             }
         } else 
         {
             assert(SSP->T1_Initial_AlleleFreqs.size() > patch_index);
-            for (int byte_index = 0 ; byte_index < SSP->T1_nbChars ; byte_index++)
+            for (int byte_index = 0 ; byte_index < SSP->Gmap.T1_nbChars ; byte_index++)
             {
                 int bit_index_to;
-                if (byte_index == SSP->T1_nbChars - 1)
+                if (byte_index == SSP->Gmap.T1_nbChars - 1)
                 {
-                    bit_index_to = SSP->T1_nbLociLastByte;
+                    bit_index_to = SSP->Gmap.T1_nbLociLastByte;
                 } else
                 {
                     bit_index_to = 8;
@@ -825,51 +831,51 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
                 }
             }
         }
-        assert(T1_Alleles.size() == SSP->T1_nbChars);
+        assert(T1_Alleles.size() == SSP->Gmap.T1_nbChars);
     }
         
 
     // Initiate T2_Alleles
-    if (SSP->T2_nbLoci > 0)
+    if (SSP->Gmap.T2_nbLoci > 0)
     {
-        for (int char_index=0 ; char_index < SSP->T2_nbLoci ; char_index++)
+        for (int char_index=0 ; char_index < SSP->Gmap.T2_nbLoci ; char_index++)
         {
             unsigned char c = 0;
             this->setT2_Allele(char_index,c);
         }
-        assert(T2_Alleles.size() == SSP->T2_nbLoci);
+        assert(T2_Alleles.size() == SSP->Gmap.T2_nbLoci);
     }
 
     // Initiate T3_Alleles
-    if (SSP->T3_nbLoci > 0)
+    if (SSP->Gmap.T3_nbLoci > 0)
     {
-        for (int char_index=0 ; char_index < SSP->T3_nbLoci ; char_index++)
+        for (int char_index=0 ; char_index < SSP->Gmap.T3_nbLoci ; char_index++)
         {
             char c = 0;
             this->setT3_Allele(char_index,c);
         }
-        assert(T3_Alleles.size() == SSP->T3_nbLoci);
+        assert(T3_Alleles.size() == SSP->Gmap.T3_nbLoci);
     }
 
     // Initiate T4_Alleles
     // No initialization. Assume all are fixed at 0
 
     // Initiate T56_Alleles 
-    assert(SSP->T5sel_nbLoci == 0 || SSP->T6sel_nbLoci == 0);
-    assert(SSP->T5ntrl_nbLoci == 0 || SSP->T6ntrl_nbLoci == 0);
+    assert(SSP->Gmap.T5sel_nbLoci == 0 || SSP->Gmap.T6sel_nbLoci == 0);
+    assert(SSP->Gmap.T5ntrl_nbLoci == 0 || SSP->Gmap.T6ntrl_nbLoci == 0);
 
-    if (SSP->T56_nbLoci > 0)
+    if (SSP->Gmap.T56_nbLoci > 0)
     { 
         // Initialize T6
-        if (SSP->T6ntrl_nbLoci)
+        if (SSP->Gmap.T6ntrl_nbLoci)
         {
-            T6ntrl_Alleles = CompressedSortedDeque(SSP->T6ntrl_nbLoci);
+            T6ntrl_Alleles = CompressedSortedDeque(SSP->Gmap.T6ntrl_nbLoci);
             (void) T6ntrl_AllelesBegin();
         }
 
-        if (SSP->T6sel_nbLoci)
+        if (SSP->Gmap.T6sel_nbLoci)
         {
-            T6sel_Alleles = CompressedSortedDeque(SSP->T6sel_nbLoci);
+            T6sel_Alleles = CompressedSortedDeque(SSP->Gmap.T6sel_nbLoci);
             (void) T6sel_AllelesBegin();
         }
 
@@ -878,7 +884,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
         if (SSP->T56_Initial_AlleleFreqs_AllZeros) // The whole chromosome must be 0s
         {
             // Nothing to do
-            if (SSP->T5ntrl_nbLoci)
+            if (SSP->Gmap.T5ntrl_nbLoci)
                 assert(SSP->T5ntrl_flipped.size() == 0);
         } else if (SSP->T56_Initial_AlleleFreqs_AllOnes) // The whole chromosome must be 1s
         {   
@@ -889,15 +895,16 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
         {
 
             assert(SSP->T56_Initial_AlleleFreqs.size() > patch_index);
-            for (int locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
+            for (int locus = 0 ; locus < SSP->Gmap.T56_nbLoci ; locus++)
             {
-                auto locusInGender = SSP->FromT56LocusToT56genderLocus[locus].second;
+                auto genderLocus = SSP->Gmap.FromT56LocusToT56genderLocus(locus);
+                auto locusInGender = genderLocus.locusInGender;
                 assert(SSP->T56_Initial_AlleleFreqs[patch_index].size() > locus);
                 if (SSP->T56_Initial_AlleleFreqs[patch_index][locus] == 1.0)
                 {
-                    if (SSP->FromT56LocusToT56genderLocus[locus].first)
+                    if (genderLocus.isNtrl)
                     {
-                        if (SSP->T56ntrl_compress)
+                        if (SSP->Gmap.isT56ntrlCompress)
                         {
                             this->setT6ntrl_AlleleToOne_JustPushBack(locusInGender);
                         } else
@@ -906,7 +913,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
                         }
                     } else
                     {
-                        if (SSP->T56sel_compress)
+                        if (SSP->Gmap.isT56selCompress)
                         {
                             this->setT6sel_AlleleToOne_JustPushBack(locusInGender);
                         } else
@@ -953,9 +960,9 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
                     // Make mutation if needed
                     if ( setToOne)
                     {
-                        if (SSP->FromT56LocusToT56genderLocus[locus].first)
+                        if (SSP->Gmap.FromT56LocusToT56genderLocus(locus).isNtrl)
                         {
-                            if (SSP->T56ntrl_compress)
+                            if (SSP->Gmap.isT56ntrlCompress)
                             {
                                 this->setT6ntrl_AlleleToOne_JustPushBack(locusInGender);
                             } else
@@ -964,7 +971,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
                             }
                         } else
                         {
-                            if (SSP->T56sel_compress)
+                            if (SSP->Gmap.isT56selCompress)
                             {
                                 this->setT6sel_AlleleToOne_JustPushBack(locusInGender);
                             } else
@@ -977,19 +984,24 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
             }
         }
     }
+
+    T1_Alleles.shrink_to_fit();
+    T2_Alleles.shrink_to_fit();
+    T3_Alleles.shrink_to_fit();
 }
 
-void Haplotype::setEntireT5_Allele(std::vector<unsigned int>& t5a)
+template<typename INT>
+void Haplotype::setEntireT5_Allele(std::vector<INT>& t5a)
 {
-    assert(t5a.size() == SSP->T5_nbLoci);
-    assert(T5ntrl_Alleles.size() == SSP->T5ntrl_nbLoci);
-    assert(T5sel_Alleles.size() == SSP->T5sel_nbLoci);
+    assert(t5a.size() == SSP->Gmap.T5_nbLoci);
+    assert(T5ntrl_Alleles.size() == SSP->Gmap.T5ntrl_nbLoci);
+    assert(T5sel_Alleles.size() == SSP->Gmap.T5sel_nbLoci);
 
-    size_t ntrlLocus = 0;
-    size_t selLocus = 0;
-    for (size_t locus = 0 ; locus < SSP->T5_nbLoci ; locus++ )
+    uint32_t ntrlLocus = 0;
+    uint32_t selLocus = 0;
+    for (uint32_t locus = 0 ; locus < SSP->Gmap.T5_nbLoci ; locus++ )
     {
-        if (SSP->FromT56ntrlLocusToLocus[ntrlLocus] < SSP->FromT56selLocusToLocus[selLocus])
+        if (SSP->Gmap.FromT56ntrlLocusToLocus(ntrlLocus) < SSP->Gmap.FromT56selLocusToLocus(selLocus))
         {
             this->T5ntrl_Alleles[ntrlLocus] = t5a[locus];
             ntrlLocus++;
@@ -1000,20 +1012,21 @@ void Haplotype::setEntireT5_Allele(std::vector<unsigned int>& t5a)
             selLocus++;            
         }
     }
-    assert(selLocus == SSP->T5sel_nbLoci);
-    assert(ntrlLocus == SSP->T5ntrl_nbLoci);
+    assert(selLocus == SSP->Gmap.T5sel_nbLoci);
+    assert(ntrlLocus == SSP->Gmap.T5ntrl_nbLoci);
 }
 
 
-void Haplotype::setEntireT6_Allele(std::vector<unsigned int>& t6a)
+template<typename INT>
+void Haplotype::setEntireT6_Allele(std::vector<INT>& t6a)
 {
-    assert(t6a.size() == SSP->T6_nbLoci);
+    assert(t6a.size() == SSP->Gmap.T6_nbLoci);
 
-    size_t ntrlLocus = 0;
-    size_t selLocus = 0;
-    for (size_t locus = 0 ; locus < SSP->T6_nbLoci ; locus++ )
+    uint32_t ntrlLocus = 0;
+    uint32_t selLocus = 0;
+    for (uint32_t locus = 0 ; locus < SSP->Gmap.T6_nbLoci ; locus++ )
     {
-        if (SSP->FromT56ntrlLocusToLocus[ntrlLocus] < SSP->FromT56selLocusToLocus[selLocus])
+        if (SSP->Gmap.FromT56ntrlLocusToLocus(ntrlLocus) < SSP->Gmap.FromT56selLocusToLocus(selLocus))
         {
             this->T6ntrl_Alleles.push_back(t6a[locus]);
             ntrlLocus++;
@@ -1024,13 +1037,13 @@ void Haplotype::setEntireT6_Allele(std::vector<unsigned int>& t6a)
             selLocus++;            
         }
     }
-    assert(selLocus == SSP->T6sel_nbLoci);
-    assert(ntrlLocus == SSP->T6ntrl_nbLoci);
+    assert(selLocus == SSP->Gmap.T6sel_nbLoci);
+    assert(ntrlLocus == SSP->Gmap.T6ntrl_nbLoci);
 }
 
 Haplotype::Haplotype(const Haplotype& other)
 {
-    if (SSP->T1_nbLoci)
+    if (SSP->Gmap.T1_nbLoci)
     {
         T1_Alleles = other.T1_Alleles;
         if (SSP->T1_isMultiplicitySelection)
@@ -1039,20 +1052,20 @@ Haplotype::Haplotype(const Haplotype& other)
         }
     }
 
-    if (SSP->T2_nbLoci)
+    if (SSP->Gmap.T2_nbLoci)
     {
         T2_Alleles = other.T2_Alleles;
         W_T2 = other.W_T2;
     }
 
-    if (SSP->T3_nbLoci)
+    if (SSP->Gmap.T3_nbLoci)
     {
         T3_Alleles = other.T3_Alleles;
     }
 
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        if (SSP->T5ntrl_nbLoci)
+        if (SSP->Gmap.T5ntrl_nbLoci)
         {
             T5ntrl_Alleles = other.T5ntrl_Alleles;
         } else
@@ -1061,9 +1074,9 @@ Haplotype::Haplotype(const Haplotype& other)
         }
     }
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        if (SSP->T5sel_nbLoci)
+        if (SSP->Gmap.T5sel_nbLoci)
         {
             T5sel_Alleles = other.T5sel_Alleles;
         } else
@@ -1077,7 +1090,7 @@ Haplotype::Haplotype(const Haplotype& other)
         }
     }
 
-    if (SSP->T4_nbLoci)
+    if (SSP->Gmap.T4_nbLoci)
     {
         T4ID = other.T4ID;
     }
@@ -1113,7 +1126,7 @@ Haplotype::Haplotype( Haplotype&& other)
 Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment operator
 {
     //std::cout << "copy assignment haplotype\n";
-    if (SSP->T1_nbLoci)
+    if (SSP->Gmap.T1_nbLoci)
     {
         T1_Alleles = other.T1_Alleles;
         if (SSP->T1_isMultiplicitySelection)
@@ -1122,20 +1135,20 @@ Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment opera
         }
     }
 
-    if (SSP->T2_nbLoci)
+    if (SSP->Gmap.T2_nbLoci)
     {
         T2_Alleles = other.T2_Alleles;
         W_T2 = other.W_T2;
     }
 
-    if (SSP->T3_nbLoci)
+    if (SSP->Gmap.T3_nbLoci)
     {
         T3_Alleles = other.T3_Alleles;
     }
 
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        if (SSP->T5ntrl_nbLoci)
+        if (SSP->Gmap.T5ntrl_nbLoci)
         {
             T5ntrl_Alleles = other.T5ntrl_Alleles;
         } else
@@ -1144,9 +1157,9 @@ Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment opera
         }
     }
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        if (SSP->T5sel_nbLoci)
+        if (SSP->Gmap.T5sel_nbLoci)
         {
             T5sel_Alleles = other.T5sel_Alleles;
         } else
@@ -1160,7 +1173,7 @@ Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment opera
         }
     }
 
-    if (SSP->T4_nbLoci)
+    if (SSP->Gmap.T4_nbLoci)
     {
         T4ID = other.T4ID;
     }
@@ -1208,12 +1221,20 @@ void Haplotype::swap(Haplotype& other)
     W_T1.swap(other.W_T1);
     W_T2.swap(other.W_T2);
     W_T56.swap(other.W_T56);
-    T4ID = other.T4ID;
+    std::swap(T4ID, other.T4ID);
 }
 
 
 void Haplotype::setW_T56(double w, int fitnessMapIndex)
 {
+    if (!(W_T56.size() > fitnessMapIndex && fitnessMapIndex >= 0))
+    {
+        std::cout << "SSP->T56_isMultiplicitySelection = " << SSP->T56_isMultiplicitySelection << "\n";
+        std::cout << "fitnessMapIndex = " << fitnessMapIndex << "\n";
+        std::cout << "SSP->NbElementsInFitnessMap = " << SSP->NbElementsInFitnessMap << "\n";
+        std::cout << "W_T56.size() = " << W_T56.size() << "\n";
+    }
+        
     assert(W_T56.size() > fitnessMapIndex && fitnessMapIndex >= 0);
     W_T56[fitnessMapIndex] = w;
 }
@@ -1241,8 +1262,8 @@ bool Haplotype::getT5ntrl_Allele(const int locus)
     return std::binary_search(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), locus);
 }*/
 
-
-void Haplotype::setT5ntrl_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT5ntrl_Allele(const INT locus, const bool& value)
 {
     // I don't like this function but I don't think it is being used in the code anyway!
     auto haploPosition = std::lower_bound(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), locus);
@@ -1267,7 +1288,8 @@ void Haplotype::setT5ntrl_Allele(const int& locus, const bool& value)
     }
 }
 
-void Haplotype::setT5sel_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT5sel_Allele(const INT locus, const bool& value)
 {
     auto position = std::lower_bound(T5sel_Alleles.begin(), T5sel_Alleles.end(), locus);
    
@@ -1293,8 +1315,8 @@ void Haplotype::setT5sel_Allele(const int& locus, const bool& value)
 }
 
 
-
-void Haplotype::setT6ntrl_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT6ntrl_Allele(const INT locus, const bool& value)
 {
     // I don't like this function but I don't think it is being used in the code anyway!
     auto haploPosition   = T6ntrl_Alleles.lower_bound(locus);
@@ -1319,7 +1341,8 @@ void Haplotype::setT6ntrl_Allele(const int& locus, const bool& value)
     }
 }
 
-void Haplotype::setT6sel_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT6sel_Allele(const INT locus, const bool& value)
 {
     auto position = std::lower_bound(T5sel_Alleles.begin(), T5sel_Alleles.end(), locus);
    
@@ -1344,79 +1367,89 @@ void Haplotype::setT6sel_Allele(const int& locus, const bool& value)
     }
 }
 
-
-void Haplotype::setT5_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT5_Allele(const INT locus, const bool& value)
 {
-    auto& TXLocusElement = SSP->FromT56LocusToT56genderLocus[locus];
-    TXLocusElement.first ? setT5sel_Allele(TXLocusElement.second, value) : setT5ntrl_Allele(TXLocusElement.second, value);
+    auto& TXLocusElement = SSP->Gmap.FromT56LocusToT56genderLocus(locus);
+    TXLocusElement.isNtrl ? setT5sel_Allele(TXLocusElement.locusInGender, value) : setT5ntrl_Allele(TXLocusElement.locusInGender, value);
 }
 
-void Haplotype::setT6_Allele(const int& locus, const bool& value)
+template<typename INT>
+void Haplotype::setT6_Allele(const INT locus, const bool& value)
 {
-    auto& TXLocusElement = SSP->FromT56LocusToT56genderLocus[locus];
-    TXLocusElement.first ? setT6sel_Allele(TXLocusElement.second, value) : setT6ntrl_Allele(TXLocusElement.second, value);
+    auto& TXLocusElement = SSP->Gmap.FromT56LocusToT56genderLocus(locus);
+    TXLocusElement.isNtrl ? setT6sel_Allele(TXLocusElement.locusInGender, value) : setT6ntrl_Allele(TXLocusElement.locusInGender, value);
 }
 
-void Haplotype::setT5sel_AlleleToOne_JustPushBack(unsigned& locus)
+template<typename INT>
+void Haplotype::setT5sel_AlleleToOne_JustPushBack(INT locus)
 {
     T5sel_Alleles.push_back(locus);
 }
 
-void Haplotype::setT5sel_AlleleToOne(int& locus)
+template<typename INT>
+void Haplotype::setT5sel_AlleleToOne(INT locus)
 {
     this->setT5sel_Allele(locus, true);
 }
 
-void Haplotype::setT5sel_AlleleToZero(int& locus)
+template<typename INT>
+void Haplotype::setT5sel_AlleleToZero(INT locus)
 {
     this->setT5sel_Allele(locus, false);
 }
 
-void Haplotype::setT5ntrl_AlleleToOne_JustPushBack(unsigned& locus)
+template<typename INT>
+void Haplotype::setT5ntrl_AlleleToOne_JustPushBack(const INT locus)
 {
     T5ntrl_Alleles.push_back(locus);
 }
 
-void Haplotype::setT5ntrl_AlleleToOne(int& locus)
+template<typename INT>
+void Haplotype::setT5ntrl_AlleleToOne(INT locus)
 {
     this->setT5ntrl_Allele(locus, true);
 }
 
-
-void Haplotype::setT5ntrl_AlleleToZero(int& locus)
+template<typename INT>
+void Haplotype::setT5ntrl_AlleleToZero(INT locus)
 {
     this->setT5ntrl_Allele(locus, false);
 }
 
 
-
-void Haplotype::setT6sel_AlleleToOne_JustPushBack(unsigned& locus)
+template<typename INT>
+void Haplotype::setT6sel_AlleleToOne_JustPushBack(const INT locus)
 {
     T6sel_Alleles.push_back(locus);
 }
 
-void Haplotype::setT6sel_AlleleToOne(int& locus)
+template<typename INT>
+void Haplotype::setT6sel_AlleleToOne(INT locus)
 {
     this->setT6sel_Allele(locus, true);
 }
 
-void Haplotype::setT6sel_AlleleToZero(int& locus)
+template<typename INT>
+void Haplotype::setT6sel_AlleleToZero(INT locus)
 {
     this->setT6sel_Allele(locus, false);
 }
 
-void Haplotype::setT6ntrl_AlleleToOne_JustPushBack(unsigned& locus)
+template<typename INT>
+void Haplotype::setT6ntrl_AlleleToOne_JustPushBack(INT locus)
 {
     T6ntrl_Alleles.push_back(locus);
 }
 
-void Haplotype::setT6ntrl_AlleleToOne(int& locus)
+template<typename INT>
+void Haplotype::setT6ntrl_AlleleToOne(INT locus)
 {
     this->setT6ntrl_Allele(locus, true);
 }
 
-
-void Haplotype::setT6ntrl_AlleleToZero(int& locus)
+template<typename INT>
+void Haplotype::setT6ntrl_AlleleToZero(INT locus)
 {
     this->setT6ntrl_Allele(locus, false);
 }
@@ -1434,7 +1467,7 @@ double Haplotype::getW_T56(int fitnessMapIndex)
 template<typename INT>
 void Haplotype::toggleT5ntrl_Allele(INT MutPosition)
 {
-    assert(MutPosition < SSP->T5ntrl_nbLoci);
+    assert(MutPosition < SSP->Gmap.T5ntrl_nbLoci);
     auto position = std::lower_bound(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), MutPosition);
 
     if (position == T5ntrl_Alleles.end())
@@ -1458,7 +1491,7 @@ void Haplotype::toggleT5ntrl_Allele(INT MutPosition)
 template<typename INT>
 void Haplotype::toggleT5sel_Allele(INT MutPosition)
 {
-    assert(MutPosition < SSP->T5sel_nbLoci);
+    assert(MutPosition < SSP->Gmap.T5sel_nbLoci);
     auto position = std::lower_bound(T5sel_Alleles.begin(), T5sel_Alleles.end(), MutPosition);
 
     if (position == T5sel_Alleles.end())
@@ -1484,7 +1517,7 @@ void Haplotype::toggleT5sel_Allele(INT MutPosition)
 template<typename INT>
 void Haplotype::toggleT6ntrl_Allele(INT MutPosition)
 {
-    assert(MutPosition < SSP->T6ntrl_nbLoci);
+    assert(MutPosition < SSP->Gmap.T6ntrl_nbLoci);
     auto position = T6ntrl_Alleles.lower_bound(MutPosition);
 
     if (position == T6ntrl_Alleles.end())
@@ -1508,7 +1541,7 @@ void Haplotype::toggleT6ntrl_Allele(INT MutPosition)
 template<typename INT>
 void Haplotype::toggleT6sel_Allele(INT MutPosition)
 {
-    assert(MutPosition < SSP->T6sel_nbLoci);
+    assert(MutPosition < SSP->Gmap.T6sel_nbLoci);
     auto position = T6sel_Alleles.lower_bound(MutPosition);
 
     if (position == T6sel_Alleles.end())
@@ -1585,15 +1618,15 @@ void Haplotype::mutateT5sel_Allele(INT MutPosition, int Habitat)
     ///////////////////////////////
     // Toggle from T5sel_Alleles //
     ///////////////////////////////
-    bool isNowFoundinT5sel_Alleles = T56finishMutation(haploP, T5sel_Alleles, MutPosition);
-    
+    auto info = T56finishMutation(haploP, T5sel_Alleles, MutPosition);
+        
     /////////////////////
     // Update fitness //
     ////////////////////
 
-    if (SSP->T56_isMultiplicitySelection)
+    if (info != -1 && SSP->T56_isMultiplicitySelection)
     {
-        updateFitnessAfterT56Mutation(MutPosition, isNowFoundinT5sel_Alleles, Habitat);
+        updateFitnessAfterT56Mutation(MutPosition, info == 1, Habitat);
     }
 }
 
@@ -1609,14 +1642,14 @@ void Haplotype::mutateT6sel_Allele(INT MutPosition, int Habitat)
     ///////////////////////////////
     // Toggle from T6sel_Alleles //
     ///////////////////////////////
-    bool isNowFoundinT6sel_Alleles = T56finishMutation(haploP, T6sel_Alleles, MutPosition);
+    auto info = T56finishMutation(haploP, T6sel_Alleles, MutPosition);
     
     /////////////////////
     // Update fitness //
     ////////////////////
-    if (SSP->T56_isMultiplicitySelection)
+    if (info != -1 && SSP->T56_isMultiplicitySelection)
     {
-        updateFitnessAfterT56Mutation(MutPosition, isNowFoundinT6sel_Alleles, Habitat);
+        updateFitnessAfterT56Mutation(MutPosition, info == 1, Habitat);
     }
 }
 
@@ -1624,7 +1657,7 @@ void Haplotype::mutateT6sel_Allele(INT MutPosition, int Habitat)
 template<typename INT>
 void Haplotype::mutateT56ntrl_Allele(INT MutPosition)
 {
-    if (SSP->T56ntrl_compress)
+    if (SSP->Gmap.isT56ntrlCompress)
     {
         mutateT6ntrl_Allele(MutPosition);
     } else
@@ -1637,7 +1670,7 @@ void Haplotype::mutateT56ntrl_Allele(INT MutPosition)
 template<typename INT>
 void Haplotype::mutateT56sel_Allele(INT MutPosition, int Habitat)
 {
-    if (SSP->T56sel_compress)
+    if (SSP->Gmap.isT56selCompress)
     {
         mutateT6sel_Allele(MutPosition, Habitat);
     } else
@@ -1674,7 +1707,7 @@ template<typename INT>
 void Haplotype::mutateT5ntrl_Allele(std::vector<INT>& MutPositions)
 {    
     // MutPositions is already sorted and without duplicates
-    size_t prevSize = T5ntrl_Alleles.size();
+    uint32_t prevSize = T5ntrl_Alleles.size();
     T5ntrl_Alleles.insert(T5ntrl_Alleles.end(), MutPositions.begin(), MutPositions.end());
     std::inplace_merge(T5ntrl_Alleles.begin(), T5ntrl_Alleles.begin() + prevSize, T5ntrl_Alleles.end());
     T5ntrl_Alleles.erase(std::unique(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end()), T5ntrl_Alleles.end());
@@ -1721,7 +1754,7 @@ void Haplotype::mutateT6ntrl_Allele(INT MutPosition)
 
 }
 
-void Haplotype::toggleFromT5ntrl_Allele(int& MutPosition, unsigned int& from)
+void Haplotype::toggleFromT5ntrl_Allele(int& MutPosition, uint32_t& from)
 {
     auto haploP = std::lower_bound(T5ntrl_Alleles.begin() + from, T5ntrl_Alleles.end(), MutPosition);
     from = haploP - T5ntrl_Alleles.begin();
@@ -1729,38 +1762,38 @@ void Haplotype::toggleFromT5ntrl_Allele(int& MutPosition, unsigned int& from)
     (void) T56finishMutation(haploP, T5ntrl_Alleles, MutPosition);
 }
 
-void Haplotype::toggleFromT6ntrl_Allele(int& MutPosition, unsigned int& blockIndexFrom, unsigned int& fromInBlock)
+void Haplotype::toggleFromT6ntrl_Allele(int& MutPosition, uint32_t& blockIndexFrom, uint32_t& fromInBlock)
 {
-    assert(MutPosition >= 0 && MutPosition < SSP->T6ntrl_nbLoci);
+    assert(MutPosition >= 0 && MutPosition < SSP->Gmap.T6ntrl_nbLoci);
     CompressedSortedDeque::iterator haploP = T6ntrl_Alleles.lower_bound_from(MutPosition, blockIndexFrom, fromInBlock); // blockIndexFrom and fromInBlock updated in here
     (void) T56finishMutation(haploP, T6ntrl_Alleles, MutPosition);
 }
 
 
-void Haplotype::toggleFromT5sel_Allele(int& MutPosition, unsigned int& from, int Habitat)
+void Haplotype::toggleFromT5sel_Allele(int& MutPosition, uint32_t& from, int Habitat)
 {
     auto haploP = std::lower_bound(T5sel_Alleles.begin() + from, T5sel_Alleles.end(), MutPosition);
     from = haploP - T5sel_Alleles.cbegin();
 
     if (SSP->T56_isMultiplicitySelection)
-        updateFitnessAfterT56Mutation(MutPosition, T56finishMutation(haploP, T5sel_Alleles, MutPosition), Habitat);
+        updateFitnessAfterT56Mutation(MutPosition, T56finishMutation(haploP, T5sel_Alleles, MutPosition) == 1, Habitat);
 
 }
 
-void Haplotype::toggleFromT6sel_Allele(int& MutPosition, unsigned int& blockIndexFrom, unsigned int& fromInBlock, int Habitat)
+void Haplotype::toggleFromT6sel_Allele(int& MutPosition, uint32_t& blockIndexFrom, uint32_t& fromInBlock, int Habitat)
 {
     auto haploP = T6sel_Alleles.lower_bound_from(MutPosition, blockIndexFrom, fromInBlock); // blockIndexFrom and fromInBlock updated in lower_bound
     if (SSP->T56_isMultiplicitySelection)
-        updateFitnessAfterT56Mutation(MutPosition, T56finishMutation(haploP, T6sel_Alleles, MutPosition), Habitat);
+        updateFitnessAfterT56Mutation(MutPosition, T56finishMutation(haploP, T6sel_Alleles, MutPosition) == 1, Habitat);
 }
 
 
 
 void Haplotype::clearT56Alleles()
 {
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        if (SSP->T56ntrl_compress)
+        if (SSP->Gmap.isT56ntrlCompress)
         {
             T6ntrl_Alleles.clear();
         } else
@@ -1769,9 +1802,9 @@ void Haplotype::clearT56Alleles()
         }
     }
         
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        if (SSP->T56sel_compress)
+        if (SSP->Gmap.isT56selCompress)
         {
             T6sel_Alleles.clear();
         } else
@@ -1781,18 +1814,19 @@ void Haplotype::clearT56Alleles()
     }
 }
 
-void Haplotype::copyIntoT56sel(int from, int to, Haplotype& SourceChromo)
+template<typename INT>
+void Haplotype::copyIntoT56sel(INT from, INT to, Haplotype& SourceChromo)
 {
     // Must have been emptied first
 
     assert(from >= 0);
     assert(to > from);
-    if (SSP->T56sel_compress)
+    if (SSP->Gmap.isT56selCompress)
     {
         T6sel_Alleles.extend(from, to, SourceChromo.T6sel_Alleles);
     } else
     {
-        std::vector<unsigned int>::iterator itFrom;
+        std::vector<uint32_t>::iterator itFrom;
         if (from == 0)
         {
             itFrom = SourceChromo.T5sel_Alleles.begin();
@@ -1801,8 +1835,8 @@ void Haplotype::copyIntoT56sel(int from, int to, Haplotype& SourceChromo)
             itFrom = lower_bound(SourceChromo.T5sel_Alleles.begin(), SourceChromo.T5sel_Alleles.end(), from);
         }
         
-        std::vector<unsigned int>::iterator itTo;
-        if (to == SSP->T5sel_nbLoci)
+        std::vector<uint32_t>::iterator itTo;
+        if (to == SSP->Gmap.T5sel_nbLoci)
         {
             itTo   = SourceChromo.T5sel_Alleles.end();
         } else
@@ -1815,19 +1849,20 @@ void Haplotype::copyIntoT56sel(int from, int to, Haplotype& SourceChromo)
     }   
 }
 
-void Haplotype::copyIntoT56ntrl(int from, int to, Haplotype& SourceChromo)
+template<typename INT>
+void Haplotype::copyIntoT56ntrl(INT from, INT to, Haplotype& SourceChromo)
 {
     // Must have been emptied first
 
     assert(from >= 0);
     assert(to > from);
-    if (SSP->T56ntrl_compress)
+    if (SSP->Gmap.isT56ntrlCompress)
     {
         T6ntrl_Alleles.extend(from, to, SourceChromo.T6ntrl_Alleles);
         
     } else
     {
-        std::vector<unsigned int>::iterator itFrom;
+        std::vector<uint32_t>::iterator itFrom;
         if (from == 0)
         {
             itFrom = SourceChromo.T5ntrl_Alleles.begin();
@@ -1836,8 +1871,8 @@ void Haplotype::copyIntoT56ntrl(int from, int to, Haplotype& SourceChromo)
             itFrom = lower_bound(SourceChromo.T5ntrl_Alleles.begin(), SourceChromo.T5ntrl_Alleles.end(), from);
         }
         
-        std::vector<unsigned int>::iterator itTo;
-        if (to == SSP->T5ntrl_nbLoci)
+        std::vector<uint32_t>::iterator itTo;
+        if (to == SSP->Gmap.T5ntrl_nbLoci)
         {
             itTo   = SourceChromo.T5ntrl_Alleles.end();
         } else
@@ -1850,17 +1885,17 @@ void Haplotype::copyIntoT56ntrl(int from, int to, Haplotype& SourceChromo)
 }
 
 /*
-std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCBegin()
+std::vector<uint32_t>::const_iterator Haplotype::T5sel_AllelesCBegin()
 { 
     return T5sel_Alleles.cbegin();
 }
 
-std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCEnd()
+std::vector<uint32_t>::const_iterator Haplotype::T5sel_AllelesCEnd()
 {
     return T5sel_Alleles.cend();
 }
 
-std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from)
+std::vector<uint32_t>::const_iterator Haplotype::T5sel_AllelesCiterator(int locus, std::vector<uint32_t>::const_iterator from)
 {
     
     if (from == T5sel_Alleles.cend())
@@ -1876,7 +1911,7 @@ std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCiterator(int 
         return from;
     }
 
-    if (locus == SSP->T5sel_nbLoci)
+    if (locus == SSP->Gmap.T5sel_nbLoci)
     {
         return T5sel_Alleles.cend();
     }
@@ -1885,12 +1920,12 @@ std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCiterator(int 
 }
 
 
-std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCiterator(int locus)
+std::vector<uint32_t>::const_iterator Haplotype::T5sel_AllelesCiterator(int locus)
 {
     if (locus == 0)
     {
         return T5sel_Alleles.cbegin();
-    } else if (locus == SSP->T5sel_nbLoci)
+    } else if (locus == SSP->Gmap.T5sel_nbLoci)
     {
         return T5sel_Alleles.cend();
     }
@@ -1901,17 +1936,17 @@ std::vector<unsigned int>::const_iterator Haplotype::T5sel_AllelesCiterator(int 
 
 
 
-std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCBegin()
+std::vector<uint32_t>::const_iterator Haplotype::T5ntrl_AllelesCBegin()
 { 
     return T5ntrl_Alleles.cbegin();
 }
 
-std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCEnd()
+std::vector<uint32_t>::const_iterator Haplotype::T5ntrl_AllelesCEnd()
 {
     return T5ntrl_Alleles.cend();
 }
 
-std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int locus, std::vector<unsigned int>::const_iterator from)
+std::vector<uint32_t>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int locus, std::vector<uint32_t>::const_iterator from)
 {
     assert(from <= T5ntrl_Alleles.cend() );
     assert(from >= T5ntrl_Alleles.cbegin() );
@@ -1926,7 +1961,7 @@ std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int
         return from;
     }
 
-    if (locus == SSP->T5ntrl_nbLoci)
+    if (locus == SSP->Gmap.T5ntrl_nbLoci)
     {
         return T5ntrl_Alleles.cend();
     }
@@ -1935,12 +1970,12 @@ std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int
 }
 
 
-std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int locus)
+std::vector<uint32_t>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int locus)
 {
     if (locus == 0)
     {
         return T5ntrl_Alleles.cbegin();
-    } else if (locus == SSP->T5ntrl_nbLoci)
+    } else if (locus == SSP->Gmap.T5ntrl_nbLoci)
     {
         return T5ntrl_Alleles.cend();
     }
@@ -1959,7 +1994,7 @@ std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int
         return from;
     }
 
-    if (locus == SSP->T5_nbLoci)
+    if (locus == SSP->Gmap.T5_nbLoci)
     {
         return T5_Alleles.size();
     }
@@ -1972,7 +2007,7 @@ std::vector<unsigned int>::const_iterator Haplotype::T5ntrl_AllelesCiterator(int
     if (locus == 0)
     {
         return 0;
-    } else if (locus == SSP->T5_nbLoci)
+    } else if (locus == SSP->Gmap.T5_nbLoci)
     {
         return T5_Alleles.size();
     }
@@ -2000,7 +2035,7 @@ void Haplotype::toggleT56ntrlLoci(std::vector<int>& lociToToggle)
 {
     // lociToToggle must be sorted and all must be neutral
 
-    if (SSP->T56ntrl_compress)
+    if (SSP->Gmap.isT56ntrlCompress)
     {
         unsigned blockIndexFrom = 0;
         unsigned fromInBlock = 0;
@@ -2021,7 +2056,7 @@ void Haplotype::toggleT56ntrlLoci(std::vector<int>& lociToToggle)
 
 /*void Haplotype::toggleT56selLoci(std::vector<int>& lociToToggle, int Habitat)
 {
-    if (SSP->T56sel_compress)
+    if (SSP->Gmap.isT56selCompress)
     {
         unsigned blockIndexFrom = 0;
         unsigned fromInBlock = 0;
@@ -2049,6 +2084,16 @@ int Haplotype::getNbT6ntrl()
     return T6ntrl_Alleles.size();
 }
 
+int Haplotype::getNbT5sel()
+{
+    return T5sel_Alleles.size();
+}
+
+int Haplotype::getNbT6sel()
+{
+    return T6sel_Alleles.size();
+}
+
 bool Haplotype::isT5ntrlMutation(int locus)
 {
     auto it = this->T5ntrl_AllelesBegin();
@@ -2066,7 +2111,7 @@ bool Haplotype::isT5ntrlMutation(int locus)
 
 bool Haplotype::isT5selMutation(int locus)
 {
-    std::vector<unsigned int>::iterator itEnd = this->T5sel_AllelesEnd();
+    std::vector<uint32_t>::iterator itEnd = this->T5sel_AllelesEnd();
     auto it = std::lower_bound(this->T5sel_AllelesBegin(), itEnd, locus);
     if (it != itEnd)
     {
@@ -2110,7 +2155,7 @@ void Haplotype::assertT5orderAndUniqueness()
 {
     {
         auto& v = T5ntrl_Alleles;
-        size_t originalSize = v.size();
+        uint32_t originalSize = v.size();
         v.erase( std::unique( v.begin(), v.end() ), v.end() );
         assert(v.size() == originalSize);
         assert(std::is_sorted(v.begin(), v.end()));
@@ -2118,7 +2163,7 @@ void Haplotype::assertT5orderAndUniqueness()
 
     {
         auto& v = T5sel_Alleles;
-        size_t originalSize = v.size();
+        uint32_t originalSize = v.size();
         v.erase( std::unique( v.begin(), v.end() ), v.end() );
         assert(v.size() == originalSize);
         assert(std::is_sorted(v.begin(), v.end()));
@@ -2127,9 +2172,9 @@ void Haplotype::assertT5orderAndUniqueness()
 
 
 
-ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Haplotype::T5ntrl_AllelesBegin()
+ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> Haplotype::T5ntrl_AllelesBegin()
 {
-    return ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>(
+    return ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator>(
         T5ntrl_Alleles.begin(),
         SSP->T5ntrl_flipped.begin(),
         T5ntrl_Alleles.end(),
@@ -2137,9 +2182,9 @@ ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Hapl
     );
 }
 
-ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Haplotype::T5ntrl_AllelesEnd()
+ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> Haplotype::T5ntrl_AllelesEnd()
 {
-    return ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>(
+    return ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator>(
         T5ntrl_Alleles.end(),
         SSP->T5ntrl_flipped.end(),
         T5ntrl_Alleles.end(),
@@ -2147,12 +2192,12 @@ ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Hapl
     );
 }
 
-std::vector<unsigned int>::iterator Haplotype::T5sel_AllelesBegin()
+std::vector<uint32_t>::iterator Haplotype::T5sel_AllelesBegin()
 {
     return T5sel_Alleles.begin();
 }
 
-std::vector<unsigned int>::iterator Haplotype::T5sel_AllelesEnd()
+std::vector<uint32_t>::iterator Haplotype::T5sel_AllelesEnd()
 {
     return T5sel_Alleles.end();
 }
@@ -2190,26 +2235,26 @@ CompressedSortedDeque::iterator Haplotype::T6sel_AllelesEnd()
 
 
 
-ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Haplotype::T56ntrl_AllelesBegin(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing)
+ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> Haplotype::T56ntrl_AllelesBegin(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing)
 {
     (void) nothing;
     return T5ntrl_AllelesBegin();
 }
 
-ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Haplotype::T56ntrl_AllelesEnd(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing)
+ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> Haplotype::T56ntrl_AllelesEnd(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing)
 {
     (void) nothing;
     return T5ntrl_AllelesEnd();
 }
 
 
-std::vector<unsigned int>::iterator Haplotype::T56sel_AllelesBegin(std::vector<unsigned int>::iterator& nothing)
+std::vector<uint32_t>::iterator Haplotype::T56sel_AllelesBegin(std::vector<uint32_t>::iterator& nothing)
 {
     (void) nothing;
     return T5sel_AllelesBegin();
 }
 
-std::vector<unsigned int>::iterator Haplotype::T56sel_AllelesEnd(std::vector<unsigned int>::iterator& nothing)
+std::vector<uint32_t>::iterator Haplotype::T56sel_AllelesEnd(std::vector<uint32_t>::iterator& nothing)
 {
     (void) nothing;
     return T5sel_AllelesEnd();
@@ -2241,10 +2286,10 @@ CompressedSortedDeque::iterator Haplotype::T56sel_AllelesEnd(CompressedSortedDeq
 }
 
 
-ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Haplotype::T56ntrl_AllelesIterator(ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> nothing, unsigned value)
+ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> Haplotype::T56ntrl_AllelesIterator(ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> nothing, unsigned value)
 {
     (void) nothing;
-    return ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>(
+    return ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator>(
         std::lower_bound(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), value),
         std::lower_bound(SSP->T5ntrl_flipped.begin(), SSP->T5ntrl_flipped.end(), value),
         T5ntrl_Alleles.end(),
@@ -2253,7 +2298,7 @@ ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator> Hapl
     
 }
 
-std::vector<unsigned int>::iterator Haplotype::T56sel_AllelesIterator(std::vector<unsigned int>::iterator& nothing, unsigned value)
+std::vector<uint32_t>::iterator Haplotype::T56sel_AllelesIterator(std::vector<uint32_t>::iterator& nothing, unsigned value)
 {
     (void) nothing;
     return std::lower_bound(T5sel_Alleles.begin(), T5sel_Alleles.end(), value);
@@ -2281,12 +2326,12 @@ CompressedSortedDeque::iterator Haplotype::T56sel_AllelesIterator(CompressedSort
 
 
 
-std::vector<unsigned int> Haplotype::getT56ntrlTrueHaplotype()
+std::vector<uint32_t> Haplotype::getT56ntrlTrueHaplotype()
 {
-    std::vector<unsigned int> r;
-    if (SSP->T56ntrl_nbLoci)
+    std::vector<uint32_t> r;
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        if (SSP->T56ntrl_compress)
+        if (SSP->Gmap.isT56ntrlCompress)
         {
             auto it = this->T6ntrl_AllelesBegin();
             auto itEnd = this->T6ntrl_AllelesEnd();
@@ -2308,12 +2353,12 @@ std::vector<unsigned int> Haplotype::getT56ntrlTrueHaplotype()
     return r;
 }
 
-std::vector<unsigned int> Haplotype::getT56selTrueHaplotype()
+std::vector<uint32_t> Haplotype::getT56selTrueHaplotype()
 {
-    std::vector<unsigned int> r;
-    if (SSP->T56sel_nbLoci)
+    std::vector<uint32_t> r;
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        if (SSP->T56sel_compress)
+        if (SSP->Gmap.isT56selCompress)
         {
             auto it = this->T6sel_AllelesBegin();
             auto itEnd = this->T6sel_AllelesEnd();
@@ -2337,36 +2382,59 @@ std::vector<unsigned int> Haplotype::getT56selTrueHaplotype()
 
 
 template<typename ITERATOR, typename CONTAINER, typename INT>
-bool Haplotype::T56finishMutation(ITERATOR& haploP, CONTAINER& container, INT MutPosition)
+char Haplotype::T56finishMutation(ITERATOR& haploP, CONTAINER& container, INT MutPosition)
 {
-    bool isNowFoundinContainer;
+    /*
+    info = 0; // Mutation happened and is now not found in container anymore
+    info = 1; // Mutation happened and is now found in container 
+    info = -1; // Mutation did not happen
+    */
+
+    char info;
     if (haploP != container.end())
     {
         if ( MutPosition == *haploP)
         {
             // found
-            container.erase(haploP);
-            isNowFoundinContainer=false;
+            if (SSP->T56_mutDirection != 1)
+            {
+                container.erase(haploP);
+                info = 0;
+            } else
+            {
+                info = -1;
+            }
         } else
-        {   
-            container.insert(haploP, MutPosition);
-            isNowFoundinContainer=true;
+        {
+            if (SSP->T56_mutDirection != 0)
+            {
+                container.insert(haploP, MutPosition);
+                info = 1;
+            } else
+            {
+                info = -1;
+            }
         }
     } else
     {
         // Not found
-        container.push_back(MutPosition);
-        isNowFoundinContainer=true;
+        if (SSP->T56_mutDirection != 0)
+        {
+            container.push_back(MutPosition);
+            info = 1;
+        } else
+        {
+            info = -1;
+        }
     }
 
-    return isNowFoundinContainer;
+    return info;
 }
 
 template<typename INT>
 void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundInAlleles, int Habitat)
 {
-    assert(SSP->FromT56selLocusToLocus.size()>MutPosition);
-    int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->FromT56selLocusToLocus[MutPosition]];
+    int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT56selLocusToLocus(MutPosition)];
 
     double w = this->getW_T56(fitnessMapIndex);
     
@@ -2374,7 +2442,7 @@ void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundIn
     {
         /*// Was mutation added or removed?
         bool wasMutationAdded;
-        if (SSP->T56sel_compress)
+        if (SSP->Gmap.isT56selCompress)
         {
             auto flippedP = SSP->T6sel_flipped.lower_bound(MutPosition);
             if (flippedP != SSP->T6sel_flipped.end() && MutPosition == *flippedP)
@@ -2423,11 +2491,11 @@ void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundIn
     }
 }
 
-size_t Haplotype::nbT56muts()
+uint32_t Haplotype::nbT56muts()
 {
-    size_t r;
+    uint32_t r;
 
-    if (SSP->T56ntrl_compress)
+    if (SSP->Gmap.isT56ntrlCompress)
     {
         r = T6ntrl_Alleles.size();
     } else
@@ -2435,7 +2503,7 @@ size_t Haplotype::nbT56muts()
         r = T5ntrl_Alleles.size();
     }
 
-    if (SSP->T56sel_compress)
+    if (SSP->Gmap.isT56selCompress)
     {
         r += T6sel_Alleles.size();
     } else
@@ -2446,15 +2514,15 @@ size_t Haplotype::nbT56muts()
     return r;
 }
 
-size_t Haplotype::nbT56muts(int fitnessMapIndex)
+uint32_t Haplotype::nbT56muts(int fitnessMapIndex)
 {
-    size_t r = 0;
+    uint32_t r = 0;
 
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
-        if (SSP->T56ntrl_compress)
+        if (SSP->Gmap.isT56ntrlCompress)
         {
-            std::cout << "Sorry debugging function 'size_t Haplotype::nbT56muts(int fitnessMapIndex)' has not been defined for T6 loci\n";
+            std::cout << "Sorry debugging function 'uint32_t Haplotype::nbT56muts(int fitnessMapIndex)' has not been defined for T6 loci\n";
             abort();
         } else
         {
@@ -2462,8 +2530,8 @@ size_t Haplotype::nbT56muts(int fitnessMapIndex)
             {
                 auto from = std::lower_bound(SSP->FromLocusToFitnessMapIndex.begin(), SSP->FromLocusToFitnessMapIndex.end(), fitnessMapIndex);
                 auto to   = std::upper_bound(from, SSP->FromLocusToFitnessMapIndex.end(), fitnessMapIndex);
-                size_t locusFrom = from - SSP->FromLocusToFitnessMapIndex.begin();
-                size_t locusTo = to - SSP->FromLocusToFitnessMapIndex.begin();
+                uint32_t locusFrom = from - SSP->FromLocusToFitnessMapIndex.begin();
+                uint32_t locusTo = to - SSP->FromLocusToFitnessMapIndex.begin();
                 r += 
                     std::lower_bound(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), locusTo)
                     -
@@ -2474,11 +2542,11 @@ size_t Haplotype::nbT56muts(int fitnessMapIndex)
     }
 
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        if (SSP->T56sel_compress)
+        if (SSP->Gmap.isT56selCompress)
         {
-            std::cout << "Sorry debugging function 'size_t Haplotype::nbT56muts(int fitnessMapIndex)' has not been defined for T6 loci\n";
+            std::cout << "Sorry debugging function 'uint32_t Haplotype::nbT56muts(int fitnessMapIndex)' has not been defined for T6 loci\n";
             abort();
         } else
         {
@@ -2486,8 +2554,8 @@ size_t Haplotype::nbT56muts(int fitnessMapIndex)
             {
                 auto from = std::lower_bound(SSP->FromLocusToFitnessMapIndex.begin(), SSP->FromLocusToFitnessMapIndex.end(), fitnessMapIndex);
                 auto to   = std::upper_bound(from, SSP->FromLocusToFitnessMapIndex.end(), fitnessMapIndex);
-                size_t locusFrom = from - SSP->FromLocusToFitnessMapIndex.begin();
-                size_t locusTo = to - SSP->FromLocusToFitnessMapIndex.begin();
+                uint32_t locusFrom = from - SSP->FromLocusToFitnessMapIndex.begin();
+                uint32_t locusTo = to - SSP->FromLocusToFitnessMapIndex.begin();
                 //std::cout << "fitnessMapIndex = " << fitnessMapIndex << " | locusFrom = " << locusFrom << " | locusTo = " << locusTo << "\n";
                 r += 
                     std::lower_bound(T5sel_Alleles.begin(), T5sel_Alleles.end(), locusTo)
@@ -2517,10 +2585,10 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
 
     // Get the right fitness array
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbLoci);
+    assert(fits.size() == SSP->Gmap.T1_nbLoci);
 
     double r = 1.0;
-    for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
+    for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T1(fitnessMapIndex) == -1.0)
         {
@@ -2529,7 +2597,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
 
             auto to = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T1;
             //std::cout << "to " << to << "\n";
-            assert(to <= SSP->T1_nbLoci);
+            assert(to <= SSP->Gmap.T1_nbLoci);
             auto from = 0;
             if (fitnessMapIndex != 0)
             {
@@ -2658,12 +2726,12 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
 #endif          
     assert(SSP->T2_FitnessEffects.size() > Habitat);
     auto& fits = SSP->T2_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T2_nbLoci);
+    assert(fits.size() == SSP->Gmap.T2_nbLoci);
 
 
     double r = 1.0;
     int T2_locus = 0;
-    for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
+    for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         int T2_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T2;
         if (getW_T2(fitnessMapIndex) == -1.0)
@@ -2696,15 +2764,15 @@ double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
 {
 
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56sel_nbLoci);
+    assert(fits.size() == SSP->Gmap.T56sel_nbLoci);
 
-    std::vector<unsigned int>::iterator it    = T5sel_Alleles.begin();
-    std::vector<unsigned int>::iterator itEnd = T5sel_Alleles.end();
+    std::vector<uint32_t>::iterator it    = T5sel_Alleles.begin();
+    std::vector<uint32_t>::iterator itEnd = T5sel_Alleles.end();
 
     bool needToRecomputeIt = false;
 
     double r = 1.0;
-    for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
+    for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T56(fitnessMapIndex) != -1.0)
         {
@@ -2739,7 +2807,7 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
 {
 
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T56sel_nbLoci);
+    assert(fits.size() == SSP->Gmap.T56sel_nbLoci);
 
     CompressedSortedDeque::iterator it    = T6sel_Alleles.begin();
     CompressedSortedDeque::iterator itEnd = T6sel_Alleles.end();
@@ -2747,7 +2815,7 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
     bool needToRecomputeIt = false;
 
     double r = 1.0;
-    for (size_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
+    for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T56(fitnessMapIndex) != -1.0)
         {
@@ -2788,12 +2856,12 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicity'\n";
 
 
     double r;
-    if (SSP->T5sel_nbLoci)
+    if (SSP->Gmap.T5sel_nbLoci)
     {
         r = CalculateT5FitnessMultiplicity(Habitat);
     } else
     {
-        assert(SSP->T6sel_nbLoci);
+        assert(SSP->Gmap.T6sel_nbLoci);
         r = CalculateT6FitnessMultiplicity(Habitat);
     }
 
@@ -2819,7 +2887,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
 
     // Get the right fitness array
     auto& fits = SSP->T1_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T1_nbLoci);
+    assert(fits.size() == SSP->Gmap.T1_nbLoci);
 
 
     double r = 1.0;
@@ -2847,7 +2915,7 @@ std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
 #endif          
     assert(SSP->T2_FitnessEffects.size() > Habitat);
     auto& fits = SSP->T2_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T2_nbLoci);
+    assert(fits.size() == SSP->Gmap.T2_nbLoci);
 
     double r = 1.0;
     for (const int locus : LociSet)
@@ -2872,12 +2940,12 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 
     // Get the right fitness array
     auto& fits = SSP->T56_FitnessEffects[Habitat];
-    assert(fits.size() == SSP->T5sel_nbLoci);
+    assert(fits.size() == SSP->Gmap.T5sel_nbLoci);
 
     double r = 1.0;
 
     assert(LociSet.size() > 0);
-    size_t locusIndex = 0;
+    uint32_t locusIndex = 0;
     for (; it != itEnd ; ++it)
     {
         while (LociSet[locusIndex] < *it)
@@ -2902,7 +2970,7 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 #endif   
 
     double r;
-    if (SSP->T5sel_nbLoci)
+    if (SSP->Gmap.T5sel_nbLoci)
     {
         r = CalculateT56FitnessMultiplicityOnSubsetOfLoci(Habitat, LociSet, T5sel_Alleles.begin(), T5sel_Alleles.end());
     } else
@@ -2917,13 +2985,13 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 
 /*bool Haplotype::getT56_Allele(const int locus) // That's a slow function that should not be used too often!
 {
-    assert(locus < SSP->T56_nbLoci);
+    assert(locus < SSP->Gmap.T56_nbLoci);
     auto T56ntrlLocus = FromLocusToTXLocus[locus].T56ntrl;
-    SSP->isT56neutral[]
-    if (SSP->FromT56LocusToT56genderLocus[locus].type == "T56ntrl")
+    SSP->Gmap.isT56neutral[]
+    if (SSP->Gmap.FromT56LocusToT56genderLocus(locus).type == "T56ntrl")
     {
-        auto T56ntrlLocus = SSP->FromT56LocusToT56genderLocus[locus].T56ntrl;
-        if (SSP->T56ntrl_compress)
+        auto T56ntrlLocus = SSP->Gmap.FromT56LocusToT56genderLocus(locus).T56ntrl;
+        if (SSP->Gmap.isT56ntrlCompress)
         {
 
         } else
@@ -2932,9 +3000,9 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
         }
     } else
     {
-        assert(SSP->FromT56LocusToT56genderLocus[locus].type == "T56sel");
-        auto T56selLocus = SSP->FromT56LocusToT56genderLocus[locus].T56sel;
-        if (SSP->T56sel_compress)
+        assert(SSP->Gmap.FromT56LocusToT56genderLocus(locus).type == "T56sel");
+        auto T56selLocus = SSP->Gmap.FromT56LocusToT56genderLocus(locus).T56sel;
+        if (SSP->Gmap.isT56selCompress)
         {
 
         } else
@@ -2944,3 +3012,36 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 
     }
 }*/
+
+void Haplotype::freeT56Memory()
+{
+    if (SSP->Gmap.T5ntrl_nbLoci)
+    {
+        T5ntrl_Alleles.clear();
+        T5ntrl_Alleles.shrink_to_fit();
+    }
+
+    if (SSP->Gmap.T5sel_nbLoci)
+    {
+        T5sel_Alleles.clear();
+        T5sel_Alleles.shrink_to_fit();
+    }
+
+    if (SSP->Gmap.T6ntrl_nbLoci)
+    {
+        T6ntrl_Alleles.clear();
+        //T6ntrl_Alleles.shrink_to_fit();
+    }
+
+    if (SSP->Gmap.T6sel_nbLoci)
+    {
+        T6sel_Alleles.clear();
+        //T6sel_Alleles.shrink_to_fit();
+    }
+
+    if (SSP->T56_isMultiplicitySelection)
+    {
+        W_T56.clear();
+        W_T56.shrink_to_fit();
+    }
+}

@@ -55,12 +55,15 @@ Note for Remi of things to do:
 #include <math.h>
 #include <queue>
 #include <ctime>
-#include <boost/algorithm/string.hpp>
-#include <boost/tokenizer.hpp>
+#include <set>
+#include <array>
+//#include <boost/algorithm/string.hpp>
+//#include <boost/tokenizer.hpp>
 #include <cstdlib>
-#include <boost/cstdint.hpp> // Fixed size integers for FDR
+//#include <boost/cstdint.hpp> // Fixed size integers for FDR
 #include <signal.h>
 #include <unordered_map>
+#include "compressedString.cpp"
 //#include <moreRNG/FastDiceRoller.cpp>
 //#include <moreRNG/xorshiro128.cpp>
 
@@ -86,6 +89,7 @@ Note for Remi of things to do:
 #include "Option.h"
 #include "OptionContainer.h"
 #include "GeneralParameters.h"
+#include "T56_memoryManager/T56_memoryManager.h"
 #include "Walker.h"
 #include "GeneticSampler.h"
 //#include "SimulationTracker.h"
@@ -95,6 +99,9 @@ Note for Remi of things to do:
 #include "TreeNode.h"
 #include "Tree.h"
 #include "KillOnDemand.h"
+#include "GeneticMap/GeneticMap.h"
+#include "SampleSequenceDataContainer/SampleSequenceData.h"
+#include "SampleSequenceDataContainer/SampleSequenceDataContainer.h"
 #include "T4TreeRec/T4TreeRec.h"
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
@@ -120,6 +127,7 @@ Note for Remi of things to do:
 #include "ResetGenetics.cpp"
 #include "FromLocusToTXLocusElement.cpp"
 #include "GeneralParameters.cpp"
+#include "T56_memoryManager/T56_memoryManager.cpp"
 #include "Walker.cpp"
 #include "GeneticSampler.cpp"
 #include "Pop.cpp"
@@ -134,7 +142,20 @@ Note for Remi of things to do:
 #include "Patch.cpp"
 //#include "SimulationTracker.cpp"
 #include "KillOnDemand.cpp"
+#include "GeneticMap/GeneticMap.cpp"
+#include "SampleSequenceDataContainer/SampleSequenceData.cpp"
+#include "SampleSequenceDataContainer/SampleSequenceDataContainer.cpp"
 #include "SpeciesSpecificParameters.cpp"
+
+#include "T4TreeRec/Segment.cpp"
+#include "T4TreeRec/ReversibleVector.cpp"
+#include "T4TreeRec/Edge.cpp"
+#include "T4TreeRec/EdgeTable.cpp"
+#include "T4TreeRec/HaplotypeOfSegments.cpp"
+#include "T4TreeRec/HaplotypesContainer.cpp"
+#include "T4TreeRec/LastGenerationIDmap.cpp"
+#include "T4TreeRec/NodeGenetics.cpp"
+#include "T4TreeRec/NodeTable.cpp"
 #include "T4TreeRec/T4TreeRec.cpp"
 
 #include "codeToInsert.cpp"
@@ -156,7 +177,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.11.0");
+    std::string VERSION("version 4.13.17");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -202,8 +223,10 @@ std::vector<double> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0}; /
 std::string OutputFile::GeneralPath;
 std::vector<int> Pop::T2LociToCorrect;
 std::string OutputFile::sequencingErrorStringToAddToFilnames = "";
-std::vector<int> LifeCycle::recombination_breakpoints = {INT_MAX};
+std::vector<uint32_t> LifeCycle::recombination_breakpoints = {INT_MAX};
 LifeCycle::ParentsData LifeCycle::PD;
+bool KillOnDemand::justAboutToKill = false;
+std::vector<int> T4TreeRec::generationsToKeepInTheTree;
 
 /*
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -293,7 +316,7 @@ int main(int argc, char *argv[])
             
 
             SSP->resetGenetics.resetPopIfNeeded(pop_odd);
-            if (SSP->T56_nbLoci)
+            if (SSP->Gmap.T56_nbLoci)
             {
                 pop_odd.toggleT56MutationsIfNeeded();
             }
@@ -345,7 +368,7 @@ int main(int argc, char *argv[])
             #endif
 
             GP->CurrentGeneration = GP->startAtGeneration; // Not needed for the moment but it is just in case I modify the ::initialize method
-            if (SSP->T4_nbLoci) SSP->T4Tree.initialize(allSpecies[speciesIndex].second);            
+            if (SSP->Gmap.T4_nbLoci) SSP->T4Tree.initialize(allSpecies[speciesIndex].second);            
 
             #ifdef DEBUG
                 std::cout << "-------- T4Tree initialized --------" << std::endl;
@@ -388,8 +411,18 @@ int main(int argc, char *argv[])
 
     // Loop through each generation
     std::vector<bool> isFirstPopOffspring(GP->nbSpecies, false);
-    for ( GP->CurrentGeneration = GP->startAtGeneration + 1 ; GP->CurrentGeneration <= GP->nbGenerations ;  GP->CurrentGeneration++ )
+
+    if (GP->burnInUntilT4Coal_check_every_N_generations == -1)
     {
+        GP->CurrentGeneration = GP->startAtGeneration + 1;
+    } else
+    {
+        GP->CurrentGeneration = std::numeric_limits<int>::lowest() + 1;
+    }
+
+    for ( ; GP->CurrentGeneration <= GP->nbGenerations ;  GP->CurrentGeneration++ )
+    {
+
         #ifdef DEBUG
         std::cout << "NBMIGRANTS = " << NBMIGRANTS << " ";
         std::cout << "NBT1MUTATIONS = " << NBT1MUTATIONS << "\n";
@@ -399,7 +432,8 @@ int main(int argc, char *argv[])
         outputWriter.PrintGeneration();
 
         // Change pops and parameters if needed. Will loop through each species and will use the globals variables.
-        allParameters.UpdatePopsAndParameters();
+        if (GP->CurrentGeneration >= 0) allParameters.UpdatePopsAndParameters(); // The 'if' is here in case we want a neutral burnIn        
+            
 
         // Set patch size after the end of the current generation. Is used for species interactions
         GP->setAllPatchSizePreviousGenerationIfNeeded();
@@ -420,13 +454,10 @@ int main(int argc, char *argv[])
                     Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
                     Pop& pop_Parent     = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
 
-                    // Do selection dispersal, selection and breeding
-                    //std::cout << "\nBEFORE: pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
-                    //std::cout << "BEFORE: pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
-                    //std::cout << "--------------------------\n";
                     LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring, pop_Parent);
-                    //std::cout << "AFTER: pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Offspring.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
-                    //std::cout << "AFTER: pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID = " << pop_Parent.getPatch(0).getInd(0).getHaplo(0).T4ID << "\n";
+
+                    if (GP->CurrentGeneration == GP->nbGenerations && subGeneration == SSP->nbSubGenerationsPerGeneration-1)
+                        pop_Parent.freeMemory();
 
                     // In case, the T2 blocks capacity have been overpassed, correct them or abort.
                     nbT2LociCorrections += pop_Offspring.correctT2Loci();
@@ -443,6 +474,7 @@ int main(int argc, char *argv[])
         SSP          = nullptr;
 
         // Loop through each species to update patchSize, to resetGenetics and to write outputs
+        std::vector<bool> neutralBurnIn_hasSpeciesCoalesced(GP->nbSpecies, false);
         for (int speciesIndex = 0; speciesIndex < GP->nbSpecies ; speciesIndex++)
         {
             // Get the big pointers for the species
@@ -451,31 +483,50 @@ int main(int argc, char *argv[])
             // get Pop
             Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
 
-            // reset genetics if needed (under user requirement only)
-            SSP->resetGenetics.resetPopIfNeeded(pop_Offspring);
-
-            // Code inserted
-            codeToInsert(pop_Offspring);
-
-            // WriteOutputs if you asked for it
-            outputWriter.WriteOutputs(pop_Offspring); // includes genealogy updates for coalescence
-
-            // Save population in binary file if you asked for it
-            pop_Offspring.PrintBinaryFile();
-
-
-            // killOnDemand
-            if (SSP->killOnDemand.mustKill(pop_Offspring))
+            if (GP->CurrentGeneration >= 0) // Don't get there if in burnIn
             {
-                std::string forSpeciesText;
-                if (GP->nbSpecies > 1)
+                // Redefine individual types
+                SSP->redefineIndividualTypesIfNeeded(pop_Offspring);
+
+                // Kill individuals
+                if (SSP->fecundityForFitnessOfOne != -1)
                 {
-                    forSpeciesText = " for species " + SSP->speciesName;
+                    SSP->killIndividualsIfAskedFor();
                 }
-                std::cout << "\n\n\t\tSimulation has been killed on demand"<< forSpeciesText << " at generation "<< GP->CurrentGeneration <<"!\n\n";
-                goto endOfSimulation;
+
+                // reset genetics if needed (under user requirement only)
+                SSP->resetGenetics.resetPopIfNeeded(pop_Offspring);
+
+                // Code inserted
+                codeToInsert(pop_Offspring);
+
+                // WriteOutputs if you asked for it
+                if (GP->CurrentGeneration >= 0) outputWriter.WriteOutputs(pop_Offspring); 
+
+                // Save population in binary file if you asked for it
+                if (GP->CurrentGeneration >= 0) pop_Offspring.PrintBinaryFile();
+
+
+                // killOnDemand
+                if (SSP->killOnDemand.mustKill(pop_Offspring))
+                {
+                    outputWriter.WriteOutputs(pop_Offspring);
+                    std::string forSpeciesText;
+                    if (GP->nbSpecies > 1)
+                    {
+                        forSpeciesText = " for species " + SSP->speciesName;
+                    }
+                    std::cout << "\n\n\t\tSimulation has been killed on demand"<< forSpeciesText << " at generation "<< GP->CurrentGeneration <<"!\n\n";
+                    goto endOfSimulation;
+                }
             }
 
+
+            // Burn in -- that code is a bit long and ugly for being in main.cpp. Sorry
+            else 
+            {
+                GP->testIfEndOfT4BurnIn(pop_Offspring, neutralBurnIn_hasSpeciesCoalesced);
+            }
         }
 
         // Security as we are outside a species specific context

@@ -143,6 +143,7 @@ std::cout << "Enters in 'Pop::Pop'\n";
         }
     }
     
+    patches.shrink_to_fit();
     assert(patches.size() == GP->PatchNumber);
 
     // I won't need these anymore
@@ -191,6 +192,12 @@ void Pop::AddPatch(Patch& newPatch)
 {
     patches.push_back(newPatch); // copy
 }
+void Pop::AddPatch()
+{
+    Patch p;
+    patches.push_back(p);
+}
+
 void Pop::RemoveLastPatch()
 {
     patches.pop_back(); // Will call destructor of Patch
@@ -294,15 +301,21 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
         
         assert(CumSumFits.size() > patch_index);
         assert(CumSumFits[patch_index].size() > 0);
-        assert(CumSumFits[patch_index][0].size() > 0);
-        if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
+        if (!SSP->malesAndFemales) 
         {
-            std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates. As a reminder the fitness effect among loci is multiplicative. If the fecundity was not set to -1.0, this message would not have appeared and the patch size would have simply dropped to zero." << std::endl;
-            if (GP->CurrentGeneration == 1)
+            assert(CumSumFits[patch_index][0].size() == SSP->patchSize[patch_index]);
+            if (SSP->patchSize[patch_index] > 0)
             {
-                std::cout << "As the error message poped up at the first generation, you should probably check the initial conditions. Maybe you start with 'AllOnes' with selection against the the '1' variant (selection is against the '1' variant when making the 'Multiplicity' assumption). It is also possible that you start the simulation with a fixed lethal variant." << std::endl;
+                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
+                {
+                    std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates. As a reminder the fitness effect among loci is multiplicative. If the fecundity was not set to -1.0, this message would not have appeared and the patch size would have simply dropped to zero." << std::endl;
+                    if (GP->CurrentGeneration == 1)
+                    {
+                        std::cout << "As the error message poped up at the first generation, you should probably check the initial conditions. Maybe you start with 'AllOnes' with selection against the the '1' variant (selection is against the '1' variant when making the 'Multiplicity' assumption). It is also possible that you start the simulation with a fixed lethal variant." << std::endl;
+                    }
+                    abort();
+                }
             }
-            abort();
         }
     }
 
@@ -373,6 +386,7 @@ void Pop::CalculateFitnesses()
         for ( int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index )
         {
             double w = patch.getInd(ind_index).CalculateFitness(patch_index);
+            if (!SSP->isAnySelection) assert(w == 1.0);
             //std::cout << "SSP->malesAndFemales " << SSP->malesAndFemales << "\n";
             //std::cout << "ind_index " << ind_index << " indexFirstMale[patch_index] " << indexFirstMale[patch_index] << "\n";
             if (SSP->malesAndFemales && ind_index >= indexFirstMale[patch_index])
@@ -387,7 +401,7 @@ void Pop::CalculateFitnesses()
         }
 
         // Security to avoid round off error in extreme parameter sets
-        checkIfCumSumFitsIsNotTooSmall(patch_index);
+        if (SSP->isAnySelection) checkIfCumSumFitsIsNotTooSmall(patch_index);
 
         assert(CumSumFits.size() == GP->PatchNumber);
 
@@ -417,8 +431,9 @@ int Pop::SelectionParent(int patch_from, int sex)
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::SelectionParent\n";
-#endif        
-    assert(this->CumSumFits[patch_from].size() > sex);
+#endif
+    
+    assert(SSP->patchSize[patch_from]);
     int parent_index;
     if (SSP->isAnySelection && SSP->selectionOn != 1) // selection on fertility (maybe on both)
     {
@@ -438,6 +453,7 @@ int Pop::SelectionParent(int patch_from, int sex)
             index = walkers[patch_from][sex](GP->rngw);
         } else
         {
+            assert(this->CumSumFits[patch_from].size() > sex);
             double rnd = GP->rngw.uniform_real_distribution(this->CumSumFits[patch_from][sex].back());
             //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].back() = " << this->CumSumFits[patch_from][sex].back() << "\n";
             //std::cout << "rnd = " << rnd << "\n";
@@ -493,7 +509,7 @@ int Pop::SelectionParent(int patch_from, int sex)
 }
 
 
-int Pop::SelectionOriginPatch(size_t patch_to)
+int Pop::SelectionOriginPatch(uint32_t patch_to)
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::SelectionOriginPatch\n";
@@ -520,10 +536,11 @@ int Pop::SelectionOriginPatch(size_t patch_to)
      std::cout << "\n";   
     */
      
-
+    //std::cout << "-----\n";
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
     {
         double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
+        //std::cout << "probability = " << probability << "\n";
         //if (patch_to > 1e3) std::cout << "from " << SSP->dispersalData.BackwardMigrationIndex[patch_to][fake_patch_from] << " to " << patch_to << ": " << probability << "\n";
         
         if (rnd < probability)
@@ -534,8 +551,14 @@ int Pop::SelectionOriginPatch(size_t patch_to)
         rnd -= probability;
     }   
  
-    //std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
+    
+    /*if (!(patch_from >= 0 && patch_from < GP->PatchNumber))
+    {
+        std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
+    }*/
     assert(patch_from >= 0 && patch_from < GP->PatchNumber);
+    assert(SSP->patchSize[patch_from] > 0);
+        
     
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Exits in Pop::SelectionOriginPatch\n";
@@ -544,86 +567,115 @@ int Pop::SelectionOriginPatch(size_t patch_to)
 }
 
 
-void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> previousPatchSizes)
+void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, std::vector<int>& previousPatchSizes)
 {
     //pop1.hasCrazyResettingHappened = true;
     //pop2.hasCrazyResettingHappened = true;
 
-    //std::cout << "Enters in Pop::updatePops\n";
-    // Change number of patches
-    // If there are more patches than before, then the first patch is simply copied several times.
-    // If there are fewer patches than before, then last patches are just removed.
-    //std::cout << "GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
-    //std::cout << "GP->allSpeciesPatchSizes[0][0] = " << GP->allSpeciesPatchSizes[0][0] << "\n";
+    
+    //////////////////////////////
+    // Change number of patches //
+    //////////////////////////////
+
     assert(GP->PatchNumber > 0);
-    //pop1.CumSumFits.resize(GP->PatchNumber); // I don't think this is needed though
-    //pop2.CumSumFits.resize(GP->PatchNumber); // I don't think this is needed though
+
     if (pop1.getNbPatches() > GP->PatchNumber) // If it needs to remove patches
     {
         int NbPatchesToRemove = pop1.getNbPatches() - GP->PatchNumber;
         for (int i = 0 ; i < NbPatchesToRemove ; ++i)
         {
             pop1.RemoveLastPatch();    // Will call destructor of Patch
-            pop2.RemoveLastPatch(); // Will call destructor of Patch
+            pop2.RemoveLastPatch();    // Will call destructor of Patch
         }
     } else if (pop1.getNbPatches() < GP->PatchNumber) // if it needs to add patches
     {
         assert(GP->PatchNumber - pop1.getNbPatches() > 0);
-        int nbPatchesToAdd = GP->PatchNumber - pop1.getNbPatches();
-        Patch NewPatch(pop1.getPatch(0));
-        for (int newPatch_index = 0 ; newPatch_index < nbPatchesToAdd ; ++newPatch_index)
+
+        // Loop through new patches
+        
+        for ( auto patch_index = pop1.getNbPatches(); patch_index < GP->PatchNumber ; ++patch_index)
         {
-            pop1.AddPatch(NewPatch);  // Will copy in 'AddPatch'
-            pop2.AddPatch(NewPatch);  // Will copy in 'AddPatch'
+            pop1.AddPatch();
+            pop2.AddPatch();
         }
     }
     assert(pop1.getNbPatches() == GP->PatchNumber);
     assert(pop2.getNbPatches() == GP->PatchNumber);
 
-
-    // Change patch carrying capacity and patchSize
-    // If there are more individuals than before in a given patch, then the individuals are sampled (with replacement of course) from the same patch (which mifght well be just a copy of patch 0) and cloned until new carrying capacity is reached.
-    // If there are fewer individuals than before in a given patch, random individuals are removed.
-    // As a reminder, the actual number of individuals per patch is always the carrying capacity. The patch size may differ from it but not the number of individuals kept in memory. This is to avoid freeing and reallcoation of memory.
+    ////////////////////////////////////
+    // Change patch carrying capacity //
+    ////////////////////////////////////
+    
     assert(SSP->patchCapacity.size() == GP->PatchNumber);
     assert(SSP->patchSize.size() == GP->PatchNumber);
-    assert(previousPatchSizes.size() == GP->PatchNumber);
-    //assert(GP->allSpeciesPatchSizes.size() == GP->PatchNumber);
-
+    assert(previousPatchSizes.size() == GP->PatchNumber); // Yes it is the size of the current number of patches
     
 
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         assert(pop1.getPatch(patch_index).getpatchCapacity() == pop2.getPatch(patch_index).getpatchCapacity());
-        //assert(GP->allSpeciesPatchSizes[patch_index].size() == GP->nbSpecies);
-        //std::cout << "In Pop::updatePops, SSP->patchCapacity["<<patch_index<<"] = "<<SSP->patchCapacity[patch_index]<<"\n";
-        //std::cout << "In Pop::updatePops, pop1.getPatch(patch_index).getpatchCapacity() = "<<pop1.getPatch(patch_index).getpatchCapacity()<<"\n";
             
-
         if (pop1.getPatch(patch_index).getpatchCapacity() < SSP->patchCapacity[patch_index]) // If the carrying capacity increased.
-        {        
-            // even if fec != -1, I still have to add individuals (even if I won't make sense of them)
-            // Figure out what patch the individuals should be sampled from            
-            int patch_index_ToSampleFrom = SSP->selectNonEmptyPatch(patch_index, previousPatchSizes, true);
-            assert(patch_index_ToSampleFrom == -1 || patch_index_ToSampleFrom >= 0 && patch_index_ToSampleFrom < GP->PatchNumber);
-            
-            if (patch_index_ToSampleFrom != -1)
+        {   
+       
+            // Figure which patch to copy individuals from (if needed to copy)
+            int patchToSample = -1;
+            if (SSP->fecundityForFitnessOfOne == -1)
             {
-                assert(previousPatchSizes[patch_index_ToSampleFrom] > 0);
-                //std::cout << "patch_index_ToSampleFrom = " << patch_index_ToSampleFrom << "\n";
-
-                int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
-                for (int fake_ind_index = 0 ; fake_ind_index < NbIndsToAdd ; ++fake_ind_index)
+            
+                if (pop1.getPatch(patch_index).getpatchCapacity())
+                    patchToSample = patch_index;
+                else
                 {
-                    int ind_index = fake_ind_index % previousPatchSizes[patch_index_ToSampleFrom];
-                    
-                    assert(ind_index >= 0 && ind_index < previousPatchSizes[patch_index_ToSampleFrom]);
-                    //std::cout << "RandomIndividual = " << RandomIndividual << "\n";
-                    //assert(RandomIndividual >= 0 && RandomIndividual < pop1.getPatch(patch_index_ToSampleFrom).getpatchCapacity());
-                    Individual NewIndividual = pop1.getPatch(patch_index_ToSampleFrom).getInd(ind_index); // Get the individual from this patch. DO NOT TAKE A REFERENCE ONLY. APPARENTLY AddIndividual DOES NOT COPY AS I EXPECTED IT TO.
-                    pop1.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
-                    pop2.getPatch(patch_index).AddIndividual(NewIndividual); // Is copied in 'AddIndividual'
+                
+                    double probMigr_patchToSample = -1.0;
+                    assert(SSP->dispersalData.forwardMigration.size() == GP->PatchNumber);
+                    assert(SSP->dispersalData.forwardMigrationIndex.size() == GP->PatchNumber);
+                
+                    for (size_t patch_from = 0 ; patch_from < GP->PatchNumber ; ++patch_from )
+                    {
+                        assert(SSP->dispersalData.forwardMigrationIndex[patch_from].size() == SSP->dispersalData.forwardMigration[patch_from].size());
+                        for (size_t fake_patch_to = 0 ; fake_patch_to < SSP->dispersalData.forwardMigrationIndex[patch_from].size() ; ++fake_patch_to)
+                        {
+                            if (patch_index == SSP->dispersalData.forwardMigrationIndex[patch_from][fake_patch_to])
+                            {
+                                if (SSP->dispersalData.forwardMigration[patch_from][fake_patch_to] > probMigr_patchToSample && previousPatchSizes[patch_from])
+                                {
+                                
+                                    probMigr_patchToSample = SSP->dispersalData.forwardMigration[patch_from][fake_patch_to];
+                                    patchToSample = patch_from;
+                                }
+                            }
+                        }
+                    }
+                
+                    if (!(patchToSample >= 0 && patchToSample < oldNbPatches))
+                    {
+                        std::cout << "At generation " << GP->CurrentGeneration << " SimBit tried to add individual in the patch index " << patch_index << ". When the fecundityForFitnessOfOne is set to -1 (as it is the case; this is default setting), SimBit will simply copy individuals already present in the patch to reach carrying capacity. If the patch was empty, then it looks at the patch that has the highest forward migration rate toward the focal patch. If no patch has any migration rate to this focal patch, then SimBit does not know how to add individuals into this new patch. If you wanted the patch to remain empty despite the carrying capacity being high, then just set the fecundity to something else than -1 (which is the default). Hopefully, one day I will make this security check before the beginning of the simulation!\n";
+                        abort();
+                    }
+                    assert(probMigr_patchToSample > 0.0 && probMigr_patchToSample <= 1.0);
                 }
+            }
+            // add individuals
+            int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
+            for (int ind_index = 0 ; ind_index < NbIndsToAdd ; ++ind_index)
+            {
+                Individual newInd;
+                if (SSP->fecundityForFitnessOfOne == -1)
+                {
+                
+                    assert(patchToSample != -1);
+                    assert(pop1.getPatch(patchToSample).getpatchCapacity());
+                    assert(previousPatchSizes[patchToSample]);
+                    int indToSample = ind_index % previousPatchSizes[patchToSample];
+                
+                    newInd = pop1.getPatch(patchToSample).getInd(indToSample);
+                
+                }
+                
+                pop1.getPatch(patch_index).AddIndividual(newInd);
+                pop2.getPatch(patch_index).AddIndividual(newInd);
             }
 
         } else if (pop1.getPatch(patch_index).getpatchCapacity() > SSP->patchCapacity[patch_index]) // If the carrying capacity decreased.
@@ -641,15 +693,17 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
         }
     }
         
-
-    // Set all fitnesses to -1 to force recalculation (Some other alternative would have better performance but I am assuming that a user won't ask for many parameters changes through time)
+    /////////////////////////////
+    // Set all fitnesses to -1 //
+    /////////////////////////////
+    // Some other alternative would have better performance but I am assuming that a user won't ask for many parameters changes through time
     for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {
             for (int haplo_index = 0 ; haplo_index < SSP->ploidy ; ++haplo_index)
             {
-                if (SSP->T1_nbLoci)
+                if (SSP->Gmap.T1_nbLoci)
                 {
                     if (SSP->T1_isMultiplicitySelection)
                     {
@@ -658,7 +712,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
                     } 
                 }
                     
-                if (SSP->T2_nbLoci)
+                if (SSP->Gmap.T2_nbLoci)
                 {
                     if (SSP->T2_isSelection)
                     {
@@ -667,7 +721,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
                     }
                 }
 
-                if (SSP->T56sel_nbLoci)
+                if (SSP->Gmap.T56sel_nbLoci)
                 {
                     assert(SSP->T56_isSelection);
                     if (SSP->T56_isMultiplicitySelection)
@@ -688,7 +742,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, std::vector<int> pr
 void Pop::addT2LocusToCorrect(int T2Locus) // is a static
 {
     assert(SSP != nullptr);
-    assert(T2Locus >= 0 && T2Locus < SSP->T2_nbLoci);
+    assert(T2Locus >= 0 && T2Locus < SSP->Gmap.T2_nbLoci);
     if
     (
         std::find(
@@ -736,9 +790,9 @@ int Pop::correctT2Loci()
                     // Loop through loci that need to be corrected
                     for (int i = 0 ; i < T2LociToCorrect.size() ; i++)
                     {
-                        if (T2LociToCorrect[i] < 0 || T2LociToCorrect[i] >= SSP->T2_nbLoci)
+                        if (T2LociToCorrect[i] < 0 || T2LociToCorrect[i] >= SSP->Gmap.T2_nbLoci)
                         {
-                            printf("Internal error in Pop::correctT2Loci. Supposed to look for T2 block index %d but there are only %d T2 blocks in the whole genome.\n", T2LociToCorrect[i], SSP->T2_nbLoci);
+                            printf("Internal error in Pop::correctT2Loci. Supposed to look for T2 block index %d but there are only %u T2 blocks in the whole genome.\n", T2LociToCorrect[i], SSP->Gmap.T2_nbLoci);
                             abort();
                         }
                         auto T2Allele = individual.getHaplo(haplo_index).getT2_Allele(T2LociToCorrect[i]);
@@ -801,7 +855,7 @@ int Pop::correctT2Loci()
     return 0;
 }
 
-std::vector<int> Pop::findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<unsigned int>& flipped, const int& nbLoci,  const double freqThreshold)
+std::vector<int> Pop::findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<uint32_t>& flipped, const int& nbLoci,  const double freqThreshold)
 {
     std::vector<int> lociToToggle;
 
@@ -812,7 +866,7 @@ std::vector<int> Pop::findWhatMustBeToggledAndUpdateFlipped(const std::vector<un
     std::vector<bool> isFlipped = inverseWhich(flipped, nbLoci);
     assert(isFlipped.size() == nbLoci);
 
-    for (size_t locus = 0 ; locus < nbLoci ; ++locus)
+    for (uint32_t locus = 0 ; locus < nbLoci ; ++locus)
     {
         double relFreq = (double) popFreqs[locus] / (2.0 * (double) SSP->TotalpatchSize);
         assert(relFreq >= 0.0 && relFreq <= 1.0);
@@ -852,16 +906,16 @@ void Pop::toggleT56FixedMutations()
     /// T5ntrl ///
     //////////////
     std::vector<int> T56ntrlLociToToggle;
-    if (SSP->T5ntrl_nbLoci)
+    if (SSP->Gmap.T5ntrl_nbLoci)
     {
         std::vector<unsigned> popFreqs = this->computeT56ntrlFrequencies();
-        T56ntrlLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, SSP->T5ntrl_flipped, SSP->T5ntrl_nbLoci, SSP->T56ntrl_frequencyThresholdForFlippingMeaning);
-    } else if (SSP->T6ntrl_nbLoci)
+        T56ntrlLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, SSP->T5ntrl_flipped, SSP->Gmap.T5ntrl_nbLoci, SSP->T56ntrl_frequencyThresholdForFlippingMeaning);
+    } else if (SSP->Gmap.T6ntrl_nbLoci)
     {
         std::vector<unsigned> popFreqs = this->computeT56ntrlFrequencies();
         auto flipped = SSP->T6ntrl_flipped.toVector();
-        T56ntrlLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, flipped, SSP->T6ntrl_nbLoci, SSP->T56ntrl_frequencyThresholdForFlippingMeaning);
-        SSP->T6ntrl_flipped = CompressedSortedDeque(flipped, SSP->T6ntrl_nbLoci);
+        T56ntrlLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, flipped, SSP->Gmap.T6ntrl_nbLoci, SSP->T56ntrl_frequencyThresholdForFlippingMeaning);
+        SSP->T6ntrl_flipped = CompressedSortedDeque(flipped, SSP->Gmap.T6ntrl_nbLoci);
     }
 
 
@@ -870,18 +924,18 @@ void Pop::toggleT56FixedMutations()
     //////////////
     /*std::vector<int> T56selLociToToggle;
 
-    if (SSP->T5sel_nbLoci)
+    if (SSP->Gmap.T5sel_nbLoci)
     {
-        assert(!SSP->T56sel_compress);
+        assert(!SSP->Gmap.isT56selCompress);
         std::vector<unsigned> popFreqs = this->computeT56selFrequencies();
-        T56selLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, SSP->T5sel_flipped, SSP->T5sel_nbLoci, SSP->T56sel_frequencyThresholdForFlippingMeaning);
-    } else if (SSP->T6sel_nbLoci)
+        T56selLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, SSP->T5sel_flipped, SSP->Gmap.T5sel_nbLoci, SSP->T56sel_frequencyThresholdForFlippingMeaning);
+    } else if (SSP->Gmap.T6sel_nbLoci)
     {
-        assert(SSP->T56sel_compress);
+        assert(SSP->Gmap.isT56selCompress);
         std::vector<unsigned> popFreqs = this->computeT56selFrequencies();
         auto flipped = SSP->T6sel_flipped.toVector();
-        T56selLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, flipped, SSP->T6sel_nbLoci, SSP->T56sel_frequencyThresholdForFlippingMeaning);
-        SSP->T6sel_flipped = CompressedSortedDeque(flipped, SSP->T6sel_nbLoci);
+        T56selLociToToggle = findWhatMustBeToggledAndUpdateFlipped(popFreqs, flipped, SSP->Gmap.T6sel_nbLoci, SSP->T56sel_frequencyThresholdForFlippingMeaning);
+        SSP->T6sel_flipped = CompressedSortedDeque(flipped, SSP->Gmap.T6sel_nbLoci);
     }*/
 
 
@@ -901,7 +955,7 @@ void Pop::toggleT56FixedMutations()
 void Pop::toggleT56LociFromEveryone(std::vector<int>& T56ntrlLociToToggle, std::vector<int>& T56selLociToToggle)
 {
     assert(SSP->Habitats.size() == patches.size() );
-    for (size_t patchIndex = 0 ; patchIndex < patches.size() ; ++patchIndex)
+    for (uint32_t patchIndex = 0 ; patchIndex < patches.size() ; ++patchIndex)
         patches[patchIndex].toggleT56LociFromEveryone(T56ntrlLociToToggle, T56selLociToToggle, SSP->Habitats[patchIndex]);
 }
 
@@ -926,26 +980,26 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56ntrlFrequencies()
     // Build obsFreqs
     std::vector<std::vector<unsigned>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
 
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
         // count
-        for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+        for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
         {        
-            obsFreqs[patch_index].resize(SSP->T56ntrl_nbLoci, 0.0);
-            for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+            obsFreqs[patch_index].resize(SSP->Gmap.T56ntrl_nbLoci, 0.0);
+            for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
             {
-                for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+                for (uint32_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
                 {
                     Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
-                    if (SSP->T56ntrl_compress)
+                    if (SSP->Gmap.isT56ntrlCompress)
                     {
                         auto it = haplo.T6ntrl_AllelesBegin();
                         auto itEnd = haplo.T6ntrl_AllelesEnd();
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T6ntrl_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T6ntrl_nbLoci);
                             obsFreqs[patch_index][value]++;
                         }
                     } else
@@ -955,7 +1009,7 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56ntrlFrequencies()
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T5ntrl_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T5ntrl_nbLoci);
                             obsFreqs[patch_index][value]++;
                         }
                     }
@@ -975,27 +1029,27 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56selFrequencies()
     // Build obsFreqs
     std::vector<std::vector<unsigned>> obsFreqs(GP->PatchNumber); // obsFreqs[patch_index][locus]
 
-    if (SSP->T56sel_nbLoci)
+    if (SSP->Gmap.T56sel_nbLoci)
     {
-        for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+        for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
         {
             // count
-            obsFreqs[patch_index].resize(SSP->T56sel_nbLoci, 0.0);
-            for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+            obsFreqs[patch_index].resize(SSP->Gmap.T56sel_nbLoci, 0.0);
+            for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
             {
-                for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+                for (uint32_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
                 {
                     Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
 
-                    if (SSP->T56sel_compress)
+                    if (SSP->Gmap.isT56selCompress)
                     {
                         auto it = haplo.T6sel_AllelesBegin();
                         auto itEnd = haplo.T6sel_AllelesEnd();
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T6sel_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T6sel_nbLoci);
                             obsFreqs[patch_index][value]++;
                         }
                     } else
@@ -1005,7 +1059,7 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56selFrequencies()
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T5sel_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T5sel_nbLoci);
                             obsFreqs[patch_index][value]++;
                         }
                     }
@@ -1022,25 +1076,22 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56Frequencies()
 {
     //std::cout << "enters Pop::computePatchSpecificT56Frequencies\n";
 
-    assert(SSP->T56_nbLoci);
+    assert(SSP->Gmap.T56_nbLoci);
 
     std::vector<std::vector<unsigned>> ntrlFreqs  = this->computePatchSpecificT56ntrlFrequencies();
     std::vector<std::vector<unsigned>> selFreqs = this->computePatchSpecificT56selFrequencies();
     
-    assert(SSP->FromT56selLocusToLocus.size() == SSP->T56sel_nbLoci);
-    assert(SSP->FromT56ntrlLocusToLocus.size() == SSP->T56ntrl_nbLoci);
-    assert(SSP->FromT56LocusToT56genderLocus.size() == SSP->T56_nbLoci);
 
     std::vector<std::vector<unsigned>> r(GP->PatchNumber);
-    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+    for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
     {
-        size_t selFreqsIndex = 0;
-        size_t ntrlFreqsIndex = 0;
-        r[patch_index].resize(SSP->T56_nbLoci);
-        for (size_t T56locus = 0 ; T56locus < SSP->T56_nbLoci ; T56locus++)
+        uint32_t selFreqsIndex = 0;
+        uint32_t ntrlFreqsIndex = 0;
+        r[patch_index].resize(SSP->Gmap.T56_nbLoci);
+        for (uint32_t T56locus = 0 ; T56locus < SSP->Gmap.T56_nbLoci ; T56locus++)
         {
             //std::cout << "SSP->FromT56LocusToT56genderLocus["<<T5locus<<"].first = " << SSP->FromT56LocusToT56genderLocus[T5locus].first << "\n";
-            if (SSP->FromT56LocusToT56genderLocus[T56locus].first)
+            if (SSP->Gmap.FromT56LocusToT56genderLocus(T56locus).isNtrl)
             {
                 r[patch_index][T56locus] = ntrlFreqs[0][ntrlFreqsIndex]; // Why '0' and not 'patch_index'? Because the previous patch index has been removed to keep RAM as low as possible
                 ntrlFreqsIndex++;
@@ -1054,13 +1105,13 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56Frequencies()
         ntrlFreqs.erase(ntrlFreqs.begin());  // Why remove the first element? Because we always refer to the zeroth element above. It helps keep teh RAM usage as low as possible
         selFreqs.erase(selFreqs.begin());    // Why remove the first element? Because we always refer to the zeroth element above. It helps keep teh RAM usage as low as possible
         
-        assert(selFreqsIndex == SSP->T56sel_nbLoci);
-        assert(ntrlFreqsIndex == SSP->T56ntrl_nbLoci);
+        assert(selFreqsIndex == SSP->Gmap.T56sel_nbLoci);
+        assert(ntrlFreqsIndex == SSP->Gmap.T56ntrl_nbLoci);
     }
     assert(ntrlFreqs.size() == 0);
     assert(selFreqs.size() == 0);
     assert(r.size() == GP->PatchNumber);
-    assert(r[0].size() == SSP->T56_nbLoci);
+    assert(r[0].size() == SSP->Gmap.T56_nbLoci);
 
     //std::cout << "About to exit Pop::computePatchSpecificT56Frequencies\n";
     return r;
@@ -1072,28 +1123,28 @@ std::vector<std::vector<unsigned>> Pop::computePatchSpecificT56Frequencies()
 
 std::vector<unsigned> Pop::computeT56ntrlFrequencies()
 {
-    assert(SSP->T56ntrl_nbLoci == SSP->T5ntrl_nbLoci + SSP->T6ntrl_nbLoci);
-    std::vector<unsigned> obsFreqs(SSP->T56ntrl_nbLoci,0); // obsFreqs[patch_index][locus]
+    assert(SSP->Gmap.T56ntrl_nbLoci == SSP->Gmap.T5ntrl_nbLoci + SSP->Gmap.T6ntrl_nbLoci);
+    std::vector<unsigned> obsFreqs(SSP->Gmap.T56ntrl_nbLoci,0); // obsFreqs[patch_index][locus]
 
-    if (SSP->T56ntrl_nbLoci)
+    if (SSP->Gmap.T56ntrl_nbLoci)
     {
         // count
-        for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+        for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {        
-            for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+            for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
             {
-                for (size_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+                for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
                 {
                     Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
-                    if (SSP->T56ntrl_compress)
+                    if (SSP->Gmap.isT56ntrlCompress)
                     {
                         auto it    = haplo.T6ntrl_AllelesBegin();
                         auto itEnd = haplo.T6ntrl_AllelesEnd();
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T6ntrl_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T6ntrl_nbLoci);
                             ++obsFreqs[value];
                         }
                     } else
@@ -1103,7 +1154,7 @@ std::vector<unsigned> Pop::computeT56ntrlFrequencies()
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T5ntrl_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T5ntrl_nbLoci);
                             ++obsFreqs[value];
                         }
                     }
@@ -1113,9 +1164,9 @@ std::vector<unsigned> Pop::computeT56ntrlFrequencies()
     }
 
     /*
-    assert(obsFreqs.size()== SSP->T56ntrl_nbLoci);
+    assert(obsFreqs.size()== SSP->Gmap.T56ntrl_nbLoci);
     std::cout << "what is polymorphic: ";
-    for (size_t locus = 0 ; locus < obsFreqs.size() ; ++locus)
+    for (uint32_t locus = 0 ; locus < obsFreqs.size() ; ++locus)
     {
         if (obsFreqs[locus] != 0 && obsFreqs[locus] != 2 * SSP->TotalpatchSize)
             std::cout << locus << " ";
@@ -1131,30 +1182,30 @@ std::vector<unsigned> Pop::computeT56ntrlFrequencies()
 std::vector<unsigned> Pop::computeT56selFrequencies()
 {
     // Build obsFreqs
-    assert(SSP->T56sel_nbLoci == SSP->T5sel_nbLoci + SSP->T6sel_nbLoci);
-    std::vector<unsigned> obsFreqs(SSP->T56sel_nbLoci,0); // obsFreqs[patch_index][locus]
-    if (SSP->T56sel_nbLoci)
+    assert(SSP->Gmap.T56sel_nbLoci == SSP->Gmap.T5sel_nbLoci + SSP->Gmap.T6sel_nbLoci);
+    std::vector<unsigned> obsFreqs(SSP->Gmap.T56sel_nbLoci,0); // obsFreqs[patch_index][locus]
+    if (SSP->Gmap.T56sel_nbLoci)
     {
         // count
-        size_t TotalpatchSize = 0;
-        for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+        uint32_t TotalpatchSize = 0;
+        for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
         {
             TotalpatchSize += SSP->patchSize[patch_index];
         
-            for (size_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
+            for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)
             {
-                for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+                for (uint32_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
                 {
                     Haplotype& haplo = this->getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
 
-                    if (SSP->T56sel_compress)
+                    if (SSP->Gmap.isT56selCompress)
                     {
                         auto it = haplo.T6sel_AllelesBegin();
                         auto itEnd = haplo.T6sel_AllelesEnd();
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T6sel_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T6sel_nbLoci);
                             ++obsFreqs[value];
                         }
                     } else
@@ -1164,7 +1215,7 @@ std::vector<unsigned> Pop::computeT56selFrequencies()
                         for (; it != itEnd ; ++it)
                         {
                             auto value = *it;
-                            assert(value >= 0 && value < SSP->T5sel_nbLoci);
+                            assert(value >= 0 && value < SSP->Gmap.T5sel_nbLoci);
                             ++obsFreqs[value];
                         }
                     }
@@ -1183,14 +1234,14 @@ std::vector<unsigned> Pop::computeT56Frequencies()
     std::vector<unsigned> selFreqs = this->computeT56selFrequencies();
     std::vector<unsigned> ntrlFreqs = this->computeT56ntrlFrequencies();
 
-    std::vector<unsigned> r(SSP->T56_nbLoci);
+    std::vector<unsigned> r(SSP->Gmap.T56_nbLoci);
     
-    size_t selFreqsIndex = 0;
-    size_t ntrlFreqsIndex = 0;
+    uint32_t selFreqsIndex = 0;
+    uint32_t ntrlFreqsIndex = 0;
 
-    for (size_t locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
+    for (uint32_t locus = 0 ; locus < SSP->Gmap.T56_nbLoci ; locus++)
     {
-        if (SSP->FromT56LocusToT56genderLocus[locus].first)
+        if (SSP->Gmap.FromT56LocusToT56genderLocus(locus).isNtrl)
         {
             r[locus] = ntrlFreqs[ntrlFreqsIndex];
             ntrlFreqsIndex++;
@@ -1202,11 +1253,11 @@ std::vector<unsigned> Pop::computeT56Frequencies()
         //std::cout << "freq of locus " << T5locus << " = " <<  r[T5locus] << "\n";
     }
 
-    assert(selFreqsIndex == SSP->T56sel_nbLoci);
-    assert(ntrlFreqsIndex == SSP->T56ntrl_nbLoci);
+    assert(selFreqsIndex == SSP->Gmap.T56sel_nbLoci);
+    assert(ntrlFreqsIndex == SSP->Gmap.T56ntrl_nbLoci);
 
 
-    assert(r.size() == SSP->T56_nbLoci);
+    assert(r.size() == SSP->Gmap.T56_nbLoci);
 
     return r;
 }
@@ -1215,7 +1266,7 @@ std::vector<double> Pop::computeT56RelativeFrequencies()
 {
     auto freqs = computeT56Frequencies();
     std::vector<double> relFreqs(freqs.size());
-    for (size_t locus = 0 ; locus < SSP->T56_nbLoci ; locus++)
+    for (uint32_t locus = 0 ; locus < SSP->Gmap.T56_nbLoci ; locus++)
     {
         relFreqs[locus] = (double)freqs[locus] / (2.0*SSP->TotalpatchSize);
         assert(relFreqs[locus]>=0.0 && relFreqs[locus] <= 1.0);
@@ -1226,7 +1277,7 @@ std::vector<double> Pop::computeT56RelativeFrequencies()
 std::vector<std::vector<double>> Pop::computeT1RelativeFrequenciesPerPatch()
 {
     std::vector<std::vector<double>> r(GP->PatchNumber);
-    for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         r[patch_index] = this->getPatch(patch_index).computeT1RelativeFrequencies(patch_index);
     }
@@ -1239,20 +1290,20 @@ std::vector<std::vector<double>> Pop::computeT1RelativeFrequenciesPerPatch()
 std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
 {
     // Gather the genetics of one "random" individual
-    std::vector<bool> oneAllele(SSP->T1_nbLoci);
+    std::vector<bool> oneAllele(SSP->Gmap.T1_nbLoci);
     {
         assert(SSP->patchSize.size() == GP->PatchNumber);
         auto& oneHaplo = getPatch(GP->PatchNumber-1).getInd(SSP->patchSize[GP->PatchNumber-1]-1).getHaplo(0);
 
 
-        size_t locus = 0;
+        uint32_t locus = 0;
 
         // First bytes
-        for (size_t byte = 0 ; byte < (SSP->T1_nbChars-1) ; ++byte )
+        for (uint32_t byte = 0 ; byte < (SSP->Gmap.T1_nbChars-1) ; ++byte )
         {
             if (oneHaplo.getT1_char(byte))
             {
-                for (unsigned bit = 0 ; bit < 8 ; ++bit )
+                for (uint32_t bit = 0 ; bit < 8 ; ++bit )
                 {
                     oneAllele[locus] = oneHaplo.getT1_Allele(byte, bit);
                     ++locus;
@@ -1262,13 +1313,13 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
                 locus+=8;
             }
         }
-        assert(locus == (SSP->T1_nbChars-1) * 8);
+        assert(locus == (SSP->Gmap.T1_nbChars-1) * 8);
 
         // last byte
-        auto lastByte = SSP->T1_nbChars-1;
+        auto lastByte = SSP->Gmap.T1_nbChars-1;
         if (oneHaplo.getT1_char(lastByte))
         {
-            for (size_t bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit )
+            for (uint32_t bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit )
             {
                 oneAllele[locus] = oneHaplo.getT1_Allele(lastByte, bit);
                 ++locus;
@@ -1280,7 +1331,7 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
 
 
     // Figure out what is polymorphic
-    std::vector<bool> isPoly(SSP->T1_nbLoci, false);
+    std::vector<bool> isPoly(SSP->Gmap.T1_nbLoci, false);
 
     for ( int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index )
     {
@@ -1294,7 +1345,7 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
                 unsigned locus = 0;
 
                 // First bytes
-                for (unsigned byte = 0 ; byte < (SSP->T1_nbChars-1) ; ++byte )
+                for (unsigned byte = 0 ; byte < (SSP->Gmap.T1_nbChars-1) ; ++byte )
                 {
                     for (unsigned bit = 0 ; bit < 8 ; ++bit )
                     {
@@ -1303,12 +1354,12 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
                         ++locus;
                     }
                 }
-                assert(locus == (SSP->T1_nbChars-1) * 8);
+                assert(locus == (SSP->Gmap.T1_nbChars-1) * 8);
 
                 // last byte
-                auto lastByte = SSP->T1_nbChars-1;
+                auto lastByte = SSP->Gmap.T1_nbChars-1;
                 
-                for (unsigned bit = 0 ; bit < SSP->T1_nbLociLastByte ; ++bit )
+                for (uint32_t bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit )
                 {
                     if (haplo.getT1_Allele(lastByte, bit) != oneAllele[locus])
                             isPoly[locus] = true;
@@ -1320,3 +1371,28 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
     
     return whichT1_locusDescription(isPoly);
 }
+
+
+void Pop::freeMemory()
+{
+    patches.clear();
+    patches.shrink_to_fit();
+
+    T2LociToCorrect.clear();
+    T2LociToCorrect.shrink_to_fit();
+
+    indexFirstMale.clear();
+    indexFirstMale.shrink_to_fit();
+    
+    walkers.clear();
+    walkers.shrink_to_fit();
+}
+
+
+void Pop::freeT56Memory() // reset all T56 to zero
+{
+    for (auto& patch : patches)
+        patch.freeT56Memory();
+}
+
+

@@ -6,21 +6,21 @@
 
 // All CSDBlock editing functions will compress. If you don't want compressing, don't use these functions!
 
-void CompressedSortedDeque::CSDBlock::insert(CompressedSortedDeque::iterator it, unsigned int value)
+void CompressedSortedDeque::CSDBlock::insert(CompressedSortedDeque::iterator it, uint32_t value)
 {
     suffixs.insert(it.smallP, compress(value));
 }
 
 
 
-void CompressedSortedDeque::CSDBlock::push_back(unsigned int value)
+void CompressedSortedDeque::CSDBlock::push_back(uint32_t value)
 {
     suffixs.push_back(compress(value));
 }
 
 
 
-void CompressedSortedDeque::CSDBlock::insert(std::vector<unsigned short>::iterator it, unsigned int value)
+void CompressedSortedDeque::CSDBlock::insert(std::vector<unsigned short>::iterator it, uint32_t value)
 {
     suffixs.insert(it,compress(value));
 }
@@ -29,8 +29,8 @@ void CompressedSortedDeque::CSDBlock::insert(std::vector<unsigned short>::iterat
 
 
 // Constructors
-CompressedSortedDeque::CSDBlock::CSDBlock(unsigned int blockIndex)
-:adder((unsigned int) blockIndex * (unsigned int) std::numeric_limits<unsigned short>::max())
+CompressedSortedDeque::CSDBlock::CSDBlock(uint32_t blockIndex)
+:adder((uint32_t) blockIndex * (uint32_t) std::numeric_limits<unsigned short>::max())
 {
     suffixs.reserve(1);
 }
@@ -68,12 +68,12 @@ std::vector<unsigned short>::iterator CompressedSortedDeque::CSDBlock::end()
     return suffixs.end();
 }
 
-size_t CompressedSortedDeque::CSDBlock::size()
+uint32_t CompressedSortedDeque::CSDBlock::size()
 {
     return suffixs.size();
 }
 
-unsigned short CompressedSortedDeque::CSDBlock::compress(unsigned int value)
+unsigned short CompressedSortedDeque::CSDBlock::compress(uint32_t value)
 {
     return (unsigned short)(value - adder);
 }
@@ -92,7 +92,7 @@ unsigned short CompressedSortedDeque::CSDBlock::compress(unsigned int value)
 
 CompressedSortedDeque::CompressedSortedDeque(){}
 
-CompressedSortedDeque::CompressedSortedDeque(unsigned int pastMaxValue)
+CompressedSortedDeque::CompressedSortedDeque(uint32_t pastMaxValue)
 // :endIterator(data.begin(), std::vector<unsigned short>::iterator(), data.end()) // That looks ugly but it is because bigPEnd cannot have a default initializer, so I have to initalize it // data(std::vector<CSDBlock>()), 
 {
     unsigned short nbBlocks = getBlockForValue(pastMaxValue) + 1;
@@ -103,7 +103,7 @@ CompressedSortedDeque::CompressedSortedDeque(unsigned int pastMaxValue)
     }
 }
 
-CompressedSortedDeque::CompressedSortedDeque(std::vector<unsigned int> in, unsigned int pastMaxValue)
+CompressedSortedDeque::CompressedSortedDeque(std::vector<uint32_t> in, uint32_t pastMaxValue)
 : CompressedSortedDeque(pastMaxValue) 
 {
     for (auto& i : in)
@@ -164,13 +164,13 @@ CompressedSortedDeque::iterator CompressedSortedDeque::end()
 
 
 
-void CompressedSortedDeque::insert(CompressedSortedDeque::iterator& it, unsigned int value)
+void CompressedSortedDeque::insert(CompressedSortedDeque::iterator& it, uint32_t value)
 {
     it.backwardIfWrongBlock(data.begin(), value);
     it.bigP->insert(it.smallP,value); // compressed in here ('it.bigP->suffixs.insert' would not compress)
 }   
 
-CompressedSortedDeque::iterator CompressedSortedDeque::insert(unsigned int value)
+CompressedSortedDeque::iterator CompressedSortedDeque::insert(uint32_t value)
 {
     CompressedSortedDeque::iterator it = CompressedSortedDeque::lower_bound_noForward(value);
     this->insert(it, value);
@@ -178,9 +178,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::insert(unsigned int value
     return it;
 }
 
-void CompressedSortedDeque::push_back(unsigned int value)
+void CompressedSortedDeque::push_back(uint32_t value)
 {
-    size_t blockIndex = getBlockForValue(value);
+    uint32_t blockIndex = getBlockForValue(value);
     data[blockIndex].push_back(value); // compress in here
 }
 
@@ -259,7 +259,7 @@ void CompressedSortedDeque::extend(CompressedSortedDeque::iterator& from, Compre
     //std::cout << "aaaaaa\n";
     // this->assertOrdering();
     {
-        size_t blockIndex = from.bigP - source.data.begin(); 
+        uint32_t blockIndex = from.bigP - source.data.begin(); 
         if (to.bigP == from.bigP)
         {
             /*std::cout << "*from = " << *from << "\n";
@@ -296,13 +296,13 @@ void CompressedSortedDeque::extend(CompressedSortedDeque::iterator& from, Compre
             assert(to.bigP <= to.bigPEnd);
             assert(from.bigP < from.bigPEnd);
             
-            //size_t blockIndex = from.bigP - source.data.begin(); 
+            //uint32_t blockIndex = from.bigP - source.data.begin(); 
             //auto BlockIt = data.begin() + blockIndex;
             
             //if (BlockIt->suffixs.size());
             {
-                size_t i = from.bigP - from.bigPBegin;
-                size_t i_end = to.bigP - to.bigPBegin;
+                uint32_t i = from.bigP - from.bigPBegin;
+                uint32_t i_end = to.bigP - to.bigPBegin;
                 while (i < i_end)
                 {
                     data[i] = source.data[i];
@@ -323,7 +323,7 @@ void CompressedSortedDeque::extend(CompressedSortedDeque::iterator& from, Compre
     {
         if (from.smallP < to.smallP)
         {
-            size_t blockIndex = from.bigP - source.data.begin();
+            uint32_t blockIndex = from.bigP - source.data.begin();
             data[blockIndex].suffixs.insert(data[blockIndex].end(), from.smallP, to.smallP);
         }
     }
@@ -351,10 +351,10 @@ void CompressedSortedDeque::clear()
 /////////////////////
 
 
-size_t CompressedSortedDeque::size()
+uint32_t CompressedSortedDeque::size()
 {
     // begin is the position of the first mutation that might not be in the first block
-    size_t r = 0;
+    uint32_t r = 0;
     for (auto& da : data)
         r += da.suffixs.size();
     return r;
@@ -395,7 +395,7 @@ void CompressedSortedDeque::swap(CompressedSortedDeque& other)
     this->data.swap(other.data);
 }
 
-CompressedSortedDeque::iterator CompressedSortedDeque::iterator::lower_bound_FromThis(unsigned int value)
+CompressedSortedDeque::iterator CompressedSortedDeque::iterator::lower_bound_FromThis(uint32_t value)
 {
     unsigned blockIndex = CompressedSortedDeque::getBlockForValue(value);
     auto newBigP = bigPBegin + blockIndex;
@@ -419,9 +419,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::lower_bound_Fro
     return r;
 }
 
-CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound(unsigned int value)
+CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound(uint32_t value)
 {
-    unsigned int blockIndex = getBlockForValue(value);
+    uint32_t blockIndex = getBlockForValue(value);
     //std::cout << "blockIndex for " << value << " = "<< blockIndex << "\n";
     auto bigPtoSearchIn = data.begin() + blockIndex;
     iterator r = iterator(
@@ -460,9 +460,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound(unsigned int 
     return r;
 }
 
-CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(unsigned int value, unsigned& blockIndexFrom, unsigned& fromInBlock)
+CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(uint32_t value, unsigned& blockIndexFrom, unsigned& fromInBlock)
 {
-    unsigned int blockIndex = getBlockForValue(value);
+    uint32_t blockIndex = getBlockForValue(value);
     auto bigPtoSearchIn = data.begin() + blockIndex;
     
     std::vector<unsigned short>::iterator fromIt;
@@ -487,9 +487,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(unsigned
     return r;   
 }
 
-CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(unsigned int value, const CompressedSortedDeque::iterator& itFrom)
+CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(uint32_t value, const CompressedSortedDeque::iterator& itFrom)
 {
-    unsigned int blockIndex = getBlockForValue(value);
+    uint32_t blockIndex = getBlockForValue(value);
     std::vector<unsigned short>::iterator smallPFrom;
     if (itFrom.bigP == data.begin() + blockIndex)
     {
@@ -508,9 +508,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_from(unsigned
     return r;
 }
 
-CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_noForward(unsigned int value)
+CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_noForward(uint32_t value)
 {
-    unsigned int blockIndex = getBlockForValue(value);
+    uint32_t blockIndex = getBlockForValue(value);
     auto bigPtoSearchIn = data.begin() + blockIndex;
     iterator r = iterator(
         bigPtoSearchIn,
@@ -527,9 +527,9 @@ CompressedSortedDeque::iterator CompressedSortedDeque::lower_bound_noForward(uns
 // Other Methods ///
 ////////////////////
 
-unsigned short CompressedSortedDeque::getBlockForValue(const unsigned int value)
+unsigned short CompressedSortedDeque::getBlockForValue(const uint32_t value)
 {
-    unsigned int m = (unsigned int) std::numeric_limits<unsigned short>::max();
+    uint32_t m = (uint32_t) std::numeric_limits<unsigned short>::max();
     return (value + m) / m - 1;
 }
 
@@ -617,10 +617,10 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator++(int)
 
 unsigned CompressedSortedDeque::iterator::operator*() const
 {
-    //std::cout << "dereference "<< ((unsigned int) bigP->prefix) + (unsigned int)*smallP <<" with prefix " << bigP->prefix << " and short " << *smallP << "\n";
+    //std::cout << "dereference "<< ((uint32_t) bigP->prefix) + (uint32_t)*smallP <<" with prefix " << bigP->prefix << " and short " << *smallP << "\n";
     //std::cout << "bigP->adder = " << bigP->adder << "\n";
     //std::cout << "*smallP = " << *smallP << "\n" << std::flush;
-    return (unsigned int) bigP->adder + (unsigned int) (*smallP);
+    return (uint32_t) bigP->adder + (uint32_t) (*smallP);
 }
 
 
@@ -664,13 +664,13 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator--(int)
 
 
 
-CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator+=(size_t i)
+CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator+=(uint32_t i)
 {
 
 //   [ ][ ][ ][ ]   [ ][ ][ ][ ][ ]
 //       ^  + 5            ~
 
-    size_t diffToEnd = bigP->suffixs.end() - smallP;
+    uint32_t diffToEnd = bigP->suffixs.end() - smallP;
 
     if (i <= diffToEnd)
     {
@@ -696,7 +696,7 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator+=(size
 }
 
 
-CompressedSortedDeque::iterator operator+(const CompressedSortedDeque::iterator& it, size_t i)
+CompressedSortedDeque::iterator operator+(const CompressedSortedDeque::iterator& it, uint32_t i)
 {
     CompressedSortedDeque::iterator r(it);
     r+=i;
@@ -705,7 +705,7 @@ CompressedSortedDeque::iterator operator+(const CompressedSortedDeque::iterator&
 
 
 
-CompressedSortedDeque::iterator operator+(size_t i, const CompressedSortedDeque::iterator& it)
+CompressedSortedDeque::iterator operator+(uint32_t i, const CompressedSortedDeque::iterator& it)
 {
     CompressedSortedDeque::iterator r(it);
     r+=i;
@@ -714,7 +714,7 @@ CompressedSortedDeque::iterator operator+(size_t i, const CompressedSortedDeque:
 
 
 
-CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator-=(size_t i)
+CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator-=(uint32_t i)
 {
 
 //   [ ][ ][ ][ ]  [ ][ ][ ]   [ ][ ][ ][ ][ ]
@@ -726,7 +726,7 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator-=(size
     {
         --bigP;
     }
-    size_t diffToBegin = smallP - bigP->suffixs.begin(); // diff to object past begin looking backward!
+    uint32_t diffToBegin = smallP - bigP->suffixs.begin(); // diff to object past begin looking backward!
 
     if (i <= diffToBegin)
     {
@@ -751,7 +751,7 @@ CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator-=(size
 
 
 
-CompressedSortedDeque::iterator operator-(const CompressedSortedDeque::iterator& iterator, size_t i)
+CompressedSortedDeque::iterator operator-(const CompressedSortedDeque::iterator& iterator, uint32_t i)
 {
     CompressedSortedDeque::iterator r(iterator);
     r-=i;
@@ -759,10 +759,10 @@ CompressedSortedDeque::iterator operator-(const CompressedSortedDeque::iterator&
 }
 
 
-size_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::iterator& from)
+uint32_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::iterator& from)
 {
     /*
-    size_t i = 0;
+    uint32_t i = 0;
     while (from != to)
     {
         from++;
@@ -771,7 +771,7 @@ size_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::ite
     return i;
     */ 
 
-    size_t r = 0;
+    uint32_t r = 0;
 
     CompressedSortedDeque::iterator newFrom(from);
     while (newFrom.bigP != to.bigP)
@@ -787,7 +787,7 @@ size_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::ite
 }
 
 
-CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator[](size_t i)
+CompressedSortedDeque::iterator CompressedSortedDeque::iterator::operator[](uint32_t i)
 {
     return *this + i;
 }
@@ -876,7 +876,7 @@ void CompressedSortedDeque::iterator::updateIfReachedEndAndThereIsMore()
 }
 
 
-void CompressedSortedDeque::iterator::backwardIfWrongBlock(std::vector<CSDBlock>::iterator firstBlockIt, const unsigned int value)
+void CompressedSortedDeque::iterator::backwardIfWrongBlock(std::vector<CSDBlock>::iterator firstBlockIt, const uint32_t value)
 {
     if (bigP->suffixs.begin() == smallP)
     {
@@ -889,7 +889,7 @@ void CompressedSortedDeque::iterator::backwardIfWrongBlock(std::vector<CSDBlock>
     }
 }
 
-size_t CompressedSortedDeque::iterator::getDistanceToBeginningOfBlock()
+uint32_t CompressedSortedDeque::iterator::getDistanceToBeginningOfBlock()
 {
     
     if (bigP != bigPEnd)

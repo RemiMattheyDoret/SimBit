@@ -19,7 +19,7 @@ public:
 
     ZipIterator<vectorType, iteratorType> operator++();
     ZipIterator<vectorType, iteratorType> operator++(int) = delete;
-    unsigned int operator*();
+    uint32_t operator*();
     template<typename vType, typename iType>
     friend bool operator==(ZipIterator<vType, iType>& lhs, ZipIterator<vType, iType>& rhs);
     template<typename vType, typename iType>
@@ -36,6 +36,6 @@ public:
     iteratorType get_haploP();
     iteratorType get_flippedP();
 
-    void lower_bound(unsigned int target);
-    void upper_bound(unsigned int target);
+    void lower_bound(uint32_t target);
+    void upper_bound(uint32_t target);
 };

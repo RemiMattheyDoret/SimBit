@@ -31,15 +31,15 @@
 int main()
 {
 	RNG_wrapper rngw(15);
-	size_t nbZeros = 0;
-	size_t nbOnes = 0;
+	uint32_t nbZeros = 0;
+	uint32_t nbOnes = 0;
 	for (int i = 0 ; i<500000; ++i)
 		rngw.get_1b() ? nbOnes++: nbZeros++;
 	std::cout << nbZeros << ":" << nbOnes << "\n";
 
 	{
-		size_t N = 8;
-		std::vector<size_t> counts(N);
+		uint32_t N = 8;
+		std::vector<uint32_t> counts(N);
 		for (int i = 0 ; i<500000000; ++i)
 			counts[rngw.uniform_int_distribution(N-1)]++;
 
@@ -49,9 +49,9 @@ int main()
 	}
 	
 	{
-		size_t N = 8;
-		std::uniform_int_distribution<size_t> d(0,N-1);
-		std::vector<size_t> counts(N);
+		uint32_t N = 8;
+		std::uniform_int_distribution<uint32_t> d(0,N-1);
+		std::vector<uint32_t> counts(N);
 		for (int i = 0 ; i<500000000; ++i)
 			counts[d(rngw.getRNG())]++;
 

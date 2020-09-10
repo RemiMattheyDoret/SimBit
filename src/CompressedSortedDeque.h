@@ -20,7 +20,7 @@ public:
 		
 
 		void updateIfReachedEndAndThereIsMore();
-		void backwardIfWrongBlock(std::vector<CSDBlock>::iterator firstBlockIt, const unsigned int value);
+		void backwardIfWrongBlock(std::vector<CSDBlock>::iterator firstBlockIt, const uint32_t value);
 
 	public:
 		iterator();
@@ -34,13 +34,13 @@ public:
 		iterator operator--(); //prefix decrement
 		iterator operator--(int); //postfix decrement
 
-		iterator operator+=(size_t i);
-		iterator operator-=(size_t i);
-		iterator operator[](size_t i);
-		friend iterator operator+(const CompressedSortedDeque::iterator& iterator, size_t i);
-		friend iterator operator+(size_t i, const CompressedSortedDeque::iterator& iterator);
-		friend iterator operator-(const CompressedSortedDeque::iterator& iterator, size_t i);
-		friend size_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::iterator& from);
+		iterator operator+=(uint32_t i);
+		iterator operator-=(uint32_t i);
+		iterator operator[](uint32_t i);
+		friend iterator operator+(const CompressedSortedDeque::iterator& iterator, uint32_t i);
+		friend iterator operator+(uint32_t i, const CompressedSortedDeque::iterator& iterator);
+		friend iterator operator-(const CompressedSortedDeque::iterator& iterator, uint32_t i);
+		friend uint32_t operator-(CompressedSortedDeque::iterator& to, CompressedSortedDeque::iterator& from);
 		
 		friend void swap(CompressedSortedDeque::iterator& lhs, CompressedSortedDeque::iterator& rhs);
 		friend bool operator<(const CompressedSortedDeque::iterator& lhs, const CompressedSortedDeque::iterator& rhs);
@@ -50,8 +50,8 @@ public:
 		friend bool operator==(const CompressedSortedDeque::iterator& lhs, const CompressedSortedDeque::iterator& rhs);
 		friend bool operator!=(const CompressedSortedDeque::iterator& lhs, const CompressedSortedDeque::iterator& rhs);
 
-		size_t getDistanceToBeginningOfBlock();
-		iterator lower_bound_FromThis(unsigned int value);
+		uint32_t getDistanceToBeginningOfBlock();
+		iterator lower_bound_FromThis(uint32_t value);
 	};
 
 
@@ -63,26 +63,26 @@ public:
 	{
 		friend CompressedSortedDeque;
 	private:
-		unsigned int adder;
-		unsigned short compress(unsigned int value);
+		uint32_t adder;
+		unsigned short compress(uint32_t value);
 
 	public:
 		std::vector<unsigned short> suffixs;
 
-		CSDBlock(unsigned int blockIndex);
+		CSDBlock(uint32_t blockIndex);
 		CSDBlock(const CSDBlock& other); // Used for operator=
 		CSDBlock(CSDBlock&& other); // Used for operator=
 		CSDBlock& operator=(const CSDBlock& other);
 
 		std::vector<unsigned short>::iterator begin();
 		std::vector<unsigned short>::iterator end();
-		size_t size();
+		uint32_t size();
 
 		// All CSDBlock editing functions will compress. If you don't want compressing, don't use these functions!
 
-		void insert(CompressedSortedDeque::iterator it, unsigned int value);
-		void push_back(unsigned int value);
-		void insert(std::vector<unsigned short>::iterator it, unsigned int value);
+		void insert(CompressedSortedDeque::iterator it, uint32_t value);
+		void push_back(uint32_t value);
+		void insert(std::vector<unsigned short>::iterator it, uint32_t value);
 		void insert(std::vector<unsigned short>::iterator thisFrom, std::vector<unsigned short>::iterator otherFrom, std::vector<unsigned short>::iterator otherTo);
 	};
 
@@ -101,8 +101,8 @@ private:
 	//// Methods ////
 	/////////////////
 
-	static unsigned short getBlockForValue(const unsigned int value);
-	CompressedSortedDeque::iterator lower_bound_noForward(unsigned int value);
+	static unsigned short getBlockForValue(const uint32_t value);
+	CompressedSortedDeque::iterator lower_bound_noForward(uint32_t value);
 	void UpdateEndIterator(CompressedSortedDeque::iterator newPossibleEnd);
 
 	void extend(CompressedSortedDeque::iterator& from, CompressedSortedDeque::iterator& to,  CompressedSortedDeque& source);
@@ -110,8 +110,8 @@ private:
 public:
 	
 
-	CompressedSortedDeque(unsigned int maxValue);
-	CompressedSortedDeque(std::vector<unsigned int> in, unsigned int maxValue);
+	CompressedSortedDeque(uint32_t maxValue);
+	CompressedSortedDeque(std::vector<uint32_t> in, uint32_t maxValue);
 	CompressedSortedDeque(); // Does nothing
 
 	std::vector<unsigned> toVector();
@@ -121,27 +121,27 @@ public:
 
 	iterator begin();
 	iterator end();
-	size_t size();
+	uint32_t size();
 	unsigned back();
 	bool isEmpty();
 	void swap(CompressedSortedDeque& other);
 
 	// Any editing function will compress. The only exception is extend (who takes already compressed data)
-	void insert(iterator& it, unsigned int value);
+	void insert(iterator& it, uint32_t value);
 	void erase(iterator& it);
-	iterator insert(unsigned int value);
-	void push_back(unsigned int value);
+	iterator insert(uint32_t value);
+	void push_back(uint32_t value);
 
 
 
 	template<typename INT>
 	void extend(INT locusFrom, INT locusTo,  CompressedSortedDeque& source);
 
-	//CompressedSortedDeque::iterator lower_bound(CompressedSortedDeque::iterator from, CompressedSortedDeque::iterator to, unsigned int value);
-	//CompressedSortedDeque::iterator upper_bound(CompressedSortedDeque::iterator from, CompressedSortedDeque::iterator to, unsigned int value);
-	CompressedSortedDeque::iterator lower_bound(unsigned int value);
-	CompressedSortedDeque::iterator lower_bound_from(unsigned int value, unsigned& blockIndexFrom, unsigned& fromInBlock);
-	CompressedSortedDeque::iterator lower_bound_from(unsigned int value, const CompressedSortedDeque::iterator& itFrom);
+	//CompressedSortedDeque::iterator lower_bound(CompressedSortedDeque::iterator from, CompressedSortedDeque::iterator to, uint32_t value);
+	//CompressedSortedDeque::iterator upper_bound(CompressedSortedDeque::iterator from, CompressedSortedDeque::iterator to, uint32_t value);
+	CompressedSortedDeque::iterator lower_bound(uint32_t value);
+	CompressedSortedDeque::iterator lower_bound_from(uint32_t value, unsigned& blockIndexFrom, unsigned& fromInBlock);
+	CompressedSortedDeque::iterator lower_bound_from(uint32_t value, const CompressedSortedDeque::iterator& itFrom);
 
 	void clear();
 	void assertOrdering(std::string message = "");

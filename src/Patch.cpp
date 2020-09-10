@@ -45,6 +45,13 @@ int Patch::getpatchCapacity()
 void Patch::AddIndividual(Individual& newInd)
 {
     inds.push_back(newInd); // Copy individual received as a reference
+   /* if (SSP->Gmap.T4_nbLoci > 0)
+    {
+        std::cout << "newInd.getHaplo(0).T4ID = " << newInd.getHaplo(0).T4ID << "\n";
+        std::cout << "newInd.getHaplo(1).T4ID = " << newInd.getHaplo(1).T4ID << "\n";
+        assert(newInd.getHaplo(0).T4ID == inds.back().getHaplo(0).T4ID);
+        assert(newInd.getHaplo(1).T4ID == inds.back().getHaplo(1).T4ID);
+    }*/
 }
 
 void Patch::removeLastIndividual()
@@ -71,9 +78,9 @@ Individual& Patch::getInd(const int& ind_index, const int& patch_index)
     return this->getInd(ind_index);
 }
 
-/*Patch::Patch(){}
+Patch::Patch(){}
 
-Patch::Patch(const Patch& p)
+/*Patch::Patch(const Patch& p)
 {
     inds = p.inds;
 }
@@ -189,6 +196,8 @@ std::cout << "Enters in 'Patch::Patch(const int patch_index, char Abiogenesis)'\
 
         assert(inds.size() == SSP->patchCapacity[patch_index]);
     }
+
+    inds.shrink_to_fit();
 }
 
 
@@ -199,24 +208,31 @@ void Patch::toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std:
 }
 
 
-std::vector<double> Patch::computeT1RelativeFrequencies(size_t self_patch_index)
+std::vector<double> Patch::computeT1RelativeFrequencies(uint32_t self_patch_index)
 {
-    std::vector<double> r(SSP->T1_nbLoci, 0.0);   
-    for (size_t ind_index = 0 ; ind_index < SSP->patchSize[self_patch_index] ; ++ind_index)
+    std::vector<double> r(SSP->Gmap.T1_nbLoci, 0.0);   
+    for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[self_patch_index] ; ++ind_index)
     {
-        for (size_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+        for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
         {
-            for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+            for (uint32_t locus = 0 ; locus < SSP->Gmap.T1_nbLoci ; ++locus)
             {
                 r[locus] += getInd(ind_index).getHaplo(haplo_index).getT1_Allele(locus);
             }
         }
     }
 
-    for (size_t locus = 0 ; locus < SSP->T1_nbLoci ; ++locus)
+    for (uint32_t locus = 0 ; locus < SSP->Gmap.T1_nbLoci ; ++locus)
     {
         r[locus] /= 2*SSP->patchSize[self_patch_index];
     }
 
     return r;
+}
+
+
+void Patch::freeT56Memory()
+{
+    for (auto& ind : inds)
+        ind.freeT56Memory();
 }

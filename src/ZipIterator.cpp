@@ -55,7 +55,7 @@ void ZipIterator<vectorType, iteratorType>::skipPotentialValueFoundInBothHaploAn
 }
 
 template<typename vectorType, typename iteratorType>
-unsigned int ZipIterator<vectorType, iteratorType>::operator*()
+uint32_t ZipIterator<vectorType, iteratorType>::operator*()
 {
 
 	if (flippedP != flippedEndP)
@@ -245,7 +245,7 @@ bool ZipIterator<vectorType, iteratorType>::isMore()
 }
 
 template<>
-void ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator>::lower_bound(unsigned int target)
+void ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator>::lower_bound(uint32_t target)
 {
 	haploP.lower_bound_FromThis(target);
 	flippedP.lower_bound_FromThis(target);
@@ -253,7 +253,7 @@ void ZipIterator<CompressedSortedDeque, CompressedSortedDeque::iterator>::lower_
 }
 
 template<>
-void ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>::lower_bound(unsigned int target)
+void ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator>::lower_bound(uint32_t target)
 {
 	haploP   = std::lower_bound(haploP,   haploEndP,   target);
 	flippedP = std::lower_bound(flippedP, flippedEndP, target);
@@ -261,7 +261,7 @@ void ZipIterator<std::vector<unsigned int>, std::vector<unsigned int>::iterator>
 }
 
 template<typename vectorType, typename iteratorType>
-void ZipIterator<vectorType, iteratorType>::upper_bound(unsigned int target)
+void ZipIterator<vectorType, iteratorType>::upper_bound(uint32_t target)
 {
 	this->lower_bound(target);
 	if (this->isMore()) // If end not reached

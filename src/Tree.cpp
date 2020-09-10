@@ -5,7 +5,7 @@ double Tree::computeMeanCoalescenceTime(std::vector<TreeNode*> offsprings)
 	double T = 0.0;
 
 	// Security
-	//size_t totalNbCoalescence = 0;
+	//uint32_t totalNbCoalescence = 0;
 	double totalNbCoalescence = offsprings.size() - 1;
 
 	// Initialize parents
@@ -13,12 +13,12 @@ double Tree::computeMeanCoalescenceTime(std::vector<TreeNode*> offsprings)
 	parents.reserve(offsprings.size()); // Will never need to grow more
 
 	// Loop through generations
-	for (size_t generation = 1 ; true ; ++generation) // looping back in time
+	for (uint32_t generation = 1 ; true ; ++generation) // looping back in time
 	{
 		assert(generation <= GP->CurrentGeneration+1);
 
 		// List parents
-		for (size_t offspring_haplo_index = 0 ; offspring_haplo_index < offsprings.size() ; ++offspring_haplo_index)
+		for (uint32_t offspring_haplo_index = 0 ; offspring_haplo_index < offsprings.size() ; ++offspring_haplo_index)
 		{
 			parents.push_back(offsprings[offspring_haplo_index]->parent);
 		}
@@ -29,7 +29,7 @@ double Tree::computeMeanCoalescenceTime(std::vector<TreeNode*> offsprings)
 
 
 		// Add to T
-		size_t nbCoalescence = offsprings.size() - parents.size();
+		uint32_t nbCoalescence = offsprings.size() - parents.size();
 		//totalNbCoalescence += nbCoalescence;
 		/*
 		std::cout << " ----------- \n";
@@ -73,12 +73,12 @@ double Tree::computeTt_fast()
 {
 	// Initialize offsprings
 	std::vector<TreeNode*> offsprings;
-	for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
 	{
-		size_t currentNbHaplos = currentGenerationHaplotypes[patch_index].size();
+		uint32_t currentNbHaplos = currentGenerationHaplotypes[patch_index].size();
 		offsprings.reserve(offsprings.size() + currentNbHaplos);
 
-		for (size_t haplo_index = 0 ; haplo_index < currentNbHaplos ; ++haplo_index)
+		for (uint32_t haplo_index = 0 ; haplo_index < currentNbHaplos ; ++haplo_index)
 		{
 			offsprings.push_back(currentGenerationHaplotypes[patch_index][haplo_index][0]);
 		}
@@ -93,17 +93,17 @@ double Tree::computeTs_fast()
 	double Ts = 0.0;
 
 	// Loop through patches
-	for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
 	{
 		// Initialize offsprings
 		std::vector<TreeNode*> offsprings;
 
 		// Reserve
-		size_t currentNbHaplos = currentGenerationHaplotypes[patch_index].size();
+		uint32_t currentNbHaplos = currentGenerationHaplotypes[patch_index].size();
 		offsprings.reserve(currentNbHaplos); // It will never need to grow
 
 		// Gather offsprings
-		for (size_t haplo_index = 0 ; haplo_index < currentNbHaplos ; ++haplo_index)
+		for (uint32_t haplo_index = 0 ; haplo_index < currentNbHaplos ; ++haplo_index)
 		{
 			offsprings.push_back(currentGenerationHaplotypes[patch_index][haplo_index][0]);
 		}
@@ -120,13 +120,13 @@ double Tree::computeTs_fast()
 double Tree::computeTs()
 {
 	double Ts = 0.0;
-	for (size_t patch_i = 0 ; patch_i < GP->PatchNumber  ; ++patch_i)
+	for (uint32_t patch_i = 0 ; patch_i < GP->PatchNumber  ; ++patch_i)
 	{		
-		size_t Ts_patchi = 0;
-		size_t nbComparisons = 0;
-		for (size_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
+		uint32_t Ts_patchi = 0;
+		uint32_t nbComparisons = 0;
+		for (uint32_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
 		{
-			for (size_t haplo_j = haplo_i ; haplo_j < currentGenerationHaplotypes[patch_i].size(); ++haplo_j)
+			for (uint32_t haplo_j = haplo_i ; haplo_j < currentGenerationHaplotypes[patch_i].size(); ++haplo_j)
 			{
 				++nbComparisons; // Even when 'patch_i == patch_j && haplo_i == haplo_j' it counts as a comparison for which coalescence time is zero
 				Ts_patchi += computeCoalescentTimeBetweenTwoNodes
@@ -142,9 +142,9 @@ double Tree::computeTs()
 	return Ts / (double) GP->PatchNumber;
 }
 
-size_t Tree::computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y)
+uint32_t Tree::computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y)
 {
-	for (size_t generation = 0 ; true ; ++generation)
+	for (uint32_t generation = 0 ; true ; ++generation)
 	{
 		if (X == Y)
 		{
@@ -158,15 +158,15 @@ size_t Tree::computeCoalescentTimeBetweenTwoNodes(TreeNode* X, TreeNode* Y)
 
 double Tree::computeTb()
 {
-	size_t Tb = 0;
-	size_t nbComparisons = 0;
-	for (size_t patch_i = 0 ; patch_i < (GP->PatchNumber - 1)  ; ++patch_i)
+	uint32_t Tb = 0;
+	uint32_t nbComparisons = 0;
+	for (uint32_t patch_i = 0 ; patch_i < (GP->PatchNumber - 1)  ; ++patch_i)
 	{
-		for (size_t patch_j = patch_i + 1 ; patch_j < GP->PatchNumber ; ++patch_j)
+		for (uint32_t patch_j = patch_i + 1 ; patch_j < GP->PatchNumber ; ++patch_j)
 		{
-			for (size_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
+			for (uint32_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
 			{
-				for (size_t haplo_j = 0 ; haplo_j < currentGenerationHaplotypes[patch_j].size(); ++haplo_j)
+				for (uint32_t haplo_j = 0 ; haplo_j < currentGenerationHaplotypes[patch_j].size(); ++haplo_j)
 				{
 					++nbComparisons; // Even when 'patch_i == patch_j && haplo_i == haplo_j' it counts as a comparison for which coalescence time is zero
 					Tb += computeCoalescentTimeBetweenTwoNodes
@@ -190,15 +190,15 @@ double Tree::computeTb_fast()
 
 double Tree::computeTt()
 {
-	size_t Tt = 0;
-	size_t nbComparisons = 0;
-	for (size_t patch_i = 0 ; patch_i < (GP->PatchNumber - 1)  ; ++patch_i)
+	uint32_t Tt = 0;
+	uint32_t nbComparisons = 0;
+	for (uint32_t patch_i = 0 ; patch_i < (GP->PatchNumber - 1)  ; ++patch_i)
 	{
-		for (size_t patch_j = patch_i ; patch_j < GP->PatchNumber ; ++patch_j)
+		for (uint32_t patch_j = patch_i ; patch_j < GP->PatchNumber ; ++patch_j)
 		{
-			for (size_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
+			for (uint32_t haplo_i = 0 ; haplo_i < currentGenerationHaplotypes[patch_i].size(); ++haplo_i)
 			{
-				for (size_t haplo_j = 0 ; haplo_j < currentGenerationHaplotypes[patch_j].size(); ++haplo_j)
+				for (uint32_t haplo_j = 0 ; haplo_j < currentGenerationHaplotypes[patch_j].size(); ++haplo_j)
 				{
 					++nbComparisons; // Even when 'patch_i == patch_j && haplo_i == haplo_j' it counts as a comparison for which coalescence time is zero
 					Tt += computeCoalescentTimeBetweenTwoNodes
@@ -244,7 +244,7 @@ std::vector<double> Tree::computeCoalescenceFstStatistics()
 
 
 
-std::string Tree::getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, size_t& serialNumber)
+std::string Tree::getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeNode* node, uint32_t& serialNumber)
 {
 	auto it = nodeNames.find(node);
 	if (it == nodeNames.end())
@@ -265,7 +265,7 @@ std::string Tree::getNodeName(std::map<TreeNode*, std::string>& nodeNames, TreeN
 void Tree::printToFile(std::queue<TreeNode*> FIFO)
 {
 	std::map<TreeNode*, std::string> nodeNames;	
-	size_t serialNumber = 0;
+	uint32_t serialNumber = 0;
 
 	std::string s;
 	s += "Generation " + std::to_string(GP->CurrentGeneration) + "\n\n" + "Tree:\n";
@@ -312,15 +312,15 @@ void Tree::addNode(TreeNode* node)
 	nbNodesInTree++;
 }
 
-void Tree::addChildHaplotype_finished(size_t child_patch_index)
+void Tree::addChildHaplotype_finished(uint32_t child_patch_index)
 {
 	assert(currentGenerationHaplotypes.size() > child_patch_index);
 
 #ifdef DEBUG
 	{
-		size_t expectedLeft = 0;
+		uint32_t expectedLeft = 0;
 
-		for (size_t chunkIndex = 0 ; chunkIndex < newHaplotypeDescription.size() ; chunkIndex++)
+		for (uint32_t chunkIndex = 0 ; chunkIndex < newHaplotypeDescription.size() ; chunkIndex++)
 		{
 			std::cout << "Adding newHaplotypeDescription. Chunck " << chunkIndex << ": left = "<<newHaplotypeDescription[chunkIndex]->left<<", right = "<<newHaplotypeDescription[chunkIndex]->right<<"\n";
 			assert(expectedLeft == newHaplotypeDescription[chunkIndex]->left);
@@ -328,7 +328,7 @@ void Tree::addChildHaplotype_finished(size_t child_patch_index)
 			expectedLeft = newHaplotypeDescription[chunkIndex]->right;
 		}
 		std::cout << "expectedLeft = " << expectedLeft << "\n";
-		assert(expectedLeft == SSP->T4_nbLoci);
+		assert(expectedLeft == SSP->Gmap.T4_nbLoci);
 	}
 #endif
 
@@ -405,7 +405,7 @@ void Tree::initialize()
 	{
 		for (int indHaplo_index = 0 ; indHaplo_index < (SSP->patchSize[patch_index] * 2) ; indHaplo_index++)
 		{
-			TreeNode* newNode = new TreeNode(0, SSP->T4_nbLoci); // no parent constructor
+			TreeNode* newNode = new TreeNode(0, SSP->Gmap.T4_nbLoci); // no parent constructor
 			newNode->assignGenotypeOfFalses();
 			// this->addChildHaplotype_setParentInfo(); no need to set parent info. Just set isCurrentlyBuildingHaplotype to true
 			this->isCurrentlyBuildingHaplotype = true;
@@ -517,14 +517,14 @@ void Tree::addMutationsToNode(TreeNode* node)
 		// How many mutations?
 		double MRfrom = SSP->T4_MutationRate[0] * (node->left + 1);
 	    double MRto   = SSP->T4_MutationRate[0] * (node->right + 1);
-	    std::poisson_distribution<size_t> poissonDist(MRto - MRfrom);
-		size_t nbMutations = poissonDist(GP->rngw.getRNG());
+	    std::poisson_distribution<uint32_t> poissonDist(MRto - MRfrom);
+		uint32_t nbMutations = poissonDist(GP->rngw.getRNG());
 
 	    // Place mutations
-	    for (size_t mutation = 0 ; mutation < nbMutations ; mutation++)
+	    for (uint32_t mutation = 0 ; mutation < nbMutations ; mutation++)
 	    {
 	    	// Find position
-	    	std::uniform_int_distribution<size_t> dist(0, node->genotype.size()-1);
+	    	std::uniform_int_distribution<uint32_t> dist(0, node->genotype.size()-1);
 	        auto MutPosition = dist(GP->rngw.getRNG());
 
 	        // toggle bit
@@ -537,11 +537,11 @@ void Tree::addMutationsToNode(TreeNode* node)
 		// How many mutations?
 		auto itFrom = SSP->T4_MutationRate.begin() + node->left;
 	    auto itTo = SSP->T4_MutationRate.begin() + node->right;
-	    std::poisson_distribution<size_t> poissonDist(*itTo - *itFrom);
-		size_t nbMutations = poissonDist(GP->rngw.getRNG());
+	    std::poisson_distribution<uint32_t> poissonDist(*itTo - *itFrom);
+		uint32_t nbMutations = poissonDist(GP->rngw.getRNG());
 
 		// Place mutations
-	    for (size_t mutation = 0 ; mutation < nbMutations ; mutation++)
+	    for (uint32_t mutation = 0 ; mutation < nbMutations ; mutation++)
 	    {
 	    	// Find position - rnd
 	    	std::uniform_real_distribution<double> dist(*itFrom, *itTo);
@@ -573,7 +573,7 @@ std::vector<TreeNode*> Tree::placeMutationsOnTree(std::queue<TreeNode*> FIFO, Tr
 		assert(node->nbChildren == node->children.size());
 		assert(node->nbChildren > 0);
 
-		for (size_t childIndex = 0 ; childIndex < node->nbChildren ; childIndex++)
+		for (uint32_t childIndex = 0 ; childIndex < node->nbChildren ; childIndex++)
 		{
 			//std::cout << "childIndex = " << childIndex << "\n";
 			auto& child = node->children[childIndex];
@@ -735,11 +735,11 @@ void Tree::mergeCurrentHaplotypes()
 {
 	std::vector<std::vector<HaplotypeDescription>> mergedCurrentGenerationHaplotypes(currentGenerationHaplotypes.size());
 	assert(currentGenerationHaplotypes.size() == GP->PatchNumber);
-	for (size_t patch_index = 0 ; patch_index < currentGenerationHaplotypes.size() ; patch_index++)
+	for (uint32_t patch_index = 0 ; patch_index < currentGenerationHaplotypes.size() ; patch_index++)
 	{
 		mergedCurrentGenerationHaplotypes[patch_index].resize(currentGenerationHaplotypes[patch_index].size());
 		assert(currentGenerationHaplotypes[patch_index].size() == 2 * SSP->patchSize[patch_index]);
-		for (size_t indHaplo_index = 0 ; indHaplo_index < currentGenerationHaplotypes[patch_index].size() ; indHaplo_index++)
+		for (uint32_t indHaplo_index = 0 ; indHaplo_index < currentGenerationHaplotypes[patch_index].size() ; indHaplo_index++)
 		{
 			mergedCurrentGenerationHaplotypes[patch_index][indHaplo_index] = mergeHaplotype(currentGenerationHaplotypes[patch_index][indHaplo_index]);
 		}
@@ -750,8 +750,8 @@ void Tree::mergeCurrentHaplotypes()
 
 HaplotypeDescription Tree::mergeHaplotype(HaplotypeDescription& original)
 {
-	size_t lastRight = 0;
-	TreeNode* newNode = new TreeNode(0, SSP->T4_nbLoci);
+	uint32_t lastRight = 0;
+	TreeNode* newNode = new TreeNode(0, SSP->Gmap.T4_nbLoci);
 	nbNodesInTree++;
 	for (auto& node : original)
 	{
@@ -776,9 +776,9 @@ std::pair<int,int> Tree::findNodeIDin(TreeNode*& node, std::vector<std::vector<H
 #endif		
 	std::pair<int, int> IDnode = {-1,-1};
 	assert(listOfNodes.size() == GP->PatchNumber);
-	for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
 	{
-		for (size_t indHaplo_index = 0 ; indHaplo_index < listOfNodes[patch_index].size() ; indHaplo_index++)
+		for (uint32_t indHaplo_index = 0 ; indHaplo_index < listOfNodes[patch_index].size() ; indHaplo_index++)
 		{
 			for (auto& chunk : listOfNodes[patch_index][indHaplo_index])
 				if (chunk == node)
@@ -823,7 +823,7 @@ void Tree::newGeneration()
 	this->swapLastAndcurrentGenerationHaplotypes();
 	// reset the new currentGenerationHaplotypes
 	currentGenerationHaplotypes.resize(GP->PatchNumber);
-	for (size_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
+	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; patch_index++)
 	{
 		currentGenerationHaplotypes[patch_index].resize(0);
 	}
@@ -836,7 +836,7 @@ void Tree::newGeneration()
 #endif	
 }
 
-void Tree::addChildHaplotype_setParentInfo(size_t parent_patch, size_t parent_ind_index)
+void Tree::addChildHaplotype_setParentInfo(uint32_t parent_patch, uint32_t parent_ind_index)
 {
 	parent_patch_index_newHaplotypeDescription = parent_patch;
 	parent_ind_index_newHaplotypeDescription   = parent_ind_index;
@@ -845,7 +845,7 @@ void Tree::addChildHaplotype_setParentInfo(size_t parent_patch, size_t parent_in
 	//std::cout << "parentInfo set\n";
 }
 
-void Tree::addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to)
+void Tree::addChildHaplotype_addNode(uint32_t haploIndex, uint32_t from, uint32_t to)
 {
 // from included (just like left)
 // to excluded   (just like right)
@@ -863,7 +863,7 @@ void Tree::addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to)
 
 	HaplotypeDescription& parentHaplotype = lastGenerationHaplotypes[parent_patch_index_newHaplotypeDescription][parent_ind_index_newHaplotypeDescription * 2 + haploIndex];
 
-	for (size_t ParentHaplotypeChunkIndex = 0;ParentHaplotypeChunkIndex < parentHaplotype.size() ; ParentHaplotypeChunkIndex++)
+	for (uint32_t ParentHaplotypeChunkIndex = 0;ParentHaplotypeChunkIndex < parentHaplotype.size() ; ParentHaplotypeChunkIndex++)
 	{
 		TreeNode* chunk = parentHaplotype[ParentHaplotypeChunkIndex];
 		
@@ -871,7 +871,7 @@ void Tree::addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to)
 		std::cout << "ParentHaplotypeChunkIndex = " << ParentHaplotypeChunkIndex << " --- ";
 		std::cout << "chunk->left = " << chunk->left << "  chunk->right = "<< chunk->right<< " --- ";
 		std::cout << "from = " << from << "  to = "<< to << "\n";
-		assert(to <= SSP->T4_nbLoci);
+		assert(to <= SSP->Gmap.T4_nbLoci);
 		*/
 		
 
@@ -922,8 +922,8 @@ void Tree::addChildHaplotype_addNode(size_t haploIndex, size_t from, size_t to)
 	/*
 	for (TreeNode*& chunk : parentHaplotype)
 	{
-		size_t newleft = chunk->left;
-		size_t newright;
+		uint32_t newleft = chunk->left;
+		uint32_t newright;
 		for (auto& breakpoint : T4breakpoints)
 		{
 			if (chunk->left <= breakpoint && breakpoint < chunk->right )
@@ -979,18 +979,18 @@ std::vector<std::vector<double>> Tree::getCurrentStates_frequencies()
 	}
 
 	std::vector<std::vector<double>> r(GP->PatchNumber);
-	for (size_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
+	for (uint32_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
 	{
 		// Sum up the trues
-		r[patch_index].resize(SSP->T4_nbLoci);
-		for (size_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
+		r[patch_index].resize(SSP->Gmap.T4_nbLoci);
+		for (uint32_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
 		{
-			for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+			for (uint32_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
 			{
 				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index].size() == 1);
-				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbLoci);
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->Gmap.T4_nbLoci);
 
-				for (size_t locus = 0 ; locus < SSP->T4_nbLoci ; locus++)
+				for (uint32_t locus = 0 ; locus < SSP->Gmap.T4_nbLoci ; locus++)
 				{
 					if (currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype[locus])
 						r[patch_index][locus]++;
@@ -999,7 +999,7 @@ std::vector<std::vector<double>> Tree::getCurrentStates_frequencies()
 		}
 
 		// divide
-		for (size_t locus = 0 ; locus < SSP->T4_nbLoci ; locus++)       
+		for (uint32_t locus = 0 ; locus < SSP->Gmap.T4_nbLoci ; locus++)       
 	  	{
 	    	r[patch_index][locus] /= 2 * SSP->patchSize[patch_index];
 	    	assert(r[patch_index][locus] >= 0.0 && r[patch_index][locus] <= 1.0);
@@ -1021,16 +1021,16 @@ std::vector<std::vector<std::vector<std::vector<bool>>>> Tree::getCurrentStates(
 
 	// Go from nodes to a nice looking vector
 	std::vector<std::vector<std::vector<std::vector<bool>>>> r(GP->PatchNumber);
-	for (size_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
+	for (uint32_t patch_index =0 ; patch_index < GP->PatchNumber ; patch_index++)
 	{
 		r[patch_index].resize(SSP->patchSize[patch_index]);
-		for (size_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
+		for (uint32_t ind_index =0 ; ind_index < SSP->patchSize[patch_index] ; ind_index++)	
 		{
 			r[patch_index][ind_index].resize(2);
-			for (size_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
+			for (uint32_t haplo_index = 0 ; haplo_index < 2 ; haplo_index++)
 			{
 				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index].size() == 1);
-				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->T4_nbLoci);
+				assert(currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype.size() == SSP->Gmap.T4_nbLoci);
 				r[patch_index][ind_index][haplo_index] = currentGenerationHaplotypes[patch_index][ind_index * 2 + haplo_index][0]->genotype;
 			}
 		}

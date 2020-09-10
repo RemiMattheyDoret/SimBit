@@ -51,7 +51,7 @@ private:
     int FindSpeciesIndexFromString(std::string s_species);
 
 public:
-    InputReader(std::string entry,std::string ForErrorMessage);
+    InputReader(std::string entry, std::string ForErrorMessage);
     InputReader(InputReader& fullInput, int from, int to, int speciesIndex);
     InputReader(InputReader& fullInput, int from, int to = -1);
     void removeAlreadyRead();
@@ -78,7 +78,8 @@ public:
     void consideredFullyRead();
     void interpretKeywords();
     int getVIndex();
-    size_t getSizeOfV();
+    uint32_t getSizeOfV();
     void markedAsRead();
+    void removeWhatPrecedesIndex();
 };
 

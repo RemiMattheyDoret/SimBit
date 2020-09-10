@@ -2,8 +2,8 @@
 class Walker
 {
 private:
-  std::vector<std::pair<double, size_t>> alias;
-  size_t N_m_one;
+  std::vector<std::pair<double, uint32_t>> alias;
+  uint32_t N_m_one;
  
 public:
   Walker();
@@ -15,5 +15,5 @@ public:
   Walker(const Walker&& other);
   Walker(const Walker& other);
   
-  size_t operator()(RNG_wrapper& rngw) const;
+  uint32_t operator()(RNG_wrapper& rngw) const;
 };

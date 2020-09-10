@@ -58,7 +58,13 @@ typedef enum {
     T56_AlleleFreqFile = 28,
     T56_LargeOutputFile = 29,
     T4CoalescenceFst = 30,
-    T1_AverageHybridIndexFile = 31
+    T1_AverageHybridIndexFile = 31,
+    T1_haplotypeFreqs_file = 32,
+    sampleSeq_file = 33,
+    T4_paintedHaplo_file = 34,
+    T4_paintedHaploSegmentsDiversity_file = 35,
+    T4_SNPfreq_file = 36,
+    Tx_SNPfreq_file = 37
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific
@@ -81,28 +87,52 @@ private:
     bool isPatchSpecific;
     bool isNbLinesEqualNbOutputTimes;
     bool doesTimeNeedsToBeSet;
+    bool isT4MutationPlacementSpecific;
     
 
     static const std::vector<int> listOfOutputFileTypeThatCanTakeASubset;
     static const std::vector<std::string> OutputFileTypesNames; // initialized in .cpp
 
 public:
+
+    struct T4_paintedHaplo_info
+    {
+        int paintedGeneration;
+        int observedGeneration;
+        std::vector<int> patch_indices;
+        std::vector<int> nbHaplotypesPerPatch;
+
+        void print()
+        {
+            std::cout << "paintedGeneration = " << paintedGeneration << "\n";
+            std::cout << "observedGeneration = " << observedGeneration << "\n";
+            assert(patch_indices.size() == nbHaplotypesPerPatch.size());
+            std::cout << "nb patches = " << patch_indices.size() << "\n";
+        }
+    };
+
+
+
     std::vector<std::vector<T1_locusDescription>> subset;
     static std::string GeneralPath;
     static std::string sequencingErrorStringToAddToFilnames;
+    std::vector<T4_paintedHaplo_info> T4_paintedHaplo_information;
 
     void assertSubsetSize();
     OutputFile(OutputFile&& f); // move constructor
     OutputFile(std::string f, OutputFileTypes t);
     bool containsRightNumberOfLines(std::ifstream& pFile);
     bool getDoesTimeNeedsToBeSet();
+    bool getIsT4MutationPlacementSpecific();
     void open();
+    void openT4(size_t mutPlacementIndex);
     void openPatchSpecific(int patch_index = -1);
     void openForSeed();
     void open(int generation);
     void openWithoutGenerationDespiteBeingGenerationSpecific();
     bool isOpen();
     void write(const std::string& s);
+    void write(const std::vector<std::string>& s);
     void writeBinary(const RNG_type x);
     void writeBinary(const int x);
     void writeBinary(const char* first, int second);
@@ -111,6 +141,7 @@ public:
     void setTimes(std::vector<int> x);
     bool isTime();
     void clearContent();
+    void remove();
     void clearContentAndLeaveOpen(int generation);
     bool isEmpty(std::ifstream& pFile);
     bool DoesFileExist();
@@ -118,11 +149,12 @@ public:
     bool DoesAtLeastOneFileOfTypeAlreadyExist();
     bool DoAllFilesOfTypeAlreadyExist();
     void interpretTimeAndSubsetInput(InputReader& input);
+    void interpretTimeForPaintedHaplo(InputReader& input);
     void interpretSubsetInput(InputReader& input);
     std::string getPathForSeed();
-    std::string getPath(std::string patchIndexString = "");
-    std::string getPath(int generation, std::string patchIndexString = "");
-    std::string getPathWithoutGenerationDespiteBeingGenerationSpecific();
+    std::string getPath(std::string patchIndexString = "", size_t mutPlacementIndex = 0);
+    std::string getPath(int generation, std::string patchIndexString = "", size_t mutPlacementIndex = 0);
+    std::string getPathWithoutGenerationDespiteBeingGenerationSpecific(size_t mutPlacementIndex = 0);
     std::vector<int>& getTimes();
     OutputFileTypes getFileType();
     void openAndReadLine(std::string& line, int generation);
