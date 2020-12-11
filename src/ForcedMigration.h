@@ -1,9 +1,19 @@
 class ForcedMigration
 {
-	std::vector<size_t> times;
-	std::vector<std::vector<std::vector<size_t>>> froms_atTimes;
-	std::vector<std::vector<std::vector<size_t>>> tos_atTimes;
-	std::vector<std::vector<std::vector<size_t>>> nbHaploss_atTimes;
+private:
+	std::vector<size_t> earlytimes;
+	std::vector<bool> isCopy_atEarlyTimes;
+	std::vector<size_t> from_atEarlyTimes;
+	std::vector<size_t> to_atEarlyTimes;
+	std::vector<size_t> nbInds_atEarlyTimes;
 
-	void readInput(InputReader& input);
-}
+	std::vector<size_t> latetimes;
+	std::vector<bool> isCopy_atLateTimes;
+	std::vector<size_t> from_atLateTimes;
+	std::vector<size_t> to_atLateTimes;
+	std::vector<size_t> nbInds_atLateTimes;
+
+public:
+	void readInput(InputReader& input);	
+	void forceMigrationIfNeeded(Pop& pop, bool isEarly);
+};

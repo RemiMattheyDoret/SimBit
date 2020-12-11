@@ -27,6 +27,8 @@
  */
 
 
+
+
 bool Haplotype::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
 {
     assert(SSP->Gmap.T1_nbChars == T1_Alleles.size());
@@ -111,6 +113,59 @@ unsigned char Haplotype::getT1_char(INT char_index)
     return T1_Alleles[char_index];
 }
 
+size_t Haplotype::nbT7Genes()
+{
+    return T7_Alleles.size();
+}
+
+template<typename INT> void Haplotype::removeT7Gene(INT index)
+{
+    T7_Alleles.erase(T7_Alleles.begin() + index);
+}
+
+template<typename INT> void Haplotype::duplicateT7Gene(INT index)
+{
+    assert(T7_Alleles.size() < SSP->Gmap.T7_nbLoci);
+    assert(T7_Alleles.size());
+    
+    size_t nbPossibilities = SSP->Gmap.T7_nbLoci - T7_Alleles.size();
+    size_t possiblityIndex = GP->rngw.uniform_int_distribution(nbPossibilities);
+    
+    size_t newlocus = SSP->Gmap.T7_nbLoci;
+    for (size_t i = 0 ; i < T7_Alleles.size() ; ++i)
+    {
+        if (possiblityIndex < T7_Alleles[i].T7Locus - i)
+        {
+            if (i > 0)
+            {
+                newlocus = T7_Alleles[i-1].T7Locus + possiblityIndex - i;
+            } else
+            {
+                newlocus = possiblityIndex;
+            }
+            break;
+        }
+    }
+    if (newlocus == SSP->Gmap.T7_nbLoci)
+    {
+        newlocus = T7_Alleles.back().T7Locus + possiblityIndex - T7_Alleles.size();
+    }
+    assert(newlocus < SSP->Gmap.T7_nbLoci);
+
+    T7_Alleles.insert(T7_Alleles.begin() + newlocus, T7_Alleles[index]);
+}
+
+template<typename INT>
+T7Gene& Haplotype::getT7_Allele(const INT index)
+{
+    return T7_Alleles[index];
+}
+
+void Haplotype::clearT7Genes()
+{
+    std::vector<T7Gene>().swap(T7_Alleles);
+}
+
 template<typename INT>
 bool Haplotype::getT1_Allele(const INT T1Locus)
 {
@@ -148,7 +203,7 @@ unsigned char Haplotype::getT2_Allele(const INT char_index)
 }
 
 template<typename INT>
-double Haplotype::getT3_Allele(const INT index)
+int16_t Haplotype::getT3_Allele(const INT index)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->Gmap.T2_nbLoci);
@@ -194,10 +249,13 @@ void Haplotype::setT1_AlleleToOne(INT char_index, INT bit_index)
 template<typename INT>
 void Haplotype::setT1_AlleleToZero(INT char_index, INT bit_index)
 {
-    //assert(bit_index < 8);
-    //assert(bit_index >= 0);
-    //assert(char_index >= 0);
-    //assert(char_index < SSP->Gmap.T1_nbChars);
+    /*
+    assert(bit_index < 8);
+    assert(bit_index >= 0);
+    assert(char_index >= 0);
+    assert(char_index < SSP->Gmap.T1_nbChars);
+    std::cout << "SSP->Gmap.T1_nbChars = " << SSP->Gmap.T1_nbChars << "\n";
+    */
     T1_Alleles[char_index] &= ~(1 << bit_index);
 }
 
@@ -381,7 +439,7 @@ assert(index >= 0);
         }
     } else
     {
-        if (T3_Alleles[index] != std::numeric_limits<double>::min())
+        if (T3_Alleles[index] != std::numeric_limits<double>::lowest())
         {
             T3_Alleles[index]--;
         }
@@ -518,6 +576,17 @@ Haplotype::Haplotype()
         assert(SSP->Gmap.T56sel_nbLoci > 0);
         W_T56.resize(SSP->NbElementsInFitnessMap,-1.0);
     }
+
+
+    T1_Alleles.resize(SSP->Gmap.T1_nbChars);
+    T2_Alleles.resize(SSP->Gmap.T2_nbLoci);
+    T3_Alleles.resize(SSP->Gmap.T3_nbLoci);
+    //T5sel_Alleles.resize(SSP->Gmap.T5sel_nbLoci);
+    //T5ntrl_Alleles.resize(SSP->Gmap.T5ntrl_nbLoci);
+    //T6sel_Alleles.resize(SSP->Gmap.T6sel_nbLoci);
+    //T6ntrl_Alleles.resize(SSP->Gmap.T6ntrl_nbLoci);
+    assert(SSP->Gmap.T7_nbLoci == 0); // Just because I don't know how to initialize that yet
+    //T7_Alleles.resize(SSP->Gmap.T7_nbLoci);
 }
 
 void Haplotype::PrintBinaryFile(OutputFile& file)
@@ -553,7 +622,7 @@ void Haplotype::PrintBinaryFile(OutputFile& file)
     }
 }
 
-Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info)
+Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<int16_t> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info)
 {
     assert(SSP != nullptr); 
 
@@ -849,10 +918,10 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
     // Initiate T3_Alleles
     if (SSP->Gmap.T3_nbLoci > 0)
     {
-        for (int char_index=0 ; char_index < SSP->Gmap.T3_nbLoci ; char_index++)
+        for (int i=0 ; i < SSP->Gmap.T3_nbLoci ; i++)
         {
-            char c = 0;
-            this->setT3_Allele(char_index,c);
+            double d = 0.0;
+            this->setT3_Allele(i,d);
         }
         assert(T3_Alleles.size() == SSP->Gmap.T3_nbLoci);
     }
@@ -1221,7 +1290,9 @@ void Haplotype::swap(Haplotype& other)
     W_T1.swap(other.W_T1);
     W_T2.swap(other.W_T2);
     W_T56.swap(other.W_T56);
+    //std::cout << "\t\thaplo: Before swap: " << T4ID << " - " << other.T4ID << "\n";
     std::swap(T4ID, other.T4ID);
+    //std::cout << "\t\thaplo: After swap: " << T4ID << " - " << other.T4ID << "\n";
 }
 
 
@@ -3012,6 +3083,42 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 
     }
 }*/
+
+void Haplotype::shrink_to_fitT56()
+{
+    if (SSP->Gmap.T5ntrl_nbLoci)
+    {
+        //T5ntrl_Alleles.clear();
+        T5ntrl_Alleles.shrink_to_fit();
+    }
+
+    if (SSP->Gmap.T5sel_nbLoci)
+    {
+        //T5sel_Alleles.clear();
+        T5sel_Alleles.shrink_to_fit();
+    }
+
+    /*
+    if (SSP->Gmap.T6ntrl_nbLoci)
+    {
+        T6ntrl_Alleles.clear();
+        //T6ntrl_Alleles.shrink_to_fit();
+    }
+    */
+
+    /*
+    if (SSP->Gmap.T6sel_nbLoci)
+    {
+        T6sel_Alleles.clear();
+        //T6sel_Alleles.shrink_to_fit();
+    }
+    */
+
+    if (SSP->T56_isMultiplicitySelection)
+    {
+        W_T56.shrink_to_fit();
+    }
+}
 
 void Haplotype::freeT56Memory()
 {

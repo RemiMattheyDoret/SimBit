@@ -552,6 +552,10 @@ void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool
                             allParameters.SSPs[i].T4Tree.shift_generations_after_burn_in();
                         }
                         outputWriter.PrintGenerationEndOfBurnIn();
+                        memory_nbGenerationsInBurnIn = GP->CurrentGeneration - std::numeric_limits<int>::lowest();
+                        
+                        if (outputWriter.isFile(burnInLength_file)) outputWriter.writeOutputs_burnInLength(memory_nbGenerationsInBurnIn);
+
                         GP->CurrentGeneration = GP->startAtGeneration ;
                     }
                 }
@@ -560,6 +564,10 @@ void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool
                 //std::cout << "Burn in has ended\n";
                 SSP->T4Tree.shift_generations_after_burn_in();
                 outputWriter.PrintGenerationEndOfBurnIn();
+                memory_nbGenerationsInBurnIn = GP->CurrentGeneration - std::numeric_limits<int>::lowest();
+                
+                if (outputWriter.isFile(burnInLength_file)) outputWriter.writeOutputs_burnInLength(memory_nbGenerationsInBurnIn);
+                
                 GP->CurrentGeneration = GP->startAtGeneration ;
             }
         }

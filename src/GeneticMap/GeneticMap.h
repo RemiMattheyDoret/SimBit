@@ -36,6 +36,7 @@ private:
 	std::vector<uint32_t> _FromT56LocusToLocus;
 	std::vector<uint32_t> _FromT56ntrlLocusToLocus;
 	std::vector<uint32_t> _FromT56selLocusToLocus;
+	std::vector<uint32_t> _FromT7LocusToLocus;
 	std::vector<uint32_t> _FromLocusToNextT1Locus;
 	std::vector<uint32_t> _FromLocusToNextT2Locus;
 	std::vector<uint32_t> _FromLocusToNextT3Locus;
@@ -43,6 +44,7 @@ private:
 	std::vector<uint32_t> _FromLocusToNextT56Locus;
 	std::vector<uint32_t> _FromLocusToNextT56ntrlLocus;
 	std::vector<uint32_t> _FromLocusToNextT56selLocus;
+	std::vector<uint32_t> _FromLocusToNextT7Locus;
 	std::vector<T56LocusGender>  _FromT56LocusToT56genderLocus;
 
 	unsigned char onlyTypeUsed;
@@ -54,6 +56,7 @@ private:
 	bool isT56Used = false;
 	bool isT56ntrlUsed = false;
 	bool isT56selUsed = false;
+	bool isT7Used = false;
 
 	uint32_t nbT56LociGotFromFitnessValues = 0; // Only used to check inputs
 
@@ -92,6 +95,7 @@ public:
 	uint32_t T56_nbLoci;
 	uint32_t T56sel_nbLoci;
 	uint32_t T56ntrl_nbLoci;
+	uint32_t T7_nbLoci;
 	uint32_t TotalNbLoci;
 
 	bool isT56selCompress;
@@ -113,6 +117,10 @@ public:
 	template<typename INT>
 	uint32_t FromT56selLocusToLocus(const INT i) const;
 	template<typename INT>
+	uint32_t FromT7LocusToLocus(const INT i) const;
+
+
+	template<typename INT>
 	uint32_t FromLocusToNextT1Locus(const INT i) const;
 	template<typename INT>
 	uint32_t FromLocusToNextT2Locus(const INT i) const;
@@ -127,6 +135,10 @@ public:
 	template<typename INT>
 	uint32_t FromLocusToNextT56selLocus(const INT i) const;
 	template<typename INT>
+	uint32_t FromLocusToNextT7Locus(const INT i) const;
+
+
+	template<typename INT>
 	bool isT56neutral(const INT i) const;
 	template<typename INT>
 	T56LocusGender FromT56LocusToT56genderLocus(const INT i) const;
@@ -137,7 +149,7 @@ public:
 
 
 
-	void setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, bool alreadyKnowItIsAllNtrl = false, bool alreadyKnowItIsAllSel = false);
+	void setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, bool isMultFit, bool alreadyKnowItIsAllNtrl = false, bool alreadyKnowItIsAllSel = false);
 	void readLoci(InputReader& input);
 	void readT56Compression(InputReader& input);
 

@@ -57,6 +57,21 @@ std::vector<uint32_t> reverse_sort_indexes(const std::vector<T> &v) {
 }
 
 template <typename T>
+std::vector<uint32_t> reverse_stable_sort_indexes(const std::vector<T> &v) {
+
+  // initialize original index locations
+  std::vector<uint32_t> idx(v.size());
+  std::iota(idx.begin(), idx.end(), 0);
+
+  // sort indexes based on comparing values in v
+  std::stable_sort(idx.begin(), idx.end(),
+       [&v](uint32_t i1, uint32_t i2) {return v[i1] > v[i2];});
+
+  return idx;
+}
+
+
+template <typename T>
 std::vector<uint32_t> sort_indexes(const std::vector<T> &v) {
 
   // initialize original index locations
@@ -352,7 +367,8 @@ std::vector<bool> inverseWhich(std::vector<INT> idx, INTT size )
 }
 
 
-std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<double>>& rates, std::vector<std::vector<unsigned>>& indices)
+template<typename INT>
+std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<double>>& rates, std::vector<std::vector<INT>>& indices)
 {
   assert(rates.size() == indices.size());
   auto nbPatches = rates.size(); // Cannot use GP as we aregoing through different generation index
@@ -382,7 +398,8 @@ std::vector<std::vector<double>> getFullFormMatrix(std::vector<std::vector<doubl
 }
 
 
-std::vector<std::vector<std::vector<double>>> getFullFormMatrix(std::vector<std::vector<std::vector<double>>>& __rates, std::vector<std::vector<std::vector<unsigned>>>& __indices)
+template<typename INT>
+std::vector<std::vector<std::vector<double>>> getFullFormMatrix(std::vector<std::vector<std::vector<double>>>& __rates, std::vector<std::vector<std::vector<INT>>>& __indices)
 {
   assert(__rates.size() == __indices.size());
   std::vector<std::vector<std::vector<double>>> __r(__indices.size());

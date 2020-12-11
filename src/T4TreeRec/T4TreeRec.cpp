@@ -11,7 +11,7 @@ void T4TreeRec::shift_generations_after_burn_in()
 	}
 	if (maxGen >= 0)
 	{
-		std::cout << "It is likely an internal error but it looks like the neutral burn in lasted more than (the absolute of) " << std::numeric_limits<int>::lowest() << " generations. maxGen = "<< maxGen <<"\n";
+		std::cout << "It is likely an internal error but it looks like the neutral burn in lasted more than (the absolute of) " << std::numeric_limits<int>::lowest() << " generations. maxGen = "<< maxGen <<". The burn in cannot be any longer!\n";
 		abort();
 	}
 
@@ -19,9 +19,8 @@ void T4TreeRec::shift_generations_after_burn_in()
 	for (uint32_t nodeID = 0 ; nodeID < nodes.size() ; ++nodeID)
 	{
 		assert(nodes[nodeID].generation < 0);
-		//std::cout << "b " << nodes[nodeID].generation << "\n";
-		nodes[nodeID].generation = nodes[nodeID].generation - maxGen + GP->startAtGeneration;
-		//std::cout << "a " << nodes[nodeID].generation << "\n";
+		//std::cout << nodes[nodeID].generation << " -> " << nodes[nodeID].generation - maxGen + GP->startAtGeneration <<  "\n";
+		nodes[nodeID].generation = nodes[nodeID].generation - maxGen + GP->startAtGeneration;		
 	}
 	assert(nodes.back().generation == GP->startAtGeneration);
 	ancestralGeneration = ancestralGeneration - maxGen + GP->startAtGeneration;
@@ -165,16 +164,26 @@ std::vector<std::vector<std::vector<uint32_t>>> T4TreeRec::getMutations(Pop& pop
 }
 
 
+/*
+void T4TreeRec::setPartOfNewAncestor(std::vector<NodeGenetics>& allNodes, std::vector<NodeGenetics>& newAncestorsGenetics)
+{
+	assert(newAncestorsGenetics.size() == SSP->TotalpatchSize * 2);
+	for (int newID = 0 ; newID < SSP->TotalpatchSize * 2 ; ++newID)
+	{
+		auto oldID = allNodes.size() - newID - 1;
+		newAncestorsGenetics[newID].push_backMutations(allNodes[oldID].moveMutations());
+	}
+}
+*/
 
-
-void T4TreeRec::resetAncestorsEdgesAndNodesAfterPlacingMutations(std::vector<NodeGenetics>& allNodes)
+/*
+void T4TreeRec::resetAncestorsEdgesAndNodesAfterPlacingMutations(std::vector<NodeGenetics>& allNodes, bool shouldCompleteDeleteAllTree)
 {
 	NodeTable oldNodes;
 	EdgeTable oldEdges;
 	oldNodes.swap(nodes);
 	oldEdges.swap(edges);
-	nodes.reserve(oldNodes.size());
-	edges.reserve(oldEdges.size());
+	nodes.reserve(SSP->TotalpatchSize * 2);
 
 	ancestorsGenetics.clear();
 	ancestorsGenetics.reserve(SSP->TotalpatchSize * 2);
@@ -186,20 +195,24 @@ void T4TreeRec::resetAncestorsEdgesAndNodesAfterPlacingMutations(std::vector<Nod
 		auto oldID = allNodes.size() - newID - 1;
 		assert(newID == nodes.addNode(oldNodes[oldID]));
 		nodes.back().generation = oldNodes[oldID].generation;
-		/*
-		std::cout << "oldID = " << oldID << "\n";
-		std::cout << "newID = " << newID << "\n";
-		std::cout << "allNodes.size() = " << allNodes.size()  << "\n";
-		*/
+		
+		//std::cout << "oldID = " << oldID << "\n";
+		//std::cout << "newID = " << newID << "\n";
+		//std::cout << "allNodes.size() = " << allNodes.size()  << "\n";
+		
 		assert(allNodes.size() > oldID);
 		allNodes[oldID].resetID(newID);
-		ancestorsGenetics.push_back(allNodes[oldID]);
-		ancestorsGenetics.back().setGeneration(GP->CurrentGeneration);
+		if (!shouldCompleteDeleteAllTree)
+		{
+			ancestorsGenetics.push_back(allNodes[oldID]);
+			ancestorsGenetics.back().setGeneration(GP->CurrentGeneration);
+		}
 	}
 	assert(nodes.size() == SSP->TotalpatchSize * 2);
 	assert(edges.size() == 0);
 	ancestralGeneration = GP->CurrentGeneration;
 }
+*/
 
 
 void T4TreeRec::assertIsFullySimplified() const
@@ -208,130 +221,208 @@ void T4TreeRec::assertIsFullySimplified() const
 }
 
 
-std::vector<std::vector<std::vector<uint32_t>>> T4TreeRec::placeMutations(Pop& pop, bool shouldDeleteTree) // Pop is used to access haplotypes T4ID to do a good matching and to reset them
+std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRec::PatchCountData> > T4TreeRec::placeMutations(Pop& pop, bool shouldDeleteTree, bool shouldCompleteDeleteAllTree, unsigned char outputType) // Pop is used to access haplotypes T4ID to do a good matching and to reset them
 {
 /*
 	It computes the current states and set all current individuals as ancestors (unless if there are clones, then they share the same T4ID)
 */
+	/*
+	std::cout << "Entering place mutations " << nodes.size() << " nodes and " << edges.size() << " edges\nEntering tree:\n";
+	this->print();
+	std::cout << "###############################\n\n\n";
+	*/
+	if (shouldDeleteTree || shouldCompleteDeleteAllTree) assert(shouldDeleteTree != shouldCompleteDeleteAllTree);
+	assert(outputType == 'r' || outputType == 'f' || outputType == 'b'); // Raw data, Frequency data, or Both
+
+
+	std::vector<T4TreeRec::PatchCountData> ret_freqs;
+	if (outputType != 'r')
+	{
+		ret_freqs.resize(GP->PatchNumber, {SSP->T4SNPfreq_assumeMuchDiversity, SSP->Gmap.T4_nbLoci});
+	}
 
 	//////////////////////////////////////////////////////////////////////////////
 	//// If I don't need to place mutations but just return the current state ////
 	//////////////////////////////////////////////////////////////////////////////
 
+	/*
 	isAlreadyAsSimplifiedAsPossible = true;
 	if (nodes.size() == ancestorsGenetics.size())
 	{
 		return getMutations(pop);
 	}
-	
-
+	*/
 	assert(nodes.size());
-
-
 	assert(SSP->T4_MutationRate.size() == 1 || SSP->T4_MutationRate.size() == SSP->Gmap.T4_nbLoci);
 
 
-	//////////////////////////////////////////////////////////////////////////////////
-	//// Figure at which edge index an individual is producing its last offspring ////
-	//////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////
+	//// New ancestor genetics ////
+	///////////////////////////////
 
-	std::vector<bool> isLastReproduction;
-	isLastReproduction.resize(edges.size());
+	std::vector<NodeGenetics> newAncestorsGenetics;
+	newAncestorsGenetics.resize( SSP->TotalpatchSize * 2 );
+
+
+	/////////////////////////////////////////////////////////////////////////
+	//// Loop over fractions of genome to consider to minimize RAM usage ////
+	/////////////////////////////////////////////////////////////////////////
+
+	size_t fractionGenomeSize = std::ceil((double)SSP->Gmap.T4_nbLoci / (double)SSP->T4_nbRunsToPlaceMutations);
+	assert(fractionGenomeSize);
+	size_t fractionGenomeFrom = 0;
+	size_t fractionGenomeTo = 0;
+	for (size_t fractionGenomeIndex = 0 ; fractionGenomeIndex < SSP->T4_nbRunsToPlaceMutations ; ++fractionGenomeIndex)
 	{
-		std::vector<bool> hasBeenFoundYet(nodes.size(), false);
-		assert(!hasBeenFoundYet[0]);
-		assert(hasBeenFoundYet.size() == nodes.size());
-		//std::cout << "edges.size() = " << edges.size() << "\n";
-		for (size_t edge_index = edges.size()-1 ; edge_index <= edges.size()-1 ; --edge_index)
+
+		fractionGenomeFrom = fractionGenomeTo;
+		fractionGenomeTo   = fractionGenomeTo + fractionGenomeSize;
+		if (fractionGenomeTo > SSP->Gmap.T4_nbLoci)  fractionGenomeTo = SSP->Gmap.T4_nbLoci;
+		//std::cout << "fractionGenomeFrom = " << fractionGenomeFrom << "\n";
+		//std::cout << "fractionGenomeTo = " << fractionGenomeTo << "\n";
+		assert(fractionGenomeFrom < fractionGenomeTo);
+		if (fractionGenomeIndex == SSP->T4_nbRunsToPlaceMutations-1) assert(fractionGenomeTo == SSP->Gmap.T4_nbLoci);
+
+
+
+
+		//////////////////////////////////////////////////////////////////////////////////
+		//// Figure at which edge index an individual is producing its last offspring ////
+		//////////////////////////////////////////////////////////////////////////////////
+
+		std::vector<bool> isLastReproduction;
+		isLastReproduction.resize(edges.size());
 		{
-			auto p = edges[edge_index].parent;
-			assert(p < nodes.size());
-			if (hasBeenFoundYet[p])
+			std::vector<bool> hasBeenFoundYet(nodes.size(), false);
+			assert(!hasBeenFoundYet[0]);
+			assert(hasBeenFoundYet.size() == nodes.size());
+			//std::cout << "edges.size() = " << edges.size() << "\n";
+			for (size_t edge_index = edges.size()-1 ; edge_index <= edges.size()-1 ; --edge_index)
 			{
-				isLastReproduction[edge_index] = false;
-			} else
+				if ( edges[edge_index].left < fractionGenomeTo && edges[edge_index].right > fractionGenomeFrom) 
+				{
+					auto p = edges[edge_index].parent;
+					assert(p < nodes.size());
+
+					if (hasBeenFoundYet[p])
+					{
+						isLastReproduction[edge_index] = false;
+					} else
+					{
+						//std::cout << edge_index << " is last reproduction of "<<p<<" \n";
+						hasBeenFoundYet[p] = true;
+						isLastReproduction[edge_index] = true;
+					}
+				}					
+			}
+		}
+		assert(isLastReproduction.size() == edges.size());
+
+
+		//////////////////////////////////
+		//// initialize Tree genetics ////
+		//////////////////////////////////
+
+		std::vector<NodeGenetics> allNodes; // This might be improved
+		allNodes.resize(nodes.size()); 
+
+
+
+
+		//////////////////////////////////////
+		//// Take the ancestral variation ////
+		//////////////////////////////////////
+
+		//std::cout << "About to take ancestral variation\n";
+		for (uint32_t ancestor_index = 0 ; ancestor_index < ancestorsGenetics.size() ; ++ancestor_index)
+		{
+			assert(ancestorsGenetics[ancestor_index].getID() < allNodes.size() && ancestorsGenetics[ancestor_index].getID() >= 0);
+			allNodes[ancestorsGenetics[ancestor_index].getID()] = ancestorsGenetics[ancestor_index].getSubsetMutations(fractionGenomeFrom, fractionGenomeTo);
+			//std::cout << "ancestor: allNodes[" << ancestorsGenetics[ancestor_index].getID()<<"].getGeneration() = " << allNodes[ancestorsGenetics[ancestor_index].getID()].getGeneration() << "\n";
+		}
+		
+
+
+
+		///////////////////////////////////////////
+		//// Propagate mutations down the tree ////
+		///////////////////////////////////////////
+
+		for (uint32_t edge_index = 0 ; edge_index < edges.size() ; ++edge_index)
+		{
+			auto& edge = edges[edge_index];
+			if ( edges[edge_index].left < fractionGenomeTo && edges[edge_index].right > fractionGenomeFrom) 
 			{
-				//std::cout << edge_index << " is last reproduction of "<<p<<" \n";
-				hasBeenFoundYet[p] = true;
-				isLastReproduction[edge_index] = true;
+				auto& parent = allNodes[edge.parent];
+
+				if (allNodes[edge.child].getID() == -1)
+				{
+					allNodes[edge.child] = NodeGenetics({}, nodes[edge.child].generation, edge.child);
+				}
+
+				
+				auto left  = edge.left > fractionGenomeFrom ? edge.left : fractionGenomeFrom;
+				auto right = edge.right < fractionGenomeTo ? edge.right : fractionGenomeTo;
+				assert (right > left);
+					
+
+				propagateMutationsForSegment(allNodes[edge.child], parent, left, right);
+
+				if (isLastReproduction[edge_index])
+				{
+					parent.clear();
+					parent.shrink_to_fit();
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////////
+		//// Compute frequencies if needed and set ancestors ////
+		/////////////////////////////////////////////////////////
+
+		if (outputType != 'r') // if not raw output only
+		{
+			assert(ret_freqs.size() == GP->PatchNumber);
+			for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+			{
+				auto& patch = pop.getPatch(patch_index);
+				for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+				{
+					auto& ind = patch.getInd(ind_index);
+					for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+					{
+						auto oldID = ind.getHaplo(haplo_index).T4ID;
+						for (auto& mutatedLocus : allNodes[oldID].getMutations())
+						{
+							++ret_freqs[patch_index][mutatedLocus];
+						}						
+
+						if (outputType != 'f' || shouldDeleteTree)
+						{
+							auto newID = allNodes.size() - oldID - 1;
+							newAncestorsGenetics[newID].push_backMutations(allNodes[oldID].moveMutations());
+						}						
+					}
+				}
 			}
 		}
 	}
-	assert(isLastReproduction.size() == edges.size());
-	assert(isLastReproduction.back());
 
 
 
-	//////////////////////////////////
-	//// initialize Tree genetics ////
-	//////////////////////////////////
-
-	std::vector<NodeGenetics> allNodes; // This might be improved
-	allNodes.resize(nodes.size()); 
-
-
-	//////////////////////////////////////
-	//// Take the ancestral variation ////
-	//////////////////////////////////////
-
-	for (uint32_t ancestor_index = 0 ; ancestor_index < ancestorsGenetics.size() ; ++ancestor_index)
-	{
-		assert(ancestorsGenetics[ancestor_index].getID() < allNodes.size() && ancestorsGenetics[ancestor_index].getID() >= 0);
-		allNodes[ancestorsGenetics[ancestor_index].getID()] = ancestorsGenetics[ancestor_index];
-	}
-	if (shouldDeleteTree)
-	{
-		ancestorsGenetics.resize(0);
-		ancestorsGenetics.shrink_to_fit();
-	}
-
-
-	///////////////////////////////////////////
-	//// Propagate mutations down the tree ////
-	///////////////////////////////////////////
-
-	//std::cout << "line 313\n";
-
-	for (uint32_t edge_index = 0 ; edge_index < edges.size() ; ++edge_index)
-	{
-		auto& edge = edges[edge_index];
-		//std::cout << edge_index << ": {" << edge.left << " " << edge.right << " "<< edge.parent << " " << edge.child << "}\n";
 		
-		auto& parent = allNodes[edge.parent];
-
-		if (allNodes[edge.child].getID() == -1)
-		{
-			allNodes[edge.child] = NodeGenetics({}, nodes[edge.child].generation, edge.child);
-		}
-		propagateMutationsForSegment(allNodes[edge.child], parent, edge.left, edge.right);
-
-		if (isLastReproduction[edge_index])
-		{
-			parent.clear();
-			parent.shrink_to_fit();
-		}
-	}
-	//std::cout << "line 327\n";
-
-	///////////////////////
-	//// Set ancestors ////
-	///////////////////////
-
-	if (shouldDeleteTree)
-		resetAncestorsEdgesAndNodesAfterPlacingMutations(allNodes);
-
-	//std::cout << "line 335\n";
 	////////////////////////////////////////////////////////////
 	//// Gather data in convenient format and reset pop IDs ////
 	////////////////////////////////////////////////////////////
-
-	//std::cout << "About to gather data\n";
-
-	std::vector<std::vector<std::vector<uint32_t>>> ret(GP->PatchNumber);
+	
+	assert(newAncestorsGenetics.size() == 2 * SSP->TotalpatchSize);
+	std::vector<std::vector<std::vector<uint32_t>>> ret;
+	if (outputType != 'f') ret.resize(GP->PatchNumber);
+		
 	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
 	{
 		auto& patch = pop.getPatch(patch_index);
-		ret[patch_index].reserve(2*SSP->patchSize[patch_index]);
+		if (outputType != 'f') ret[patch_index].reserve(2*SSP->patchSize[patch_index]);
 
 		for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
 		{
@@ -340,32 +431,69 @@ std::vector<std::vector<std::vector<uint32_t>>> T4TreeRec::placeMutations(Pop& p
 			{
 				// Get haplotype
 				auto& haplo = ind.getHaplo(haplo_index);
+
+				// IDs
+				auto oldID = haplo.T4ID;
+				assert(oldID < nodes.size());
+				auto newID = nodes.size() - oldID - 1;
+				assert(newID >= 0 && newID < SSP->TotalpatchSize * 2);
+				if (shouldDeleteTree || shouldCompleteDeleteAllTree)
+					haplo.T4ID = newID;
+				//std::cout << "Set node ID " << newID << ". oldID = " << oldID << "\n";
+				newAncestorsGenetics[newID].resetID(newID);
+				newAncestorsGenetics[newID].setGeneration(GP->CurrentGeneration);
 				
 
-				// assertion
-				assert(haplo.T4ID < allNodes.size());
-
 				// return object
-				ret[patch_index].push_back(allNodes[haplo.T4ID].moveMutations()); // Use old ID to get the mutations
-
-				if (shouldDeleteTree)
+				if (outputType != 'f') 
 				{
-					// reset the IDs
-					haplo.T4ID = allNodes[haplo.T4ID].getID(); // This is the newID as set in 'resetAncestorsEdgesAndNodesAfterPlacingMutations'
-					assert(haplo.T4ID >= 0 && haplo.T4ID < 2 * SSP->TotalpatchSize);	
+					if (shouldCompleteDeleteAllTree)
+					{
+						ret[patch_index].push_back(newAncestorsGenetics[newID].moveMutations());
+					} else
+					{
+						ret[patch_index].push_back(newAncestorsGenetics[newID].getMutations());
+					}
 				}
 			}
 		}	
 	}
+	if (outputType != 'f') assert(ret.size() == GP->PatchNumber);
+
+	/////////////////////////
+	//// reset ancestors ////
+	/////////////////////////
+	if (shouldDeleteTree)
+	{
+		ancestorsGenetics.swap(newAncestorsGenetics);
+		ancestorsGenetics.shrink_to_fit();
+		std::vector<NodeGenetics>().swap(newAncestorsGenetics);
+	} else if (shouldCompleteDeleteAllTree)
+	{
+		std::vector<NodeGenetics>().swap(ancestorsGenetics);
+		std::vector<NodeGenetics>().swap(newAncestorsGenetics);
+		this->deleteAll();
+	} else
+	{
+		std::vector<NodeGenetics>().swap(newAncestorsGenetics);
+	}
+
 	//std::cout << "Finish gathering data\n";
+
+	//std::cout << "Tree deleted (if asked for)\n";
 
 	/*
 	std::cout << "Mutations placed at generation " << GP->CurrentGeneration << ". Ancestral generation is " << ancestralGeneration << " and the tree is\n";
 	this->print();
 	*/
+	//std::cout << "Exit T4TreeRec::placeMutations\n";
 
-	//std::cout << "line 371\n";
-	return ret;
+	/*
+	std::cout << "Exiting place mutations " << nodes.size() << " nodes and " << edges.size() << " edges\nExiting tree:\n";
+	this->print();
+	std::cout << "###############################\n\n\n";
+	*/
+	return {ret, ret_freqs};
 }
 
 
@@ -384,6 +512,8 @@ uint32_t T4TreeRec::addHaplotype(std::vector<uint32_t>& RP, std::pair<uint32_t, 
 		Haplotypes need to know their nodeID
 	*/
 
+	//if (GP->CurrentGeneration >= 0) std::cout << "Enters T4TreeRec::addHaplotype\n";
+
 	isAlreadyAsSimplifiedAsPossible = false;
 
 	if (p.first == p.second)
@@ -399,7 +529,7 @@ uint32_t T4TreeRec::addHaplotype(std::vector<uint32_t>& RP, std::pair<uint32_t, 
 	*/
 	if (p.first >= nodes.size() )
 	{
-		std::cout << "The T4 coalescent tree received a T4ID for a parental haplotype that does not exist in the tree. That might be caused by en internal error or because you set a T4ID for an defining T4IDs yourself such as you can do with --indTypes";
+		std::cout << "The T4 coalescent tree received a T4ID for a parental haplotype that does not exist in the tree. That might be caused by en internal error or because you set a T4ID for an defining T4IDs yourself such as you can do with --indTypes. T4ID received is " << p.first << " while the current maximal T4ID is " << nodes.size()-1 << "\n";
 		abort();
 	}
 	assert(nodes.size() > p.first);
@@ -442,6 +572,7 @@ uint32_t T4TreeRec::addHaplotype(std::vector<uint32_t>& RP, std::pair<uint32_t, 
 	}
 
 	//std::cout << "offNodeID = " << offNodeID << "\n";
+	//if (GP->CurrentGeneration >= 0) std::cout << "Exit T4TreeRec::addHaplotype\n";
 
 	return offNodeID;
 }
@@ -475,6 +606,20 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 
 	*/
 
+	/*
+	if (GP->CurrentGeneration == 8)
+	{
+		std::cout << "At generation 8 got the following sequences\n";
+		for (const auto& segments : allGatheredSegments)
+		{
+			for (const auto& segment : segments)
+			{
+				std::cout << "[" << segment.segment.left << "-" << segment.segment.right << "]\n";
+			}
+		}
+	}
+	*/
+
 
 
 	// double for faster calculation below but it should be uint32_t
@@ -492,8 +637,8 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
     	for (const auto& segment : segments)
     	{
     		// Note ind_ID is ancestor_ID
-    		points.push_back({segment.segment.left, true, segment.ind_ID});
-	        points.push_back({segment.segment.right, false, segment.ind_ID});
+			points.push_back({segment.segment.left, true, segment.ind_ID});
+			points.push_back({segment.segment.right, false, segment.ind_ID});
     	}
     }
 
@@ -529,11 +674,28 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 
 			// Add segment ends and diversity (heterozygosity of segments) in returned object
 			assert(overs.size());
+
+			/*
+			if (GP->CurrentGeneration == 8)
+			{
+				std::cout << "Between points " << a.location << "-" << b.location << ", overs = [ ";
+				for (auto& elem : overs) {std::cout << elem << " ";}
+				std::cout << "]\n";
+			}
+			*/
+
 			if (overs.size() == 1)
 			{
 				//r.push_back({a.location, b.location, 0.0});
 				//r.push_back({a.location, b.location, 1.0, *overs.begin()});
-				r.push_back({a.location, b.location, 1, 0.0});
+				if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().heterozygosity == 0.0)
+				{
+					assert(r.back().right < b.location);
+					r.back().right = b.location;
+				} else
+				{
+					r.push_back({a.location, b.location, 1, *(overs.begin()),  0.0});
+				}
 			} else
 			{
 				// Compute counts
@@ -549,6 +711,17 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 					}
 					++(counts.back().first);
 				}
+
+				/*
+				if (GP->CurrentGeneration == 8)
+				{
+					for (auto& count : counts)
+					{
+						std::cout << count.first << ": " << count.second << "\n";
+					}
+				}
+				*/
+					
 
 				// Make entries
 				/*
@@ -572,19 +745,40 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 				// Compute diversity
 				size_t sumOfCounts = 0; // For assertion
 				double J = 0.0; // J as in Nei's paper (H = 1 - j)
+				size_t maxCount = 0; // used only if SSP->SegDiversityFile_includeMainColor
+				int mainColor = std::numeric_limits<int>::min();  // used only if SSP->SegDiversityFile_includeMainColor
 				for (auto& count : counts)
 				{
 					sumOfCounts += count.first;
 					J += pow(count.first / nbHaplotypesSampled, 2);
+					if (maxCount < count.first)
+					{
+						maxCount = count.first;
+						mainColor = count.second;
+					}
 				}
+				assert(maxCount);
 				assert(sumOfCounts == nbHaplotypesSampled);
 				assert(J >= 0.0 && J <= 1.0);
 				auto H = 1-J;
 				
+				/*
+				if (GP->CurrentGeneration == 8)
+				{
+					std::cout << "H = " << H << "\n";
+				}
+				*/
 
 				// Add entry in the returned object
-				r.push_back({a.location, b.location, counts.size(), H});
+				if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().heterozygosity == H && r.back().nbColors == counts.size())
+				{
+					assert(r.back().right < b.location);
+					r.back().right = b.location;
+				} else
+				{
 
+					r.push_back({a.location, b.location, counts.size(), mainColor, H});
+				}
 			}
 		}
 
@@ -648,6 +842,7 @@ std::vector<T4TreeRec::PaintedSegmentFrequency> T4TreeRec::computeLargeSegmentsF
 }
 
 
+
 void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const
 {
 	//std::cout << "enters in T4TreeRec::writePaintedHaplotypesDiversity\n";
@@ -687,6 +882,7 @@ void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& foc
 		}
 		else
 		{
+			// Move focalT4IDs_patches_index to the next patch
 			bool gotANewPatch = false;
 			for (size_t i = focalT4IDs_patches_index + 1 ; i < focalT4IDs_patches.size() ; ++i)
 			{
@@ -706,12 +902,18 @@ void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& foc
 		auto data = computeSmallSegmentsDiversityFromPaintedHaplotypes(allGatheredSegments[index_for_patch]);
 		auto nbHaplotypesSampled = allGatheredSegments[index_for_patch].size();
 
-		std::string generations_s = std::to_string(paintedGeneration) + "\t" + std::to_string(observedGeneration) + "\t";
+		std::string generations_s = std::to_string(paintedGeneration == std::numeric_limits<int>::lowest() ? -GP->memory_nbGenerationsInBurnIn : paintedGeneration) + "\t" + std::to_string(observedGeneration) + "\t";
 		//std::cout << "data.size() = " << data.size() << "\n";
 		for (const auto& segment : data)
 		{
-			
-			std::string s = generations_s + std::to_string(segment.left) + "\t" + std::to_string(segment.right) + "\t" + std::to_string(patch) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(segment.nbColors) + "\t" + std::to_string(segment.heterozygosity) + "\n";
+			std::string s;
+			if (SSP->SegDiversityFile_includeMainColor)
+			{
+				s = generations_s + std::to_string(segment.left) + "\t" + std::to_string(segment.right) + "\t" + std::to_string(patch) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(segment.nbColors) + "\t" + std::to_string(segment.colorHighestFrequency) + "\t" + std::to_string(segment.heterozygosity) + "\n";
+			} else
+			{
+				s = generations_s + std::to_string(segment.left) + "\t" + std::to_string(segment.right) + "\t" + std::to_string(patch) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(segment.nbColors) + "\t" + std::to_string(segment.heterozygosity) + "\n";
+			}
 			file.write(s);
 		}
 	}
@@ -795,7 +997,7 @@ void T4TreeRec::writePaintedHaplotypes(const std::vector<uint32_t>& focalT4IDs, 
 			{
 				auto I_index = haplo_index / 2;
 				auto H_index = haplo_index % 2;
-				std::string paintedGenerationString = paintedGeneration == std::numeric_limits<int>::lowest() ? "-1" : std::to_string(paintedGeneration);
+				std::string paintedGenerationString = paintedGeneration == std::numeric_limits<int>::lowest() ? std::to_string(-GP->memory_nbGenerationsInBurnIn) : std::to_string(paintedGeneration);
                 std::string s(paintedGenerationString + "-" + std::to_string(observedGeneration) + " P" + std::to_string(patch) + " I" + std::to_string(I_index) + " H" + std::to_string(H_index) + ": ");
                 //std::cout << "About to write " << s << "\n";
 				file.write(s);
@@ -833,6 +1035,7 @@ void T4TreeRec::writePaintedHaplotypes(const std::vector<uint32_t>& focalT4IDs, 
 
 void T4TreeRec::computePaintedHaplotypes_exploreTree(HaplotypesContainer<HaplotypeOfSegments>& allSegments, const int paintedGeneration) const
 {
+	//this->print();
 	for (int edge_index = edges.size()-1 ; edge_index >= 0 ; --edge_index )
 	{
 		auto& edge = edges[edge_index];
@@ -859,6 +1062,13 @@ void T4TreeRec::computePaintedHaplotypes_exploreTree(HaplotypesContainer<Haploty
 				}
 
 				/*
+				if (nodes[edge.parent].generation == paintedGeneration)
+				{
+					std::cout << "Parent ID " << edge.parent << " existed at paintedGeneration = " << paintedGeneration << "\n";
+				}
+				*/
+
+				/*
 				std::cout << "-----------\nedge\n";
 				edge.print();
 				std::cout << "Before: parent ("<<edge.parent<<")\n";
@@ -872,7 +1082,7 @@ void T4TreeRec::computePaintedHaplotypes_exploreTree(HaplotypesContainer<Haploty
 				//std::cout << edge_index << "\n";
 
 				// Transfer segments (simple transfer means it does not "segmentize" and it does not update the tree)
-				if (!childHaplotypeP->getAlreadySegmentized()) childHaplotypeP->sortAndMerge();
+				childHaplotypeP->sortAndMerge();
 				parentHaplotypeP->simpleTransferSegmentsFromChild(*childHaplotypeP, edge, true);
 
 				/*
@@ -965,10 +1175,23 @@ std::vector<std::vector<std::vector<T4TreeRec::PaintedSegment>>> T4TreeRec::comp
 	while (allSegments.iterator_isMore())
 	{
 		const auto info = allSegments.iterator_next();
+		info.haploP->sortAndMerge();
 		auto& segments = info.haploP->getSegmentsRef();
 
 		for (auto& segment : segments)
 		{
+			//std::cout << "Testing segment.child is in the focals\n";
+			assert(std::lower_bound(focalT4IDs.begin(),focalT4IDs.end(),segment.child) != focalT4IDs.end());
+
+			/*
+			std::cout << "Testing info.oldID lived in the generation 0\n";
+			std::cout << "nodes["<<info.oldID<<"].generation = " << nodes[info.oldID].generation << "\n";
+			std::cout << "nodes["<<info.oldID<<"] is associated here to segment = [" << segment.left << "-" << segment.right << "]" << std::endl;
+			*/
+			assert(nodes.size() > info.oldID);
+			assert(nodes[info.oldID].generation == 0);
+
+			
 			auto& dest = map[segment.child];
 			assert(allPatchesGatheredSegments.size() > dest.first);
 			assert(allPatchesGatheredSegments[dest.first].size() > dest.second);
@@ -996,8 +1219,7 @@ std::vector<std::vector<std::vector<T4TreeRec::PaintedSegment>>> T4TreeRec::comp
 				}
 			);
 
-			//// Merge the gathered segments and create map of IDs
-
+			//// Merge the gathered segments of same ancestors and create map of IDs
 			if (indGatheredSegments.size() > 1)
 			{	
 				for (uint32_t i = 0 ; i < indGatheredSegments.size()-1 ; ++i)
@@ -1096,13 +1318,15 @@ bool T4TreeRec::haveAllLociCoallesced_ifKnown() const
 
 void T4TreeRec::simplify(Pop& pop)
 {
-	//std::cout << "Simplify!\n";
+	//std::cout << "Enter T4TreeRec::simplify!\n";
+	//std::cout << "Entering simplify with " << nodes.size() << " nodes and " << edges.size() << " edges\n";
 	#ifdef DEBUG
 	//std::cout << "Entering simplify with " << nodes.size() << " nodes and " << edges.size() << " edges. Ratio of RAM usage = "<< (double)edges.size() * 4.0 / (double)nodes.size() <<"\n";
 	std::cout << "Entering simplify with " << nodes.size() << " nodes and " << edges.size() << " edges\n";
 	std::cout << "entering tree \n";
 	this->print();
 	#endif
+	
 
 	if (isAlreadyAsSimplifiedAsPossible) return;
 	isAlreadyAsSimplifiedAsPossible = true;
@@ -1117,8 +1341,8 @@ void T4TreeRec::simplify(Pop& pop)
 	auto& Ni = nodes;
 	NodeTable No;
 	EdgeTable Eo;
-	No.reserve(Ni.size() * 1.1);
-	Eo.reserve(Ei.size() * 1.1);
+	No.reserve(Ni.size() / 50);
+	Eo.reserve(Ei.size() / 50);
 
 
 	
@@ -1130,8 +1354,19 @@ void T4TreeRec::simplify(Pop& pop)
 	LastGenerationIDmap lastGenerationIDmap(Ni.size(), SSP->TotalpatchSize);
 
 	HaplotypesContainer<HaplotypeOfSegments> allSegments;
+
+	/*
+	if (Ni.back().generation != GP->CurrentGeneration)
+	{
+		Ni.print();
+		std::cout << "GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
+		std::cout << "Ni.back().generation = " << Ni.back().generation << "\n";
+	}
+	*/
+
 	assert(Ni.back().generation == GP->CurrentGeneration);
-	
+	//std::cout << "T4TreeRec::simplify: First RAM allocated\n";
+
 	for ( int oldNodeID = Ni.size()-1 ; oldNodeID >= 0 && Ni[oldNodeID].generation == GP->CurrentGeneration ; --oldNodeID)
 	{
 		auto newNodeID = No.addNode(Ni[oldNodeID]);
@@ -1145,6 +1380,7 @@ void T4TreeRec::simplify(Pop& pop)
 
 		lastGenerationIDmap.add(oldNodeID, newNodeID);
 	}
+	//std::cout << "T4TreeRec::simplify: Current generation segments set\n";
 
 
 
@@ -1290,6 +1526,7 @@ void T4TreeRec::simplify(Pop& pop)
 	this->print();
 	std::cout << "###############################\n\n\n";
 	#endif
+	//std::cout << "Exiting simplify with " << nodes.size() << " nodes and " << edges.size() << " edges\nExiting tree:\n";
 }
 
 
@@ -1341,6 +1578,7 @@ void T4TreeRec::doStuffWithAncestors(HaplotypesContainer<HaplotypeOfSegments>& A
 			std::cout << "Oops. ancestor newnewID undefined yet, newID undefined yet and oldID " << info.oldID << " has already been segmentized\n";
 		}
 		#endif
+	
 		assert(!haploP->getAlreadySegmentized());
 		haploP->segmentize(No, Eo, true);
 		++nbAncestorsAdded;
@@ -1550,6 +1788,9 @@ template<typename INT> const std::vector<uint32_t>& T4TreeRec::getMutationsOfID(
 void T4TreeRec::propagateMutationsForSegment(NodeGenetics& child, const NodeGenetics& parent, const uint32_t left, const uint32_t right)
 {
 	assert(left < right);
+	//std::cout << "child.getGeneration() = " << child.getGeneration() << "\n";
+	//std::cout << "parent.getGeneration() = " << parent.getGeneration() << "\n";
+
 	assert(child.getGeneration() > parent.getGeneration());
 	auto nbGenerationsInBetween = child.getGeneration() - parent.getGeneration();
 
@@ -1597,6 +1838,7 @@ void T4TreeRec::propagateMutationsForSegment(NodeGenetics& child, const NodeGene
     {
     	// Where does the ith mutation happen?
         auto MutPosition = SSP->geneticSampler.get_T4_mutationPosition(left, right);
+        
         /*
         if (!(MutPosition>= left && MutPosition < right))
         {
@@ -1605,6 +1847,7 @@ void T4TreeRec::propagateMutationsForSegment(NodeGenetics& child, const NodeGene
         	std::cout << "MutPosition = " << MutPosition << "\n";
         }
         */
+        
         //std::cout << MutPosition << " ";
         assert(MutPosition>= left && MutPosition < right);
 
@@ -1621,3 +1864,14 @@ void T4TreeRec::propagateMutationsForSegment(NodeGenetics& child, const NodeGene
     std::cout << "\n"; 
 	*/
 }
+
+
+void T4TreeRec::deleteAll()
+{
+	edges.deleteAll();
+	nodes.deleteAll();
+	std::vector<NodeGenetics>().swap(ancestorsGenetics);
+	std::vector<int>().swap(generationsToKeepInTheTree);
+}
+
+

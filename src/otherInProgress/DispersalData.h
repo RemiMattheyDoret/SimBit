@@ -87,15 +87,14 @@ private:
     void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
     double computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r);
     void computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
-
     bool isBackwardRatesReceived;
 
 public:
     std::vector<std::vector<std::vector<double>>>   __forwardMigration;
-    std::vector<std::vector<std::vector<int>>>      __forwardMigrationIndex;
+    std::vector<std::vector<std::vector<unsigned>>> __forwardMigrationIndex;
 
     std::vector<std::vector<double>>                forwardMigration;       // FullFormForwardMigration[from][fake_to] returns forward migration rate
-    std::vector<std::vector<int>>                   forwardMigrationIndex;  // FullFormForwardMigration[from][fake_to] returns index to
+    std::vector<std::vector<unsigned>>              forwardMigrationIndex;  // FullFormForwardMigration[from][fake_to] returns index to
 
     std::vector<int>                                nextGenerationPatchSizes;
 

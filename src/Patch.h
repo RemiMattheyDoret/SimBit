@@ -42,6 +42,7 @@ public:
     Patch(const int patch_index, char Abiogenesis);
     Patch(const int patch_index, bool ShouldReadPopFromBinary);
     void PrintBinaryFile(OutputFile& file, int patch_index);
+    void swapIndividuals(size_t i, size_t j);
     //Patch();
     //Patch(const Patch& p);
     //Patch operator=(const Patch& p);
@@ -57,6 +58,7 @@ public:
     std::vector<double> computeT1RelativeFrequencies(uint32_t self_patch_index);
 
     void freeT56Memory();
+    void shrink_to_fitT56();
 };
 
 

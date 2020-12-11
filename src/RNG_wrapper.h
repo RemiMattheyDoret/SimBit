@@ -53,5 +53,11 @@ public:
 	template<class int_type>
 	int_type uniform_int_distribution(int_type from, int_type to);
 	double uniform_real_distribution(double from, double to);
+
+	template<class T>
+	double normal(T mean, T sd);
+
+	template<class T>
+	size_t poisson(T mean);
 };
 

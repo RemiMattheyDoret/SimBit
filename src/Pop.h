@@ -54,7 +54,8 @@ public:
     void CalculateFitnesses();
     //double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
     //void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
-    int SelectionOriginPatch(uint32_t patch_to);
+    
+    int SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic = -1.0);
     int patchSizeNextGeneration(int patch_index);
     void toggleT56MutationsIfNeeded();
     void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle);
@@ -83,6 +84,7 @@ public:
     std::vector<std::vector<unsigned>> computePatchSpecificT56Frequencies();
     void freeMemory();
     void freeT56Memory(); // reset all T56 to zero
+    void shrink_to_fitT56();
 
     std::vector<T1_locusDescription> listT1PolymorphicLoci();
 

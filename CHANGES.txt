@@ -403,3 +403,34 @@ SimBit_4.13.1
 SimBit_4.13.2
 	T4 now also tracks the 
 
+SimBit_4.13.18
+	Info about burnin
+
+SimBit_4.13.20
+	Add --forcedMigration
+	Fix a bug with TTx and T4 outputs when there are no T4 loci
+	
+SimBit_4.13.21
+	Add --stochasticMigration to allow migration to not be stochastic anymore
+
+SimBit_4.13.23
+	Fix small obvious bug when migration is not stochastic
+
+SimBit_4.13.26
+	SNPfreq performance increase
+
+SimBit_4.13.27
+	backward migration rates
+
+SimBit_4.13.31
+	Many improvement concerning mutation placing on T4 Tree Rec.
+
+SimBit_4.13.33
+	Fix failure to remove previous file for burn in length file type
+
+SimBit_4.15.0
+	Early, still non-functional, implementation of T7 genes (ENTWINE type of development)
+
+SimBit_4.15.5
+	Change in T3 phenotype calculation to improve performance
+	Add additive fitness effects among loci and among different types of loci.

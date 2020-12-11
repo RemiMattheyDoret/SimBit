@@ -153,7 +153,12 @@ int_type RNG_wrapper::uniform_int_distribution(int_type diff) // diff is not inc
 		return get_1b();
 	} else
 	{
-		return rng() % (diff);
+		//std::cout << "diff = " << diff << "\n";
+		std::uniform_int_distribution<int_type> d(0,diff-1);
+		//int_type x = d(rng);
+		//std::cout << "x = " << x << "\n";
+		return d(rng);
+		//return rng() % (diff);
 	}
 	//return (int_type) (uniform_real_distribution((double) to) + 0.5);
 }
@@ -168,22 +173,40 @@ double RNG_wrapper::uniform_real_distribution(double diff)
 	std::cout << "maxValue_64b = " << maxValue_64b << "\n";
 	std::cout << "r = " << r << "\n";
 	std::cout << "-----\n";*/
-	return (double) rng() / (maxValue_64b+0.1) * diff;
+
+	std::uniform_real_distribution<double> d(0,diff);
+	return d(rng);
+
+	//return (double) rng() / (maxValue_64b+0.1) * diff;
 }
 
 template<class int_type>
 int_type RNG_wrapper::uniform_int_distribution(int_type from, int_type to) // to is not included unlike in the random header filethis logic
 {
-	return from + uniform_int_distribution(to - from);
+	std::uniform_int_distribution<int_type> d(from,to-1);
+	return d(rng);
+	//return from + uniform_int_distribution(to - from);
 }
 
 double RNG_wrapper::uniform_real_distribution(double from, double to)
 {
-	assert(to > from);
-	return from + uniform_real_distribution(to - from);
+	std::uniform_real_distribution<double> d(from,to);
+	return d(rng);
 }
 
 
+template<class T>
+double RNG_wrapper::normal(T mean, T sd)
+{
+	std::normal_distribution<double> d(mean,sd);
+	return d(rng);
+}
 
+template<class T>
+size_t RNG_wrapper::poisson(T mean)
+{
+	std::poisson_distribution<size_t> d(mean);
+	return d(rng);
+}
 
 

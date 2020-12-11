@@ -37,6 +37,11 @@ void Patch::PrintBinaryFile(OutputFile& file, int patch_index)
     }
 }
 
+void Patch::swapIndividuals(size_t i, size_t j)
+{
+    std::swap(inds[j],inds[i]);
+}
+
 int Patch::getpatchCapacity()
 {
     return inds.size();
@@ -228,6 +233,12 @@ std::vector<double> Patch::computeT1RelativeFrequencies(uint32_t self_patch_inde
     }
 
     return r;
+}
+
+void Patch::shrink_to_fitT56()
+{
+    for (auto& ind : inds)
+        ind.shrink_to_fitT56();
 }
 
 

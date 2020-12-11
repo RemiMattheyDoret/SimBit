@@ -1,4 +1,6 @@
 
+T4TreeRec::NodeTable::NodeTable(){}
+
 void T4TreeRec::NodeTable::swap(NodeTable& other)
 {
 	this->data.swap(other.data);
@@ -46,7 +48,7 @@ void T4TreeRec::NodeTable::print() const
 	std::cout << "NodeTable:\n";
 	for (uint32_t nodeID = 0 ; nodeID < data.size(); ++nodeID)
 	{
-		std::cout << "\t{" << data[nodeID].generation << ", " << data[nodeID].patch << "}\n";
+		std::cout << "\t" << nodeID << " {" << data[nodeID].generation << ", " << data[nodeID].patch << "}\n";
 	}
 	std::cout << "\n";
 }
@@ -66,4 +68,9 @@ T4TreeRec::Node& T4TreeRec::NodeTable::operator[](const INT i)
 T4TreeRec::Node& T4TreeRec::NodeTable::back()
 {
 	return data.back();
+}
+
+void T4TreeRec::NodeTable::deleteAll()
+{
+	std::vector<Node>().swap(data);
 }

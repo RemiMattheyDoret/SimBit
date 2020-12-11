@@ -131,10 +131,11 @@ void T4TreeRec::EdgeTable::reverseAndMerge(const uint32_t nbNodes)
 
 void T4TreeRec::EdgeTable::print() const
 {
-	std::cout << "EdgeTable:\n\tleft\tright\tparent\tchild\n";
-	for (auto& edge : data)
+	std::cout << "EdgeTable:\n\tindex\tleft\tright\tparent\tchild\n";
+	for (size_t edge_index = 0 ; edge_index < data.size() ; ++edge_index)
 	{
-		std::cout << "\t" << edge.left << "\t" << edge.right << "\t" << edge.parent << "\t" << edge.child << "\n";
+		auto& edge = data[edge_index];
+		std::cout << "\t" << edge_index << "\t" << edge.left << "\t" << edge.right << "\t" << edge.parent << "\t" << edge.child << "\n";
 	}
 	std::cout << "\n";
 }
@@ -163,3 +164,9 @@ void T4TreeRec::EdgeTable::reserve(uint32_t size)
 {
 	data.reserve(size);
 }
+
+void T4TreeRec::EdgeTable::deleteAll()
+{
+	std::vector<Edge>().swap(data);
+}
+

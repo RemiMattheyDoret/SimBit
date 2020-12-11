@@ -53,10 +53,11 @@ public:
 		uint32_t left;
 		uint32_t right;
 		size_t nbColors;
+		int colorHighestFrequency;
 		double heterozygosity;
 
-		PaintedSegmentDiversity(uint32_t l, uint32_t r, size_t c, double h)
-		:left(l), right(r), nbColors(c), heterozygosity(h)
+		PaintedSegmentDiversity(uint32_t l, uint32_t r, size_t c, int mainColor, double h)
+		:left(l), right(r), nbColors(c), colorHighestFrequency(mainColor), heterozygosity(h)
 		{
 			assert(left < right);
 			assert(nbColors > 0);
@@ -128,10 +129,13 @@ public:
 			int getGeneration() const;
 			void setGeneration(const int g);
 
+			void push_backMutations(std::vector<uint32_t>& m);
+			void push_backMutations(std::vector<uint32_t>&& m);
 			std::vector<uint32_t>& getMutations();
 			const std::vector<uint32_t>& getMutations() const;
 			std::vector<uint32_t>&& moveMutations();
 			template<typename INT> void mutateLocus(INT MutPosition);
+			template<typename INT> NodeGenetics getSubsetMutations(INT from, INT to) const;
 	};
 
 	class Edge
@@ -168,6 +172,7 @@ public:
 			EdgeTable(std::vector<Edge> d);
 			EdgeTable();
 			void reserve(uint32_t size);
+			void deleteAll();
 	};
 
 	struct Node
@@ -182,6 +187,7 @@ public:
 			std::vector<Node> data;
 		public:
 
+			NodeTable();
 			void swap(NodeTable& other);
 			void clear();
 			void reserve(uint32_t n);
@@ -193,6 +199,7 @@ public:
 			template<typename INT> const Node& operator[](const INT i) const;
 			template<typename INT>  Node& operator[](const INT i);
 			Node& back();
+			void deleteAll();
 	};
 
 	class HaplotypeOfSegments
@@ -231,7 +238,7 @@ public:
 			std::vector<Segment>& getSegmentsRef();
 			
 			void transferSegmentsFromChild(HaplotypeOfSegments& childSegments, const Edge& edge, EdgeTable& newEdgeTable, NodeTable& newNodeTable, bool shouldNodeBeKeptIfItHasASegment);
-			void simpleTransferSegmentsFromChild(HaplotypeOfSegments& childSegments, const Edge& edge, bool isORdered = true);
+			void simpleTransferSegmentsFromChild(HaplotypeOfSegments& childSegments, const Edge& edge, bool isOrdered = true);
 	};
 
 
@@ -272,6 +279,49 @@ public:
 			uint32_t size2() const;
 	};
 
+
+	class PatchCountData
+	{
+		public:
+			std::vector<uint32_t> vecFreqs;
+			std::map<uint32_t, uint32_t> mapFreqs;
+			bool isVec;
+
+			template<typename INT> uint32_t& operator[](INT i)
+			{
+				if (isVec) return vecFreqs[i]; else return mapFreqs[i];
+			}
+
+			template<typename INT> void resize(INT n)
+			{
+				if (isVec) vecFreqs.resize(n);
+			}
+
+			template<typename INT> void resize(INT n, double value)
+			{
+				if (isVec) vecFreqs.resize(n, value);
+			}
+
+			template<typename INT> PatchCountData(bool isMuchDiversity, INT nbLoci)
+			{
+				isVec = isMuchDiversity;
+				this->resize(nbLoci, 0.0);
+			}
+
+			void clear()
+			{
+				if (isVec)
+				{
+					std::vector<uint32_t>().swap(vecFreqs);
+				} else
+				{
+					std::map<uint32_t, uint32_t>().swap(mapFreqs);
+				}
+			}
+
+
+	};
+
 	/*
 		End of inner classes
 	*/
@@ -295,7 +345,7 @@ private:
 
 
 	void doStuffWithAncestors(HaplotypesContainer<HaplotypeOfSegments>& A, NodeTable& No, EdgeTable& Eo);
-	void resetAncestorsEdgesAndNodesAfterPlacingMutations(std::vector<NodeGenetics>& allNodes);
+	//void resetAncestorsEdgesAndNodesAfterPlacingMutations(std::vector<NodeGenetics>& allNodes, bool shouldCompleteDeleteAllTree);
 
 	static void propagateMutationsForSegment(NodeGenetics& child, const NodeGenetics& parent, const uint32_t left, const uint32_t right);
 	//void printInfoForDebug(Pop& pop)  ;
@@ -315,6 +365,8 @@ private:
 	std::vector<std::vector<std::vector<uint32_t>>> getMutations(Pop& pop);
 	template<typename INT> const std::vector<uint32_t>& getMutationsOfID(INT ID);
 
+	//void setPartOfNewAncestor(std::vector<NodeGenetics>& allNodes, std::vector<NodeGenetics>& newAncestorsGenetics);
+
 public:
 	static std::vector<int> generationsToKeepInTheTree;
 
@@ -329,7 +381,7 @@ public:
 	bool haveAllLociCoallesced_ifKnown() const;
 	
 	//template<typename INT> const std::vector<uint32_t>& getMutationsOfID(std::vector<std::vector<std::vector<uint32_t>>>& mutations, Pop& pop, INT ID);
-	std::vector<std::vector<std::vector<uint32_t>>> placeMutations(Pop& pop, bool shouldDeleteTree);
+	std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<PatchCountData> > placeMutations(Pop& pop, bool shouldDeleteTree, bool shouldCompleteDeleteAllTree, unsigned char outputType);
 	void writePaintedHaplotypes(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const;
 	void writePaintedHaplotypesDiversity(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const;
 	void shift_generations_after_burn_in();
@@ -337,6 +389,7 @@ public:
 	void setLocusForWhichFixationMustBeComputedAtTheNextSimplify(int locus);
 	bool isLocusForWhichFixationHadToBeComputedFixed();
 	void assertIsFullySimplified() const;
+	void deleteAll();
 	
 };
 

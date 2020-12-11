@@ -57,9 +57,12 @@ Note for Remi of things to do:
 #include <ctime>
 #include <set>
 #include <array>
+#include <chrono>
+#include <thread>
 //#include <boost/algorithm/string.hpp>
 //#include <boost/tokenizer.hpp>
 #include <cstdlib>
+#include <stdlib.h>
 //#include <boost/cstdint.hpp> // Fixed size integers for FDR
 #include <signal.h>
 #include <unordered_map>
@@ -103,6 +106,10 @@ Note for Remi of things to do:
 #include "SampleSequenceDataContainer/SampleSequenceData.h"
 #include "SampleSequenceDataContainer/SampleSequenceDataContainer.h"
 #include "T4TreeRec/T4TreeRec.h"
+#include "ForcedMigration.h"
+#include "T7stuff/T7Parameters.h"
+#include "T7stuff/T7Gene.h"
+#include "T7stuff/develop.h"
 #include "SpeciesSpecificParameters.h"
 #include "AllParameters.h"
 #include "FromLocusToTXLocusElement.h"
@@ -117,7 +124,9 @@ Note for Remi of things to do:
 #include "Patch.h"
 
 
-// .cpp    
+// .cpp
+#include "T7stuff/T7Gene.cpp"
+#include "T7stuff/develop.cpp"
 #include "CompressedSortedDeque.cpp"      // also contains the .cpp for CompressedSortedDeque::iterator and CompressedSortedDeque::CompressedSortedDequeBlock
 #include "Genealogy.cpp"
 #include "Option.cpp"
@@ -145,6 +154,7 @@ Note for Remi of things to do:
 #include "GeneticMap/GeneticMap.cpp"
 #include "SampleSequenceDataContainer/SampleSequenceData.cpp"
 #include "SampleSequenceDataContainer/SampleSequenceDataContainer.cpp"
+#include "ForcedMigration.cpp"
 #include "SpeciesSpecificParameters.cpp"
 
 #include "T4TreeRec/Segment.cpp"
@@ -157,6 +167,7 @@ Note for Remi of things to do:
 #include "T4TreeRec/NodeGenetics.cpp"
 #include "T4TreeRec/NodeTable.cpp"
 #include "T4TreeRec/T4TreeRec.cpp"
+
 
 #include "codeToInsert.cpp"
     
@@ -177,7 +188,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.13.17");
+    std::string VERSION("version 4.15.5");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -219,7 +230,9 @@ int NBT1MUTATIONS = 0;
  */
 
 std::vector<double> Individual::T3_IndPhenotype;
-std::vector<double> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0}; // This is necessary for when there is no selection at all.
+std::vector<std::vector<double>> Individual::T7phenotypeOverTime;
+std::vector<double> Individual::T7_IndPhenotype;
+std::vector<double> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; // This is necessary for when there is no selection at all.
 std::string OutputFile::GeneralPath;
 std::vector<int> Pop::T2LociToCorrect;
 std::string OutputFile::sequencingErrorStringToAddToFilnames = "";
@@ -227,6 +240,9 @@ std::vector<uint32_t> LifeCycle::recombination_breakpoints = {INT_MAX};
 LifeCycle::ParentsData LifeCycle::PD;
 bool KillOnDemand::justAboutToKill = false;
 std::vector<int> T4TreeRec::generationsToKeepInTheTree;
+std::vector<double> T7Gene::K_values_map = {5, 36.94528, 272.99075, 2017.14397, std::numeric_limits<double>::max()};
+
+
 
 /*
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -240,6 +256,7 @@ std::vector<int> T4TreeRec::generationsToKeepInTheTree;
 
 int main(int argc, char *argv[])
 {
+
 /*
 ###########################################
 ############## INITALIZATION ##############
@@ -432,7 +449,7 @@ int main(int argc, char *argv[])
         outputWriter.PrintGeneration();
 
         // Change pops and parameters if needed. Will loop through each species and will use the globals variables.
-        if (GP->CurrentGeneration >= 0) allParameters.UpdatePopsAndParameters(); // The 'if' is here in case we want a neutral burnIn        
+        if (GP->CurrentGeneration > GP->startAtGeneration + 1) allParameters.UpdatePopsAndParameters(); // The 'if' is here in case we want a neutral burnIn        
             
 
         // Set patch size after the end of the current generation. Is used for species interactions
@@ -454,10 +471,18 @@ int main(int argc, char *argv[])
                     Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
                     Pop& pop_Parent     = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
 
+                    // Early Forced migration
+                    SSP->forcedMigration.forceMigrationIfNeeded(pop_Parent, true);
+
                     LifeCycle::BREEDING_SELECTION_DISPERSAL(pop_Offspring, pop_Parent);
 
                     if (GP->CurrentGeneration == GP->nbGenerations && subGeneration == SSP->nbSubGenerationsPerGeneration-1)
+                    {
+                        //std::cout << "About to free parent population memory\n";
                         pop_Parent.freeMemory();
+                        pop_Offspring.shrink_to_fitT56();
+                        //std::cout << "Parent population memory has been freed\n";
+                    }
 
                     // In case, the T2 blocks capacity have been overpassed, correct them or abort.
                     nbT2LociCorrections += pop_Offspring.correctT2Loci();
@@ -500,11 +525,14 @@ int main(int argc, char *argv[])
                 // Code inserted
                 codeToInsert(pop_Offspring);
 
+                // Late Forced migration
+                SSP->forcedMigration.forceMigrationIfNeeded(pop_Offspring, false);
+
                 // WriteOutputs if you asked for it
-                if (GP->CurrentGeneration >= 0) outputWriter.WriteOutputs(pop_Offspring); 
+                outputWriter.WriteOutputs(pop_Offspring); 
 
                 // Save population in binary file if you asked for it
-                if (GP->CurrentGeneration >= 0) pop_Offspring.PrintBinaryFile();
+                pop_Offspring.PrintBinaryFile();
 
 
                 // killOnDemand

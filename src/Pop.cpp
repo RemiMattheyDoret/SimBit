@@ -308,7 +308,7 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
             {
                 if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
                 {
-                    std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates. As a reminder the fitness effect among loci is multiplicative. If the fecundity was not set to -1.0, this message would not have appeared and the patch size would have simply dropped to zero." << std::endl;
+                    std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates. As a reminder the fitness effect among loci is multiplicative. If the fecundity was not set to -1.0, this message would not have appeared and the patch size would have simply dropped to zero. One nice way to figure out what is wrong is to print fitness either for each individual ('--fitness_file') or only the mean and variance in fitness ('--fitnessStats_file'). You might also to specify the seed in order to know exactly for what generation(s) you need fitness information." << std::endl;
                     if (GP->CurrentGeneration == 1)
                     {
                         std::cout << "As the error message poped up at the first generation, you should probably check the initial conditions. Maybe you start with 'AllOnes' with selection against the the '1' variant (selection is against the '1' variant when making the 'Multiplicity' assumption). It is also possible that you start the simulation with a fixed lethal variant." << std::endl;
@@ -497,9 +497,9 @@ int Pop::SelectionParent(int patch_from, int sex)
     }
 
     
-    //std::cout << "parent_index = " << parent_index << "\n";
+    //std::cout << "selected parent " << parent_index << " from patch " << patch_from <<  "\n";
     //std::cout << "haplo indices = " << getPatch(0).getInd(parent_index).getHaplo(0).T4ID << " & " << getPatch(0).getInd(parent_index).getHaplo(1).T4ID << "\n";
-    //std::cout << "SSP->patchSize[patch_from] = " << SSP->patchSize[patch_from] << "\n";
+    //std::cout << "SSP->patchSize["<<patch_from<<"] = " << SSP->patchSize[patch_from] << "\n";
     
     assert(parent_index >= 0 && parent_index < SSP->patchSize[patch_from]);
 #ifdef CALLENTRANCEFUNCTIONS
@@ -508,8 +508,7 @@ int Pop::SelectionParent(int patch_from, int sex)
     return parent_index;
 }
 
-
-int Pop::SelectionOriginPatch(uint32_t patch_to)
+int Pop::SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic)
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::SelectionOriginPatch\n";
@@ -528,8 +527,27 @@ int Pop::SelectionOriginPatch(uint32_t patch_to)
 
 
     int patch_from = -1;
+
+    double rnd;
+    if (SSP->isStochasticMigration)
+    {
+        rnd = GP->rngw.uniform_real_distribution(1.0); // random between 0 and 1
+    } else
+    {
+        rnd = rndIfNotStochastic;
+
+        if (rnd == 1.0)
+        {
+            return SSP->dispersalData.BackwardMigrationIndex[patch_to].back();
+        } else if (rnd == 0.0)
+        {
+            return SSP->dispersalData.BackwardMigrationIndex[patch_to].front();
+        }
+        //std::cout << "bef rnd = " << rnd << "\n";
+        assert(rnd >= 0.0 && rnd <= 1.0);
+    }
     
-    double rnd = GP->rngw.uniform_real_distribution(1.0); // random between 0 and 1
+        
     /*std::cout << "SSP->dispersalData.BackwardMigration[patch_to].size() = " << SSP->dispersalData.BackwardMigration[patch_to].size() << "\n";
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
      std::cout << SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from] << " ";
@@ -540,22 +558,23 @@ int Pop::SelectionOriginPatch(uint32_t patch_to)
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
     {
         double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
-        //std::cout << "probability = " << probability << "\n";
-        //if (patch_to > 1e3) std::cout << "from " << SSP->dispersalData.BackwardMigrationIndex[patch_to][fake_patch_from] << " to " << patch_to << ": " << probability << "\n";
         
-        if (rnd < probability)
+        if (rnd <= probability)
         {
             patch_from = SSP->dispersalData.BackwardMigrationIndex[patch_to][fake_patch_from];
             break;
         }
         rnd -= probability;
-    }   
+    }
  
     
-    /*if (!(patch_from >= 0 && patch_from < GP->PatchNumber))
-    {
-        std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
-    }*/
+    //if (!(patch_from >= 0 && patch_from < GP->PatchNumber))
+    //{
+    //std::cout << "from patch " << patch_from << " to patch " << patch_to << "\n";
+    //std::cout << "rnd = " << rnd << "\n";
+    //}
+    
+   
     assert(patch_from >= 0 && patch_from < GP->PatchNumber);
     assert(SSP->patchSize[patch_from] > 0);
         
@@ -563,6 +582,7 @@ int Pop::SelectionOriginPatch(uint32_t patch_to)
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Exits in Pop::SelectionOriginPatch\n";
 #endif  
+    //std::cout << "----\n";
     return patch_from;
 }
 
@@ -581,6 +601,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
 
     if (pop1.getNbPatches() > GP->PatchNumber) // If it needs to remove patches
     {
+        assert(pop1.getNbPatches() == oldNbPatches);
         int NbPatchesToRemove = pop1.getNbPatches() - GP->PatchNumber;
         for (int i = 0 ; i < NbPatchesToRemove ; ++i)
         {
@@ -589,6 +610,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
         }
     } else if (pop1.getNbPatches() < GP->PatchNumber) // if it needs to add patches
     {
+        assert(pop1.getNbPatches() == oldNbPatches);
         assert(GP->PatchNumber - pop1.getNbPatches() > 0);
 
         // Loop through new patches
@@ -622,7 +644,6 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
             int patchToSample = -1;
             if (SSP->fecundityForFitnessOfOne == -1)
             {
-            
                 if (pop1.getPatch(patch_index).getpatchCapacity())
                     patchToSample = patch_index;
                 else
@@ -657,6 +678,7 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
                     assert(probMigr_patchToSample > 0.0 && probMigr_patchToSample <= 1.0);
                 }
             }
+
             // add individuals
             int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
             for (int ind_index = 0 ; ind_index < NbIndsToAdd ; ++ind_index)
@@ -664,14 +686,12 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
                 Individual newInd;
                 if (SSP->fecundityForFitnessOfOne == -1)
                 {
-                
                     assert(patchToSample != -1);
                     assert(pop1.getPatch(patchToSample).getpatchCapacity());
                     assert(previousPatchSizes[patchToSample]);
                     int indToSample = ind_index % previousPatchSizes[patchToSample];
                 
                     newInd = pop1.getPatch(patchToSample).getInd(indToSample);
-                
                 }
                 
                 pop1.getPatch(patch_index).AddIndividual(newInd);
@@ -1375,6 +1395,7 @@ std::vector<T1_locusDescription> Pop::listT1PolymorphicLoci()
 
 void Pop::freeMemory()
 {
+    freeT56Memory(); // should not be needed
     patches.clear();
     patches.shrink_to_fit();
 
@@ -1393,6 +1414,12 @@ void Pop::freeT56Memory() // reset all T56 to zero
 {
     for (auto& patch : patches)
         patch.freeT56Memory();
+}
+
+void Pop::shrink_to_fitT56() // reset all T56 to zero
+{
+    for (auto& patch : patches)
+        patch.shrink_to_fitT56();
 }
 
 

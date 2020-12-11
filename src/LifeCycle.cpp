@@ -31,11 +31,15 @@
 
 void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop)
 {   
-    
+    //if (GP->CurrentGeneration >= 0) std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #ifdef DEBUG
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
-    
+    /*
+    std::cout << "patchSize when entering LifeCycle::BREEDING_SELECTION_DISPERSAL: ";
+    for (auto& e : SSP->patchSize) std::cout << e << " ";
+    std::cout << "\n";   
+    */
     SSP->T56_memManager.setGenerationInfo();
 
     //uint32_t nbSwaps = 0;
@@ -82,7 +86,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
         {
-            //std::cout << "offspring_index = " << offspring_index << "\n";
+            //std::cout << "Creating offspring " << offspring_index << " of patch " << patch_index << "...\n";
             //std::cout << "patchSizeNextGeneration["<<patch_index<<"] = " << patchSizeNextGeneration[patch_index] << "\n";
             
             //std::cout << "LifeCycle line 74 offspring_index = "<<offspring_index<<"\n";
@@ -103,7 +107,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             redoOffspring:
 
             // Get parents
-            auto&& CD = SSP->SwapInLifeCycle ? PD.couples[patch_index][offspring_index] : findCouple(Parent_pop,patch_index, offspring_index, PD);
+            auto&& CD = SSP->SwapInLifeCycle ? PD.couples[patch_index][offspring_index] : findCouple(Parent_pop,patch_index, offspring_index, PD, patchSizeNextGeneration[patch_index]);
             
             auto& mother = Parent_pop.getPatch(CD.mother.patch).getInd(CD.mother.ind);
             auto& father = Parent_pop.getPatch(CD.father.patch).getInd(CD.father.ind);
@@ -253,7 +257,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 double fitness = Offspring_pop.getPatch(patch_index).getInd(offspring_index).CalculateFitness(patch_index);
                 if (GP->rngw.uniform_real_distribution(1.0) > fitness)
                 {
-                    CD = findCouple(Parent_pop, patch_index, offspring_index, PD); // Will modify cloneInfo too. 
+                    CD = findCouple(Parent_pop, patch_index, offspring_index, PD, patchSizeNextGeneration[patch_index]); // Will modify cloneInfo too. 
                     if (SSP->SwapInLifeCycle)
                     {
                         PD.couples[patch_index][offspring_index] = CD;
@@ -319,6 +323,11 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         Offspring_pop.toggleT56MutationsIfNeeded();
     }
 
+    /*
+    std::cout << "patchSize when Exiting LifeCycle::BREEDING_SELECTION_DISPERSAL: ";
+    for (auto& e : SSP->patchSize) std::cout << e << " ";
+    std::cout << "\n";  
+    */
 
     //std::cout << "nbSwaps = " << nbSwaps << "\n";
 }
@@ -889,6 +898,44 @@ void LifeCycle::Mutate(Haplotype& TransmittedChrom, int Habitat)
     if (SSP->T2_Total_Mutation_rate>0) Mutate_T2(TransmittedChrom, Habitat);
     if (SSP->T3_Total_Mutation_rate>0) Mutate_T3(TransmittedChrom);
     if (SSP->T56_Total_Mutation_rate>0) Mutate_T56(TransmittedChrom, Habitat);
+    if (SSP->T7mutpars.totalMutationRatePerGene>0) Mutate_T7(TransmittedChrom);
+}
+
+void LifeCycle::Mutate_T7(Haplotype& TransmittedChrom)
+{
+    // deletion
+    if (SSP->T7mutpars.deletion > 0 && TransmittedChrom.nbT7Genes())
+    {
+        auto nbMuts = GP->rngw.poisson(SSP->T7mutpars.deletion * TransmittedChrom.nbT7Genes());
+        if (nbMuts >= TransmittedChrom.nbT7Genes())
+        {
+            TransmittedChrom.clearT7Genes();
+        } else
+        {
+            for (size_t muti = 0 ; muti < nbMuts ; ++muti)
+            {
+                auto pos = GP->rngw.uniform_int_distribution(TransmittedChrom.nbT7Genes());
+                TransmittedChrom.removeT7Gene(pos);
+            }
+        }
+    }
+
+    // Duplications
+    if (SSP->T7mutpars.duplication > 0 && TransmittedChrom.nbT7Genes() > 0 && TransmittedChrom.nbT7Genes() < SSP->Gmap.T7_nbLoci)
+    {
+        auto nbMuts = GP->rngw.poisson(SSP->T7mutpars.duplication * TransmittedChrom.nbT7Genes());
+        for (size_t muti = 0 ; muti < nbMuts ; ++muti)
+        {
+            auto pos = GP->rngw.uniform_int_distribution(TransmittedChrom.nbT7Genes());
+            TransmittedChrom.duplicateT7Gene(pos);
+        }
+    }
+
+    // Normal mutations
+    for (size_t geneIndex = 0 ; geneIndex < TransmittedChrom.nbT7Genes() ; ++geneIndex)
+    {
+        TransmittedChrom.getT7_Allele(geneIndex).attemptMutation();
+    }
 }
 
 
@@ -934,6 +981,7 @@ void LifeCycle::Mutate_T3(Haplotype& TransmittedChrom)
 std::cout << "Enters in 'Mutate_T3'\n";
 #endif       
     int nbMuts = SSP->geneticSampler.get_T3_nbMuts();
+    //std::cout << "nbMuts = " << nbMuts << "\n";
     for (int i = 0 ; i < nbMuts ; i++)
     {
         auto MutPosition = SSP->geneticSampler.get_T3_mutationPosition();
@@ -1052,7 +1100,7 @@ void LifeCycle::findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGe
     {
         for (int offspring_index = 0 ; offspring_index < patchSizeNextGeneration[patch_index] ; ++offspring_index)
         {
-            CoupleData CD = findCouple(pop, patch_index, offspring_index, PD); // Give PD for cloneInfo
+            CoupleData CD = findCouple(pop, patch_index, offspring_index, PD, patchSizeNextGeneration[patch_index]); // Give PD for cloneInfo
 
             
             PD.lastOffspring[CD.mother.segregationIndex][CD.mother.patch][CD.mother.ind] = HaplotypeData(patch_index, offspring_index, 0, CD.mother.nbRecs);
@@ -1109,9 +1157,14 @@ void LifeCycle::findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGe
 
 
 
-LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD)
+LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD, const int& nextGenPatchSize)
 {
-    int mother_patch_from = pop.SelectionOriginPatch(patch_index);
+    int mother_patch_from;
+    if (SSP->isStochasticMigration)
+        mother_patch_from = pop.SelectionOriginPatch(patch_index);
+    else
+        mother_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
+
     #ifdef DEBUG
     if (mother_patch_from != patch_index) NBMIGRANTS++;
     #endif
@@ -1156,7 +1209,10 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
                 {
                     if (SSP->gameteDispersal)
                     {
-                        father_patch_from = pop.SelectionOriginPatch(patch_index);
+                        if (SSP->isStochasticMigration)
+                            father_patch_from = pop.SelectionOriginPatch(patch_index);
+                        else
+                            father_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
                     } else
                     {
                         father_patch_from = mother_patch_from;
@@ -1170,7 +1226,10 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
                 // Wright-Fisher model. slefing with prob 1/2N (assuming neutrality) -> Default
                 if (SSP->gameteDispersal)
                 {
-                    father_patch_from = pop.SelectionOriginPatch(patch_index);
+                    if (SSP->isStochasticMigration)
+                        father_patch_from = pop.SelectionOriginPatch(patch_index);
+                    else
+                        father_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
                 } else
                 {
                     father_patch_from = mother_patch_from;

@@ -41,6 +41,14 @@ public:
     ResetGenetics                                   resetGenetics;
     T56_memoryManager                               T56_memManager;
     SampleSequenceDataContainer                     sampleSequenceDataContainer;
+    ForcedMigration                                 forcedMigration;
+
+    // T7
+    T7DevParameters                                 T7devpars;
+    T7MutParameters                                 T7mutpars;
+    T7PhenParameters                                T7phenpars;
+    
+
     
     // species ID
     std::string                                     speciesName;
@@ -74,6 +82,8 @@ public:
     bool                                            T2_isLocalSelection;
     bool                                            T3_isLocalSelection;
     bool                                            T56_isLocalSelection;
+    bool                                            isAnySelection;
+    bool                                            additiveEffectAmongLoci;
 
 
     // kill individuals
@@ -91,6 +101,7 @@ public:
     DispersalData                                   dispersalData;
     bool                                            DispWeightByFitness;
     bool                                            gameteDispersal;
+    bool                                            isStochasticMigration;
     
     // Genetic Map
     GeneticMap                                      Gmap;
@@ -183,6 +194,12 @@ public:
     bool                                            T4_paintedHaplo_shouldIgnorePatchSizeSecurityChecks;
     bool                                            T4_respectPreviousMutationsOutputs;
     size_t                                          T4_nbMutationPlacingsPerOutput;
+    size_t                                          T4_nbRunsToPlaceMutations;
+
+
+    bool                                            T4SNPfreq_assumeMuchDiversity;
+    bool                                            TxSNPfreq_assumeMuchDiversity;
+    bool                                            SegDiversityFile_includeMainColor;
 
 
     // Genetics T5
@@ -211,9 +228,6 @@ public:
     double                                          T56_Total_Mutation_rate;
     std::vector<std::vector<double>>                T56_FitnessEffects;
     
-    
-    // general fitness
-    bool                                            isAnySelection;
 
 
     // Ecology
@@ -245,6 +259,7 @@ public:
     std::vector<std::vector<int>>                    subsetT1epistasisLociForfitnessSubsetLoci_file;
     
     // methods
+    void readStochasticMigration(InputReader& input);
     void readLoci(InputReader& input);
     void readKillOnDemand(InputReader& input);
     void readT1_Initial_AlleleFreqs(InputReader& input);
@@ -252,11 +267,14 @@ public:
     void readnbSubGenerations(InputReader& input);
     void readRecombinationRate(InputReader& input);
     void readRecRateOnMismatch(InputReader& input);
+    void readSNPfreqCalculationAssumption(InputReader& input);
     void readT1_MutationRate(InputReader& input);
     void readT2_MutationRate(InputReader& input);
     void readT3_MutationRate(InputReader& input);
     void readT4_MutationRate(InputReader& input);
     void readT56_MutationRate(InputReader& input);
+    void readT7_MutationRate(InputReader& input);
+    void readT4_nbRunsToPlaceMutations(InputReader& input);
     void readadditiveEffectAmongLoci(InputReader& input);
     void readT3_PhenotypicEffects(InputReader& input);
     void readT1_EpistaticFitnessEffects(InputReader& input);
@@ -269,6 +287,11 @@ public:
     void readT56_compress(InputReader& input);
     void readT56_approximationForNtrl(InputReader& input);
     void readT56_freqThreshold(InputReader& input);
+    void readForcedMigration(InputReader& input);
+    void readSegDiversityFile_includeMainColor(InputReader& input);
+    
+    
+    
     //void readreverseFixedT5selMuts(InputReader& input);
     void readT1mutsDirectional(InputReader& input);
     //void readT5mutsDirectional(InputReader& input);
@@ -284,6 +307,8 @@ public:
     //void readT1_vcfOutput_sequence(InputReader& input);
     void readSwapInLifeCycle(InputReader& input);
     void readDispMat(InputReader& input);
+    void readT7developmentParameters(InputReader& input);
+    void readT7fitnessParameters(InputReader& input);
     void readCentralT1LocusForExtraGeneticInfo(InputReader& input);
     Haplotype getHaplotypeForIndividualType(InputReader& input, bool haploIndex, std::string& IndividualTypeName);
     void readRedefIndTypes(InputReader& input);

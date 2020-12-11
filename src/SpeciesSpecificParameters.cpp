@@ -84,6 +84,18 @@ void SpeciesSpecificParameters::setRandomDistributions()
 #endif
 }
 
+void SpeciesSpecificParameters::readSegDiversityFile_includeMainColor(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        SegDiversityFile_includeMainColor = false;
+    } else
+    {
+        SegDiversityFile_includeMainColor = input.GetNextElementBool();
+    }
+}
+
 void SpeciesSpecificParameters::readSwapInLifeCycle(InputReader& input)
 {
     if (input.PeakNextElementString() == "default")
@@ -426,6 +438,56 @@ void SpeciesSpecificParameters::readT4_printTree(InputReader& input)
 }
 */
 
+void SpeciesSpecificParameters::readSNPfreqCalculationAssumption(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        // Awefully approximative expectation
+        input.skipElement();
+
+        size_t maxEverTotalpatchCapacity = 0;
+        for (auto& elem : maxEverpatchCapacity) maxEverTotalpatchCapacity += elem;
+
+
+        if (this->Gmap.T4_nbLoci)
+        {            
+            T4SNPfreq_assumeMuchDiversity = Gmap.T4_nbLoci < 1e4 ? true : 4 * maxEverTotalpatchCapacity * T4_Total_Mutation_rate / Gmap.T4_nbLoci > 0.001;
+        } else
+        {
+            T4SNPfreq_assumeMuchDiversity = false; // whatever
+        }
+            
+        TxSNPfreq_assumeMuchDiversity = this->Gmap.TotalNbLoci - this->Gmap.T4_nbLoci < 1e4 ? true : maxEverTotalpatchCapacity > 5e3 && ((this->Gmap.TotalNbLoci - this->Gmap.T4_nbLoci) / this->Gmap.TotalNbLoci) < 0.5;
+        
+    } else
+    {
+        T4SNPfreq_assumeMuchDiversity = input.GetNextElementBool();
+        TxSNPfreq_assumeMuchDiversity = input.GetNextElementBool();
+    }
+}
+
+
+
+void SpeciesSpecificParameters::readT4_nbRunsToPlaceMutations(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        T4_nbRunsToPlaceMutations = 200;
+    } else
+    {
+        auto x = input.GetNextElementInt();
+        
+        if (x <= 0)
+        {
+            std::cout << "For option '--T4_nbRunsToPlaceMutations', only positive values are accepted. Received " << x << "\n";
+            abort();
+        }
+
+        T4_nbRunsToPlaceMutations = x;
+    }
+}
+
 void SpeciesSpecificParameters::readGeneticSampling_withWalker(InputReader& input)
 {
     geneticSampling_withWalker = input.GetNextElementBool();
@@ -466,6 +528,26 @@ void SpeciesSpecificParameters::readSampleSeq_info(InputReader& input)
 
     sampleSequenceDataContainer.readInput(input);    
 }
+
+void SpeciesSpecificParameters::readForcedMigration(InputReader& input)
+{
+    this->forcedMigration.readInput(input);
+}
+
+void SpeciesSpecificParameters::readStochasticMigration(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        this->isStochasticMigration = true;
+    } else
+    {
+        this->isStochasticMigration = input.GetNextElementBool();
+    }
+}
+
+
+
 
 void SpeciesSpecificParameters::readLoci(InputReader& input)
 {
@@ -1487,7 +1569,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
         input.skipElement();
         std::vector<unsigned char> T1_info(Gmap.T1_nbChars,0);
         std::vector<unsigned char> T2_info(Gmap.T2_nbLoci, 0);
-        std::vector<double> T3_info(Gmap.T3_nbLoci, 0.0);
+        std::vector<int16_t> T3_info(Gmap.T3_nbLoci, 0);
         uint32_t T4ID = std::numeric_limits<uint32_t>::max();
         std::vector<uint32_t> T56_info;
         return Haplotype(T1_info, T2_info, T3_info, T4ID, T56_info);
@@ -1502,7 +1584,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
     bool receivedT56_info = false;
     std::vector<unsigned char> T1_info;
     std::vector<unsigned char> T2_info;
-    std::vector<double> T3_info;
+    std::vector<int16_t> T3_info;
     uint32_t T4ID = std::numeric_limits<uint32_t>::max();
     std::vector<uint32_t> T56_info;
 
@@ -1571,7 +1653,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
             T3_info.reserve(this->Gmap.T3_nbLoci);
             for (unsigned T3locus = 0 ; T3locus < this->Gmap.T3_nbLoci ; ++T3locus)
             {
-                T3_info.push_back(input.GetNextElementDouble()); 
+                T3_info.push_back(input.GetNextElementInt()); 
             }
 
         } else if (TT == "T4" || TT == "t4")
@@ -2806,6 +2888,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
 
     assert(SSP != nullptr);
     this->T56_isMultiplicitySelection = false;
+    char isMultfit = -1; // -1 is undefeined. 0 is false, 1 is true
     if (input.PeakNextElementString() == "NA")
     {
         if (this->quickScreenAtL_T56_nbLoci != 0)
@@ -2813,6 +2896,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
             std::cout << "In option '--T5_FitnessEffects', for species " << this->speciesName << ", received 'NA' but there are T5 loci as indiciated in --L (--Loci) (this->Gmap.T5_nbLoci = " << quickScreenAtL_T56_nbLoci << ").\n";
             abort();   
         }
+        isMultfit = 0; // whatever but not -1
         input.skipElement();
     } else
     {
@@ -2823,6 +2907,16 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
         {
             (void) input.GetNextHabitatMarker(habitat);
             std::string Mode = input.GetNextElementString();
+
+            if ((Mode == "MultiplicityA" || Mode == "MultiplicityGamma" || Mode == "MultiplicityUnif" || Mode == "multfitA" || Mode == "multfitGamma" || Mode == "multfitUnif"))
+            {
+                isMultfit = 1;
+            } else
+            {
+                isMultfit = 0;
+            }
+                
+
             if (habitat == 0)
             {
                 firstMode = Mode;
@@ -3047,7 +3141,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                     std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitUnif' " << ForASingleHabitat.size() << " have been received while " << this->quickScreenAtL_T56_nbLoci << "  were expected (likely an internal error)\n";
                     abort();
                 }
-            } else if (Mode.compare("multfitGamma")==0)
+            } else if (Mode.compare("multfitGamma")==0 || Mode.compare("MultiplicityGamma")==0)
             {
                 this->T56_isMultiplicitySelection = true;
                 double alpha = input.GetNextElementDouble();
@@ -3080,14 +3174,17 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
         assert(this->T56_FitnessEffects.size() == this->MaxEverHabitat + 1);
     }
 
-    Gmap.setT56GenderLoci(T56_FitnessEffects);
-
+    assert(isMultfit == 1 || isMultfit == 0);
+    
+    Gmap.setT56GenderLoci(T56_FitnessEffects, isMultfit == 1);
+    
 
     // Set default values for T56_compress that will be changed later if the user wants
     uint32_t localCount_T56ntrl_nbLoci = 0;
     uint32_t localCount_T56sel_nbLoci = 0;
     for (uint32_t locus = 0 ; locus < this->quickScreenAtL_T56_nbLoci ; locus++)
     {
+        //std::cout << "line 3188 locus " << locus << "\n";
         if (!Gmap.isT56neutral(locus))
         {
             ++localCount_T56sel_nbLoci;
@@ -4261,7 +4358,7 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
                         }
                         if (gradient > 1.0)
                         {
-                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a gradient of "<<gradient<<". Gradient cannot be greater than 1. As 1 is the smallest possible deviation from the optimal phenotype, a gradient of 1 would mean that any deviation would be lethal. Can be worst than that!\n";
+                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a gradient of "<<gradient<<". Gradient cannot be greater than 1. As 1 is the smallest possible deviation from the optimal phenotype, a gradient of 1 would mean that any deviation would be lethal. Cannot be worst than that!\n";
                             abort();
                         }
 
@@ -4475,7 +4572,212 @@ void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
         std::cout << "For option 'T4_MutationRate', received the mode of entry '"<<mode<<"'. Sorry, only modes 'unif' and 'A' are accepted.\n";
         abort();
     }
+
+    //std::cout << "T4_Total_Mutation_rate = " << T4_Total_Mutation_rate << "\n";
 }
+
+void SpeciesSpecificParameters::readT7fitnessParameters(InputReader& input)
+{
+    /*
+    T7phenpars.nbDimensions = input.GetNextElementInt();
+    if (T7phenpars.nbDimensions < 1)
+    {
+        std::cout << "For option --T7_fit, received a negative number of dimensions. Received " << T7phenpars.nbDimensions << "\n";
+        abort();
+    }
+
+    auto type = input.GetNextElementString();
+    if (type != "linear" && type != "gaussian")
+    {
+        std::cout << "For option --T7_fit, expected a type of fitness lansdcape. Types accepted are 'linear' and 'gaussian'. Type received is " << type << "\n";
+        abort();
+    }
+    T7phenpars.fitnessLandscapeType = type == "linear" ?  'L' : 'G';
+
+    T7phenpars.fitnessLandscapeOptimum = input.GetNextElementDouble();
+    if (T7phenpars.fitnessLandscapeOptimum < 0.0)
+    {
+        std::cout << "For option --T7_fit, expected a negative fitnessLandscapeOptimum\n";
+        abort();
+    }
+
+    T7phenpars.fitnessLandscapeLinearGradient = input.GetNextElementDouble();
+    if (T7phenpars.fitnessLandscapeLinearGradient < 0.0)
+    {
+        std::cout << "For option --T7_fit, expected a negative fitnessLandscapeLinearGradients\n";
+        abort();
+    }
+
+    T7phenpars.fitnessLandscapeGaussStrength = input.GetNextElementDouble();
+    if (T7phenpars.fitnessLandscapeLinearGradient < 0.0)
+    {
+        std::cout << "For option --T7_fit, expected a negative fitnessLandscapeGaussStrength\n";
+        abort();
+    }
+
+
+
+    while (input.IsThereMoreToRead())
+    {
+        auto x = input.GetNextElementInt();
+        if (x <= 0 || x > T7devpars.maxAge)
+        {
+            std::cout << "Invalid age in T7_fit.\n";
+            abort();
+        }
+        T7phenpars.agesAtwhichPhenotypeIsSampled.push_back(x);
+    }
+    */
+}
+    
+
+
+
+void SpeciesSpecificParameters::readT7developmentParameters(InputReader& input)
+{
+    T7devpars.maxAge = input.GetNextElementInt();
+    if (T7devpars.maxAge <= 0)
+    {
+        std::cout << "For option '--T7developmentParameters', first argument (maxAge) is not great than zero. Value received ("<<T7devpars.maxAge<<")\n";
+        abort();
+    }
+
+    T7devpars.maxDeltaT = input.GetNextElementInt();
+    if (T7devpars.maxDeltaT <= 0)
+    {
+        std::cout << "For option '--T7developmentParameters', second argument (maxDeltaT) is not great than zero. Value received ("<<T7devpars.maxDeltaT<<")\n";
+        abort();
+    }
+
+
+    T7devpars.basal_transcription_rate = input.GetNextElementDouble();
+    if (T7devpars.basal_transcription_rate < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', third argument (basal_transcription_rate) is not great than zero. Value received ("<<T7devpars.basal_transcription_rate<<")\n";
+        abort();
+    }
+
+    T7devpars.EPSILON = input.GetNextElementDouble();
+    if (T7devpars.EPSILON < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', fourth argument (EPSILON) is not great than zero. Value received ("<<T7devpars.EPSILON<<")\n";
+        abort();
+    }
+
+    T7devpars.stochasticDevelopment = input.GetNextElementBool();
+    T7devpars.fitnessOverTime = input.GetNextElementBool();
+
+
+    T7devpars.nbCisSites = input.GetNextElementInt();
+    if (T7devpars.nbCisSites < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', fifth argument (T7devpars.nbCisSites) is not great than zero. Value received ("<<T7devpars.nbCisSites<<")\n";
+        abort();
+    }
+
+
+    T7devpars.basic_signal_trans_effect = input.GetNextElementDouble();
+    if (T7devpars.basic_signal_trans_effect < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', sixth argument (T7devpars.basic_signal_trans_effect) is not great than zero. Value received ("<<T7devpars.basic_signal_trans_effect<<")\n";
+        abort();
+    }
+
+    T7devpars.basic_signal_conc = input.GetNextElementInt();
+    if (T7devpars.basic_signal_conc < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', seventh argument (T7devpars.basic_signal_conc) is not great than zero. Value received ("<<T7devpars.basic_signal_conc<<")\n";
+        abort();
+    }
+
+    T7devpars.protein_decayRate = input.GetNextElementDouble();
+    if (T7devpars.basic_signal_conc < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', eighth argument (T7devpars.protein_decayRate) is not great than zero. Value received ("<<T7devpars.protein_decayRate<<")\n";
+        abort();
+    }
+
+    T7devpars.mRNA_decayRate = input.GetNextElementDouble();
+    if (T7devpars.mRNA_decayRate < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', nineth argument (T7devpars.mRNA_decayRate) is not great than zero. Value received ("<<T7devpars.mRNA_decayRate<<")\n";
+        abort();
+    }
+
+
+    T7devpars.translationRate = input.GetNextElementDouble();
+    if (T7devpars.translationRate < 0)
+    {
+        std::cout << "For option '--T7developmentParameters', nineth argument (T7devpars.translationRate) is not great than zero. Value received ("<<T7devpars.translationRate<<")\n";
+        abort();
+    }
+
+
+}
+
+
+void SpeciesSpecificParameters::readT7_MutationRate(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option 'T7_MutationRate', the std::string that is read is: " << input.print() << std::endl;
+#endif
+   
+    T7mutpars.duplication = input.GetNextElementDouble();
+    if (T7mutpars.duplication < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative duplication mutation rate (received " << T7mutpars.duplication << "\n";
+        abort();
+    }
+    T7mutpars.deletion = input.GetNextElementDouble();
+    if (T7mutpars.deletion < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative deletion mutation rate (received " << T7mutpars.deletion << "\n";
+        abort();
+    }
+
+    T7mutpars.cisEffectMu = input.GetNextElementDouble();
+    if (T7mutpars.cisEffectMu < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative value for the cis effect mutation rate (received " << T7mutpars.cisEffectMu << "\n";
+        abort();
+    }
+
+    T7mutpars.cisEffectSD = input.GetNextElementDouble();
+    if (T7mutpars.cisEffectSD < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative value for 'cisEffectSD' (received " << T7mutpars.cisEffectSD << "\n";
+        abort();
+    }
+
+    T7mutpars.transEffectMu = input.GetNextElementDouble();
+    if (T7mutpars.transEffectSD < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative value for the trans effect mutation rate (received " << T7mutpars.transEffectMu << "\n";
+        abort();
+    }
+
+    T7mutpars.transEffectSD = input.GetNextElementDouble();
+    if (T7mutpars.transEffectSD < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative transEffectSD mutation rate (received " << T7mutpars.transEffectSD << "\n";
+        abort();
+    }
+
+     T7mutpars.changeTargetMu = input.GetNextElementDouble();
+    if (T7mutpars.changeTargetMu < 0)
+    {
+        std::cout << "For option 'T7_MutationRate', received a negative value for thee mutation to change the target (aka. cisSite). (received " << T7mutpars.changeTargetMu << "\n";
+        abort();
+    }
+
+   
+    
+    T7mutpars.totalMutationRatePerGene = T7mutpars.duplication + T7mutpars.deletion + T7mutpars.cisEffectMu + T7mutpars.transEffectMu;
+    assert(T7mutpars.totalMutationRatePerGene >= 0);
+}
+
+
+
 
 void SpeciesSpecificParameters::readT4_simplifyEveryNGenerations(InputReader& input)
 {
@@ -4492,8 +4794,8 @@ void SpeciesSpecificParameters::readT4_simplifyEveryNGenerations(InputReader& in
         for (auto& elem : maxEverpatchCapacity) maxEverTotalpatchCapacity += elem;
         auto nbNewEdgesPerGenerations = maxEverTotalpatchCapacity * (1 + this->TotalRecombinationRate);
         auto nbBytesPerGeneration = nbNewEdgesPerGenerations * 4 * 5;
-        T4_simplifyEveryNGenerations = 2e9 / nbBytesPerGeneration; // This is a very arbitrary choice and will strongly affect the RAM vs CPU time trade-off. has not been thoroughly tested and might be a poor default choice. I could use something like (SSP->TotalpatchCapacity + SSP->TotalpatchCapacity * SSP->TotalRecombinationRate * 100000) * 100000; maybe
-        if (T4_simplifyEveryNGenerations < 100) T4_simplifyEveryNGenerations = 100;
+        T4_simplifyEveryNGenerations = 1e9 / nbBytesPerGeneration; // This is a very arbitrary choice and will strongly affect the RAM vs CPU time trade-off. has not been thoroughly tested and might be a poor default choice. I could use something like (SSP->TotalpatchCapacity + SSP->TotalpatchCapacity * SSP->TotalRecombinationRate * 100000) * 100000; maybe
+        if (T4_simplifyEveryNGenerations < 30) T4_simplifyEveryNGenerations = 30;
 
     } else
     {
@@ -5231,6 +5533,12 @@ void SpeciesSpecificParameters::IsThereSelection()
         this->T3_isLocalSelection = false;
         this->T56_isLocalSelection = false;
     }
+
+    if (additiveEffectAmongLoci && (Gmap.T2_nbLoci || T1_isMultiplicitySelection || T56_isMultiplicitySelection))
+    {
+        std::cout << "For option --additiveEffectAmongLoci, received 'true' (selective effects are additive among loci, including loci of different types). However, you used the multfit (multiplicative fitness) assumption, either for T1, T2 or T5 loci. This is not compatible.\n";
+        abort();
+    }
 }
 
 /*void SpeciesSpecificParameters::ClearT1_Initial_AlleleFreqs()
@@ -5264,6 +5572,13 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
 #ifdef DEBUG
     std::cout << "Enters in SpeciesSpecificParameters::UpdateParameters\n";
 #endif
+
+    /*
+    std::cout << "patchSize when enterin SpeciesSpecificParameters::UpdateParameters: ";
+    for (auto& e : patchSize) std::cout << e << " ";
+    std::cout << "\n";
+    */    
+
     // Change patchCapacity Do not change patchSize yet as it will be used later
     assert(generation_index < this->__patchCapacity.size());
     this->patchCapacity = this->__patchCapacity[generation_index];
@@ -5272,12 +5587,18 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
 
     // Change Patch size
     assert(this->patchSize.size()>0);
-    this->patchSize.resize(this->patchCapacity.size(), 0); // complete with zeros
-    std::vector<int> previousPatchSizes = this->patchSize;
+    this->patchSize.resize(GP->PatchNumber, 0); // complete with zeros
     this->patchSize.shrink_to_fit();
     assert(this->patchSize.size() == GP->PatchNumber);
+    std::vector<int> previousPatchSizes = this->patchSize;
+    for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        if (this->patchSize[patch_index] > this->patchCapacity[patch_index]) this->patchSize[patch_index] = this->patchCapacity[patch_index];
+    }
+
 
     // Set patch size to carrying capacity if it is not allowed to differ from it. Also change TotalpatchSize
+    // Also change TotalpatchCapacity
     TotalpatchSize = 0;
     if (this->fecundityForFitnessOfOne == -1.0)
     {
@@ -5286,15 +5607,16 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
             this->patchSize[patch_index] = this->patchCapacity[patch_index];
             TotalpatchSize += this->patchCapacity[patch_index];
         }
-    }
-
-
-    // Change TotalpatchCapacity
-    this->TotalpatchCapacity = 0;
-    for ( auto& OnepatchCapacity : this->patchCapacity )
+    } else
     {
-        this->TotalpatchCapacity += OnepatchCapacity;
+        this->TotalpatchCapacity = 0;
+        for ( auto& OnepatchCapacity : this->patchCapacity )
+        {
+            this->TotalpatchCapacity += OnepatchCapacity;
+        }
     }
+
+    
     if (T5_freqThresholdWasSetToDefault)
         this->resetT56_freqThresholToDefault();
 
@@ -5338,7 +5660,11 @@ std::vector<int> SpeciesSpecificParameters::UpdateParameters(int generation_inde
     (void) this->dispersalData.setOriginalBackwardMigrationIfNeeded();
 
     assert(this->dispersalData.forwardMigration.size() == GP->PatchNumber);
-
+    /*
+    std::cout << "patchSize when exiting SpeciesSpecificParameters::UpdateParameters: ";
+    for (auto& e : patchSize) std::cout << e << " ";
+    std::cout << "\n";    
+    */
     return previousPatchSizes; // This return value will be used to know what individuals to duplicate
 }
 
@@ -5357,17 +5683,13 @@ void SpeciesSpecificParameters::readadditiveEffectAmongLoci(InputReader& input)
     std::cout << "Enters in SpeciesSpecificParameters::readadditiveEffectAmongLoci\n";
 #endif
 
-    auto s = input.GetNextElementString();
-    if (s == "n"  || s == "no" || s == "No" || s == "NO" || s == "0")
+    if (input.PeakNextElementString() == "default")
     {
-        //this->multiplicativeEffectAmongLoci = true;
-    } else if (s == "y" || s == "yes" || s == "Yes" || s == "YES" || s == "1")
-    {
-        //this->multiplicativeEffectAmongLoci = false;
+        input.skipElement();
+        additiveEffectAmongLoci = false;
     } else
     {
-        std::cout << "For option --additiveEffectAmongLoci, received '" << s << "'. Please indicate 'yes' or 'no' ('y' and 'n' and '1' and '0' and a few others work too)\n";
-        abort();
+        additiveEffectAmongLoci = input.GetNextElementBool();
     }
 }
 
@@ -5761,7 +6083,7 @@ void SpeciesSpecificParameters::readkillIndividuals(InputReader& input)
 
             {
                 auto x = GP->__PatchNumber[generation_index];
-                if (patch > x)
+                if (patch >= x)
                 {
                     std::cout << "For option --killIndividuals, received patch " << patch << " at generation " << generation << " but there are only " << x << " patches in the world at that generation. As a ereminder all indices in SimBit are zero based counting\n";
                     abort();

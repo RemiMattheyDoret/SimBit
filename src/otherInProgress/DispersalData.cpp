@@ -329,60 +329,19 @@ const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGen
     //    SSP->fecundityForFitnessOfOne
     //    GP->nbSpecies == 1 // Assume if several species, then user wants none-default ecoology
     //    computingOriginalBackwardMigration
+    
 
     ////////////////////////////////////////////////////
     /// No need to recompute backward migration rate ///
     ////////////////////////////////////////////////////
 
-    if (!SSP->DispWeightByFitness)
+    if (!SSP->DispWeightByFitness || this->isBackwardRatesReceived)
     {
         // patch sizes must always be at carrying capacity
         // Then backward migration rate has been previously computed
         assert(SSP->fecundityForFitnessOfOne == -1);
         // original backward migration rate doesn't need to be recomputed
         return SSP->patchCapacity; // The next generation patch size is simply the patchCapacity
-    }
-
-    /////////////////////////////////////////////////
-    /// When user set the backward migration rate ///
-    /////////////////////////////////////////////////
-
-    if (this->isBackwardRatesReceived)
-    {
-        for (size_t patch_to = 0 ; patch_to < GP->PatchNumber ; ++patch_to)
-        {
-            BackwardMigration[patch_to].resize(0);
-            BackwardMigrationIndex[patch_to].resize(0);
-
-            double totalRate = 0.0;
-            for (size_t fake_patch_from = 0 ; fake_patch_from < forwardMigration[patch_to].size() ; ++fake_patch_from)
-            {
-                auto patch_from = forwardMigrationIndex[patch_to][fake_patch_from];
-                if (SSP->patchSize[patch_from] > 0)
-                {
-                    auto prob = forwardMigration[patch_to][fake_patch_from];
-                    BackwardMigration[patch_to].push_back(prob);
-                    BackwardMigrationIndex[patch_to].push_back(patch_from);
-                    totalRate += prob;
-                }                    
-            }
-
-            if (BackwardMigration[patch_to].size() == 0)
-            {
-                assert(SSP->fecundityForFitnessOfOne != -1);
-                std::cout << "You specified migration rate as backward migration rates. Backward migration rates are somewhat limited in their realism and they make perfectly no sense when all source patches (including itself) have are empty which is the case for patch index " << patch_to << " at generation " << GP->CurrentGeneration << ".\n";
-                abort();
-            }
-
-            if (BackwardMigration[patch_to].size() != forwardMigration[patch_to].size())
-            {
-                assert(totalRate < 1.0 && totalRate > 0.0);
-                for (size_t fake_patch_from = 0 ; fake_patch_from < BackwardMigration[patch_to].size() ; ++fake_patch_from)
-                {
-                    BackwardMigration[patch_to][fake_patch_from] /= totalRate;
-                }
-            }
-        }
     }
 
 
@@ -655,17 +614,11 @@ void DispersalData::readDispMat(InputReader& input)
     {
         input.skipElement();
 
-        if (SSP->fecundityForFitnessOfOne != -1 || SSP->DispWeightByFitness)
+        if (SSP->fecundityForFitnessOfOne != -1)
         {
-            if (SSP->DispWeightByFitness)
-            {
-                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. The fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is weighted by fitness\n";
-            } else
-            {
-                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. The fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is not weighted by fitness\n";
-            }
+            std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1. The fecundity has been set to " << SSP->fecundityForFitnessOfOne << "\n";
             abort();
-        }    
+        }
 
         this->isBackwardRatesReceived = true;
     } else
@@ -1062,7 +1015,7 @@ void DispersalData::pushBack__ForwardMigrationRate(const std::vector<std::vector
             for (size_t fakeFrom = 0 ; fakeFrom < BackwardMigration.size() ; ++fakeFrom)
             {
                 auto patch_from = BackwardMigrationIndex[patch_to][fakeFrom];
-                assert(SSP->patchCapacity.size() < patch_from);
+                assert(SSP->patchCapacity < patch_from);
                 if (SSP->patchCapacity[patch_from] == 0)
                 {
                     assert(BackwardMigration[patch_to][fakeFrom] > 0.0);

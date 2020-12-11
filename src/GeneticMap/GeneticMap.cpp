@@ -8,6 +8,8 @@ void GeneticMap::shrink_to_fit()
     _FromT56LocusToLocus.shrink_to_fit();
     _FromT56ntrlLocusToLocus.shrink_to_fit();
     _FromT56selLocusToLocus.shrink_to_fit();
+    _FromT7LocusToLocus.shrink_to_fit();
+
     _FromLocusToNextT1Locus.shrink_to_fit();
     _FromLocusToNextT2Locus.shrink_to_fit();
     _FromLocusToNextT3Locus.shrink_to_fit();
@@ -16,10 +18,11 @@ void GeneticMap::shrink_to_fit()
     _FromLocusToNextT56ntrlLocus.shrink_to_fit();
     _FromLocusToNextT56selLocus.shrink_to_fit();
     _FromT56LocusToT56genderLocus.shrink_to_fit();
+    _FromLocusToNextT7Locus.shrink_to_fit();
 }
 
 
-void GeneticMap::setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, bool alreadyKnowItIsAllNtrl, bool alreadyKnowItIsAllSel)
+void GeneticMap::setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, bool isMultFit, bool alreadyKnowItIsAllNtrl, bool alreadyKnowItIsAllSel)
 {   
     if (true) //(!(alreadyKnowItIsAllNtrl || alreadyKnowItIsAllSel))
     {
@@ -27,21 +30,42 @@ void GeneticMap::setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, boo
         uint32_t ntrl_index = 0;
         uint32_t sel_index = 0;
         assert(_FromT56LocusToT56genderLocus.size() == 0);
-        _FromT56LocusToT56genderLocus.reserve(T56_fit[0].size());
+        if (isMultFit)
+        {
+            nbT56LociGotFromFitnessValues = T56_fit[0].size();
+        } else
+        {
+            assert(T56_fit[0].size() % 2 == 0);
+            nbT56LociGotFromFitnessValues = T56_fit[0].size() / 2;
+        }
+            
+        _FromT56LocusToT56genderLocus.reserve(nbT56LociGotFromFitnessValues);
 
         assert(isT56ntrlUsed == false);
         assert(isT56selUsed == false);
-        nbT56LociGotFromFitnessValues = T56_fit[0].size();
+        
 
         for (uint32_t i = 0 ; i < nbT56LociGotFromFitnessValues; ++i)
         {
             bool isNtrl = true;
             for (uint32_t habitat = 0 ; habitat < T56_fit.size() ; ++habitat)
             {
-                if (T56_fit[habitat][i] != 1.0)
+                if (isMultFit)
                 {
-                    isNtrl = false;
-                    break;
+                    assert(T56_fit[habitat].size() > i);
+                    if (T56_fit[habitat][i] != 1.0)
+                    {
+                        isNtrl = false;
+                        break;
+                    }
+                } else
+                {
+                    assert(T56_fit[habitat].size() > 2*i+1);
+                    if (T56_fit[habitat][2*i] != 1.0 || T56_fit[habitat][2*i+1] != 1.0)
+                    {
+                        isNtrl = false;
+                        break;
+                    }
                 }
             }
 
@@ -91,7 +115,7 @@ int GeneticMap::readType(const std::string& s_type) const
     {
         if (s_type.size() != 1)
         {
-            std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
+            std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
             abort();
         }
         type = (int) std::stod(s_type);
@@ -143,6 +167,7 @@ void GeneticMap::readLoci(InputReader& input)
     this->T56_nbLoci   = 0;
     this->T56sel_nbLoci = 0;
     this->T56ntrl_nbLoci = 0;
+    this->T7_nbLoci = 0;
     this->TotalNbLoci = 0;
 
 
@@ -155,6 +180,7 @@ void GeneticMap::readLoci(InputReader& input)
     assert(isT3Used == false);
     assert(isT4Used == false);
     assert(isT56Used == false);
+    assert(isT7Used == false);
     {
         uint32_t sumNbElements = 0;
         auto inputCopy = input;
@@ -189,8 +215,11 @@ void GeneticMap::readLoci(InputReader& input)
                     case 5:
                         isT56Used = true;
                         break;
+                    case 7:
+                        isT7Used = true;
+                        break;
                     default:
-                        std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
+                        std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
                         abort();
                 }
             }
@@ -211,7 +240,7 @@ void GeneticMap::readLoci(InputReader& input)
     }
 
 
-    auto nbTypesUsed = isT1Used + isT2Used + isT3Used + isT4Used + isT56ntrlUsed + isT56selUsed;
+    auto nbTypesUsed = isT1Used + isT2Used + isT3Used + isT4Used + isT56ntrlUsed + isT56selUsed + isT7Used;
     assert(nbTypesUsed > 0);
     if (nbTypesUsed == 1)
     {
@@ -227,6 +256,8 @@ void GeneticMap::readLoci(InputReader& input)
             onlyTypeUsed = 50;
         else if (isT56selUsed)
             onlyTypeUsed = 51;
+        else if (isT7Used)
+            onlyTypeUsed = 7;
         else
         {
             std::cout << "Internal error in GeneticMap::readLoci. SimBit thinks only one type of locus is used but it could not figure which one it is\n";
@@ -272,12 +303,6 @@ void GeneticMap::readLoci(InputReader& input)
                         ++T4_nbLoci;
                         break;
                     case 5:
-                        if (nbT56LociGotFromFitnessValues <= T56_nbLoci)
-                        {
-                            std::cout << "Received at least " << T56_nbLoci << " loci (in option --L aka. --Loci) of type T5 (or T6 if compressed) but received only " << nbT56LociGotFromFitnessValues << " fitness values for T5 loci (with option --T5_fit)\n";
-                            abort();
-                        }
-
                         if (isT56neutral(T56_nbLoci))
                         {
                             if (onlyTypeUsed == 250) _FromT56ntrlLocusToLocus.push_back(TotalNbLoci);
@@ -291,8 +316,11 @@ void GeneticMap::readLoci(InputReader& input)
                         if (onlyTypeUsed == 250) _FromT56LocusToLocus.push_back(TotalNbLoci);
                         ++T56_nbLoci;
                         break;
+                    case 7:
+                        if (onlyTypeUsed == 250) _FromT7LocusToLocus.push_back(TotalNbLoci);
+                        ++T7_nbLoci;
+                        break;
                     default:
-                        std::cout << "line 277\n";
                         std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
                         abort();
                 }
@@ -307,6 +335,7 @@ void GeneticMap::readLoci(InputReader& input)
                     if (isT56Used) _FromLocusToNextT56Locus.push_back(T56_nbLoci);
                     if (isT56ntrlUsed) _FromLocusToNextT56ntrlLocus.push_back(T56ntrl_nbLoci);
                     if (isT56selUsed) _FromLocusToNextT56selLocus.push_back(T56sel_nbLoci);
+                    if (isT7Used) _FromLocusToNextT7Locus.push_back(T7_nbLoci);
                 }
             }
         }
@@ -314,7 +343,7 @@ void GeneticMap::readLoci(InputReader& input)
 
     //this->print();
     
-    assert(TotalNbLoci == T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbLoci + T56_nbLoci);
+    assert(TotalNbLoci == T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbLoci + T56_nbLoci + T7_nbLoci);
     assert(T56_nbLoci == T56sel_nbLoci + T56ntrl_nbLoci);
     if (nbT56LociGotFromFitnessValues > T56_nbLoci)
     {
@@ -370,7 +399,7 @@ void GeneticMap::readLoci(InputReader& input)
     /////////////////////
 
     assert(TotalNbLoci);
-    assert(T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbLoci + T56_nbLoci == TotalNbLoci);
+    assert(T1_nbLoci + T2_nbLoci + T3_nbLoci + T4_nbLoci + T56_nbLoci + T7_nbLoci == TotalNbLoci);
     if (isT56selCompress)
     {
         assert(T56sel_nbLoci == T6sel_nbLoci);
@@ -427,6 +456,14 @@ void GeneticMap::readLoci(InputReader& input)
     else
         assert(_FromT56selLocusToLocus.size() == 0);
 
+    if (onlyTypeUsed == 250 && isT7Used)
+        assert(_FromT7LocusToLocus.size() == T7_nbLoci); 
+    else
+        assert(_FromT7LocusToLocus.size() == 0);
+
+
+
+
     if (onlyTypeUsed == 250 && isT1Used)
         assert(_FromLocusToNextT1Locus.size() == TotalNbLoci); 
     else
@@ -466,6 +503,11 @@ void GeneticMap::readLoci(InputReader& input)
         assert(_FromT56LocusToT56genderLocus.size() == T56_nbLoci);
     else
         assert(_FromT56LocusToT56genderLocus.size() == 0);
+
+    if (onlyTypeUsed == 250 && isT7Used)
+        assert(_FromLocusToNextT7Locus.size() == TotalNbLoci); 
+    else
+        assert(_FromLocusToNextT7Locus.size() == 0);
 
     //this->print();
 }
@@ -510,6 +552,7 @@ void GeneticMap::print()
     print("_FromLocusToT56ntrlLocus", _FromLocusToNextT56ntrlLocus);
     print("_FromLocusToT56selLocus", _FromLocusToNextT56selLocus);
     print("_FromT56LocusToT56genderLocus", _FromT56LocusToT56genderLocus);
+    print("_FromLocusToT7Locus", _FromLocusToNextT7Locus);
 
     print("T1_nbLoci", T1_nbLoci);
     print("T1_nbChars", T1_nbChars);
@@ -529,6 +572,7 @@ void GeneticMap::print()
     print("TotalNbLoci", TotalNbLoci);
     print("isT56selCompress", isT56selCompress);
     print("isT56ntrlCompress", isT56ntrlCompress);
+    print("T7_nbLoci", T7_nbLoci);
     std::cout << "\n-------------------------\n\n";
 }
 
@@ -631,6 +675,21 @@ uint32_t GeneticMap::FromT56selLocusToLocus(const INT i) const
     }
 }
 
+template<typename INT>
+uint32_t GeneticMap::FromT7LocusToLocus(const INT i) const
+{
+    if (onlyTypeUsed == 250)
+    {
+        assert(_FromT7LocusToLocus.size() > i);
+        return _FromT7LocusToLocus[i];
+    } else
+    {
+        assert(onlyTypeUsed == 7);
+        return i;
+    }
+}
+
+
 
 template<typename INT>
 uint32_t GeneticMap::FromLocusToNextT1Locus(const INT i) const
@@ -672,6 +731,12 @@ template<typename INT>
 uint32_t GeneticMap::FromLocusToNextT56selLocus(const INT i) const
 {
     return FromLocusToNextTxLocus(i, isT56selUsed, _FromLocusToNextT56selLocus, 51);
+}
+
+template<typename INT>
+uint32_t GeneticMap::FromLocusToNextT7Locus(const INT i) const
+{
+    return FromLocusToNextTxLocus(i, isT7Used, _FromLocusToNextT7Locus, 7);
 }
 
 template<typename INT>
@@ -741,6 +806,7 @@ unsigned char GeneticMap::getLocusType(const INT i) const
             if (isT4Used && FromLocusToNextT4Locus(0) != 0) return 4;
             if (isT56ntrlUsed && FromLocusToNextT56ntrlLocus(0) != 0) return 50;
             if (isT56selUsed && FromLocusToNextT56selLocus(0) != 0) return 51;
+            if (isT7Used && FromLocusToNextT7Locus(0) != 0) return 7;
             std::cout << "internal error in 'unsigned char GeneticMap::getLocusType(const INT i) const', where i = " << i << ". Could not find locus type.\n";
             abort();
         } else
@@ -751,6 +817,7 @@ unsigned char GeneticMap::getLocusType(const INT i) const
             if (isT4Used && FromLocusToNextT4Locus(i) != FromLocusToNextT4Locus(i-1)) return 4;
             if (isT56ntrlUsed && FromLocusToNextT56ntrlLocus(i) != FromLocusToNextT56ntrlLocus(i-1)) return 50;
             if (isT56selUsed && FromLocusToNextT56selLocus(i) != FromLocusToNextT56selLocus(i-1)) return 51;
+            if (isT7Used && FromLocusToNextT7Locus(i) != FromLocusToNextT7Locus(i-1)) return 7;
             std::cout << "internal error in 'unsigned char GeneticMap::getLocusType(const INT i) const', where i = " << i << ". Could not find locus type.\n";
             abort();
         }

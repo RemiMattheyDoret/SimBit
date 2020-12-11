@@ -426,10 +426,13 @@ void OutputWriter::RemoveAllFiles()
                     file.remove();
                     
                 }
-            } else if (this->LogfileType != 0)
+            } else if (file.getFileType() == Logfile && this->LogfileType != 0)
             {
                 file.remove();
-            }  
+            } else if (file.getFileType() == burnInLength_file) 
+            {
+                file.remove();
+            }
         }
     }
     GP->CurrentGeneration = ForReset;
@@ -1251,6 +1254,18 @@ void OutputWriter::WriteOutputs_T5_FST_header(OutputFile& file)
     WriteOutputs_Tx_FST_header(OutputFile& file);
 }*/
 
+void OutputWriter::writeOutputs_burnInLength(int positiveGeneration)
+{
+    std::vector<OutputFile>& files = this->get_OutputFiles(burnInLength_file);
+    assert(files.size());
+    auto& file = files[0];
+
+    file.open();
+    std::string s = std::to_string(positiveGeneration) + std::string("\n");
+    file.write(s);
+    file.close();
+}
+
 
 void OutputWriter::WriteOutputs_T1_FST(Pop& pop, OutputFile& file)
 {
@@ -1734,7 +1749,15 @@ void OutputWriter::WriteOutputs_sampleSequences(std::vector<std::vector<std::vec
 void OutputWriter::WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(OutputFile& file)
 {
     file.open();
-    std::string s = "paintedGeneration\tobservedGeneration\tleft\tright\tpatchSampled\tnbHaplotypesSampled\tnbColors\tdiversity\n";
+    std::string s;
+    if (SSP->SegDiversityFile_includeMainColor)
+    {
+        s = "paintedGeneration\tobservedGeneration\tleft\tright\tpatchSampled\tnbHaplotypesSampled\tnbColors\tcolorHighestFrequency\tdiversity\n";
+    } else
+    {
+        s = "paintedGeneration\tobservedGeneration\tleft\tright\tpatchSampled\tnbHaplotypesSampled\tnbColors\tdiversity\n";
+    }
+        
     file.write(s);
     file.close();
 }
@@ -1770,7 +1793,9 @@ void OutputWriter::WriteOutputs_T4_paintedHaploSegmentsDiversity_file(Pop& pop, 
                 const auto& patch_index  = info.patch_indices[i];
                 const auto& nbHaplotypes = info.nbHaplotypesPerPatch[i];
 
-                if (GP->PatchNumber > patch_index) // This if is for KillOnDemand::justAboutToKill
+                if (i != 0) assert(patch_index >= info.patch_indices[i-1]);
+
+                if (GP->PatchNumber > patch_index) // This 'if' is for KillOnDemand::justAboutToKill
                 {
                     auto& patch = pop.getPatch(patch_index);
 
@@ -2012,14 +2037,26 @@ void OutputWriter::WriteOutputs_fitnessSubsetLoci(Pop& pop, OutputFile& file)
                 } else
                 {
                     auto fitnessComponents = pop.getPatch(patch_index).getInd(ind_index, patch_index).CalculateFitnessComponentsOnSubsetOfLoci(SSP->Habitats[patch_index], lociSetIndex);
-                    assert(fitnessComponents.size() == 4);
+                    assert(fitnessComponents.size() == 6);
 
                     std::string T1Fit =             std::to_string(fitnessComponents[0]);
                     std::string T2Fit =             std::to_string(fitnessComponents[1]);
                     std::string T1EpistasisFit =    std::to_string(fitnessComponents[2]);
                     std::string T3Fit =             std::to_string(fitnessComponents[3]);
                     std::string T56Fit =             std::to_string(fitnessComponents[4]);
-                    std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
+
+                    std::string totalFit;
+                    if (SSP->additiveEffectAmongLoci)
+                    {
+                        double totFit = 1 - fitnessComponents[0] - fitnessComponents[1] - fitnessComponents[2] - fitnessComponents[3] - fitnessComponents[4];
+                        if (totFit < 0.0) totFit = 0.0;                        
+                        totalFit = std::to_string(totFit);
+
+                    } else
+                    {
+                        totalFit = std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
+                    }
+                    
 
                     s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit + s_tab + T56Fit;
                 }
@@ -2075,14 +2112,23 @@ void OutputWriter::WriteOutputs_fitness(Pop& pop, OutputFile& file)
             } else
             {
                 auto fitnessComponents = pop.getPatch(patch_index).getInd(ind_index, patch_index).CalculateFitnessComponents(SSP->Habitats[patch_index]);
-                assert(fitnessComponents.size() == 5);
+                assert(fitnessComponents.size() == 6);
 
                 std::string T1Fit =             std::to_string(fitnessComponents[0]);
                 std::string T2Fit =             std::to_string(fitnessComponents[1]);
                 std::string T1EpistasisFit =    std::to_string(fitnessComponents[2]);
                 std::string T3Fit =             std::to_string(fitnessComponents[3]);
                 std::string T5Fit =             std::to_string(fitnessComponents[4]);
-                std::string totalFit =          std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
+                std::string totalFit;
+                if (SSP->additiveEffectAmongLoci)
+                {
+                    double totFit = 1 - fitnessComponents[0] - fitnessComponents[1] - fitnessComponents[2] - fitnessComponents[3] - fitnessComponents[4];
+                    if (totFit < 0.0) totFit = 0.0;                        
+                    totalFit = std::to_string(totFit);
+                } else
+                {
+                    totalFit = std::to_string(fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4]);
+                }
 
                 s += s_tab + totalFit + s_tab + T1Fit + s_tab + T1EpistasisFit + s_tab + T2Fit + s_tab + T3Fit + s_tab + T5Fit;
             }
@@ -3296,49 +3342,67 @@ void OutputWriter::WriteOutputs_Tx_SNPfreq_file_header(OutputFile& file, size_t 
     file.close();
 }
 
-
-void OutputWriter::WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& T4data, size_t mutPlacingIndex, Pop& pop)
+/*
+void OutputWriter::mergeT4countsWithOtherCounts(T4TreeRec::PatchCountData& T4freqs, std::vector<uint32_t>& counts)
 {
-    if (SSP->whenDidExtinctionOccur != -1)
+    if (T4freqs.isVec)
     {
-        assert(SSP->fecundityForFitnessOfOne != -1);
-        file.openT4(mutPlacingIndex);
-        std::string s("Species is extinct\n");
-        file.write(s);
-        file.close();
-        return;
-    }
-    //SSP->T4Tree.simplify(pop);
-    //SSP->T4Tree.placeMutations(pop);
-
-    file.openT4(mutPlacingIndex);
-
-    for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
-    {
-        // Compute counts
-        std::map<uint32_t, uint32_t> counts;
-
-        for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+        assert(T4freqs.vecFreqs.size() == SSP->Gmap.T4_nbLoci);
+        for (size_t T4locus = 0 ; T4locus < SSP->Gmap.T4_nbLoci ; ++T4locus)
         {
-            for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
-            {
-                auto& haplo = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+            if (T4freqs.vecFreqs[T4locus] != 0)
+                counts[SSP->Gmap.FromT4LocusToLocus(T4locus)] = T4freqs.vecFreqs[T4locus];
+        }
+    } else
+    {
+        for (auto it = T4freqs.mapFreqs.begin() ; it != T4freqs.mapFreqs.end() ; ++it)
+        {
+            assert(it->second > 0);
+            auto T4locus = it->first;
+            counts[SSP->Gmap.FromT4LocusToLocus(T4locus)] = it->second;
+        }
+    }
+}
 
-                // T1
+void OutputWriter::mergeT4countsWithOtherCounts(T4TreeRec::PatchCountData& T4freqs, std::map<uint32_t,uint32_t>& counts)
+{
+    if (T4freqs.isVec)
+    {
+        assert(T4freqs.vecFreqs.size() == SSP->Gmap.T4_nbLoci);
+        for (size_t T4locus = 0 ; T4locus < SSP->Gmap.T4_nbLoci ; ++T4locus)
+        {
+            if (T4freqs.vecFreqs[T4locus] != 0)
+                counts[SSP->Gmap.FromT4LocusToLocus(T4locus)] = T4freqs.vecFreqs[T4locus];
+        }
+    } else
+    {
+        counts.insert(T4freqs.mapFreqs.begin(), T4freqs.mapFreqs.end());
+    }
+}*/
+
+template<typename CountContainerType> void OutputWriter::WriteOutputs_SNPfreq_computeFreq(CountContainerType& counts, Pop& pop, size_t patch_index)
+{
+    //double maxCount = 2 * SSP->patchSize[patch_index];
+    for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+    {
+        for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+        {
+            auto& haplo = pop.getPatch(patch_index).getInd(ind_index).getHaplo(haplo_index);
+
+            // T1
                 for (size_t T1_locus = 0 ; T1_locus < SSP->Gmap.T1_nbLoci ; ++T1_locus)
                     if (haplo.getT1_Allele(T1_locus))
                         ++counts[SSP->Gmap.FromT1LocusToLocus(T1_locus)];
 
-                // T2
+            // T2
                 for (size_t T2_locus = 0 ; T2_locus < SSP->Gmap.T2_nbLoci ; ++T2_locus)
                     if (haplo.getT2_Allele(T2_locus)) // If any value great than 0
                         ++counts[SSP->Gmap.FromT2LocusToLocus(T2_locus)];
 
-                // T4
-                for (auto& mut : T4data[patch_index][ind_index * 2 * haplo_index])
-                    ++counts[SSP->Gmap.FromT4LocusToLocus(mut)];
+            // T4 Nothing to do                
 
-                // T56ntrl
+            // T56ntrl
+            {
                 if (SSP->Gmap.T56ntrl_nbLoci)
                 {
                     if (SSP->Gmap.isT56ntrlCompress)
@@ -3353,8 +3417,10 @@ void OutputWriter::WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<st
                             ++counts[SSP->Gmap.FromT56ntrlLocusToLocus(*it)];
                     }
                 }
+            }
 
-                // T56sel
+            // T56sel
+            {
                 if (SSP->Gmap.T56sel_nbLoci)
                 {
                     if (SSP->Gmap.isT56ntrlCompress)
@@ -3371,26 +3437,150 @@ void OutputWriter::WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<st
                 }
             }
         }
+    }
+}
+
+void OutputWriter::WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<T4TreeRec::PatchCountData>& T4freqs, size_t mutPlacingIndex, Pop& pop)
+{
+    bool printInfo = false;
+
+    if (printInfo) std::cout << "Enters in 'WriteOutputs_Tx_SNPfreq_file'\n";
+    if (SSP->whenDidExtinctionOccur != -1)
+    {
+        assert(SSP->fecundityForFitnessOfOne != -1);
+        file.openT4(mutPlacingIndex);
+        std::string s("Species is extinct\n");
+        file.write(s);
+        file.close();
+        return;
+    }
+    //SSP->T4Tree.simplify(pop);
+    //SSP->T4Tree.placeMutations(pop);
+    assert(T4freqs.size() == GP->PatchNumber);
+    file.openT4(mutPlacingIndex);
+
+    for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+    {
+        if (SSP->patchSize[patch_index] == 0) continue;
+        double maxCount = 2 * SSP->patchSize[patch_index];
 
 
 
-        
-        // Write
-        for (auto it = counts.begin() ; it != counts.end() ; ++it)
+        if (SSP->TxSNPfreq_assumeMuchDiversity)
         {
-            auto maxCount = SSP->patchSize[patch_index] * 2;
-            assert(it->second > 0 );// && it->second <= maxCount);
-            //if (it->second != maxCount) // If it is polymorphic in the patch
-            {
-                double freq = (double)it->second / (double)maxCount ;
-                assert(it->first >= 0 && it->first < SSP->Gmap.TotalNbLoci);
+            // Tx is map
+            std::map<uint32_t, uint32_t> counts;
+            WriteOutputs_SNPfreq_computeFreq(counts, pop, patch_index);
 
-                //std::cout << "upper_s: " << upper_s.size() << " " << upper_s.capacity() << "\n";
-                //std::cout << "lower_s: " << lower_s.size() << " " << lower_s.capacity() << "\n";
-                std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(it->first) + "\t" + std::to_string(freq) + "\n";
-                file.write(s);
+
+            if (T4freqs[patch_index].isVec)
+            {
+                // T4 is vector
+                assert(T4freqs[patch_index].vecFreqs.size() == SSP->Gmap.T4_nbLoci);
+
+                size_t T4locus = 0;
+                
+                for (auto it = counts.begin(); it != counts.end(); ++it)
+                {
+                    auto locusOfT4 = SSP->Gmap.FromT4LocusToLocus(T4locus);
+                    auto locusOfTx = it->first;
+                    assert(locusOfTx != locusOfT4);
+
+                    for (;T4locus < SSP->Gmap.T4_nbLoci && locusOfTx < locusOfT4; ++T4locus)
+                    {
+                        if (T4freqs[patch_index].vecFreqs[T4locus] != 0)
+                        {
+                            auto count = T4freqs[patch_index].vecFreqs[T4locus];
+                            double freq = (double)count / maxCount;
+                            auto locus = SSP->Gmap.FromT4LocusToLocus(T4locus);
+                            std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                            file.write(s);
+                        }
+                    }
+
+                    assert(it->second != 0);
+                    auto locus = it->first;
+                    double freq = (double)it->second / maxCount ;
+                    std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                    file.write(s);
+                }
+
+                for (;T4locus < SSP->Gmap.T4_nbLoci; ++T4locus)
+                {
+                    if (T4freqs[patch_index].vecFreqs[T4locus] != 0)
+                    {
+                        auto count = T4freqs[patch_index].vecFreqs[T4locus];
+                        double freq = (double)count / maxCount;
+                        auto locus = SSP->Gmap.FromT4LocusToLocus(T4locus);
+                        std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                        file.write(s);
+                    }
+                }
+
+            } else
+            {
+                // T4 is map
+                // Merge the two maps
+                counts.insert(T4freqs[patch_index].mapFreqs.begin(), T4freqs[patch_index].mapFreqs.end());
+
+                // write counts
+                for (auto it = counts.begin() ; it != counts.end() ; ++it)
+                {
+                    assert(it->second != 0);
+                    auto locus = it->first;
+                    double freq = (double)it->second / maxCount ;
+                    std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                    file.write(s);
+                }
             }
-        }
+
+
+        } else
+        {
+            // Tx is vector
+            std::vector<uint32_t> counts(SSP->Gmap.TotalNbLoci, 0);
+            WriteOutputs_SNPfreq_computeFreq(counts, pop, patch_index);
+
+            
+            // Just merge T4 (whatever format) into Tx
+            if (T4freqs[patch_index].isVec)
+            {
+                // T4 is vector
+                assert(T4freqs[patch_index].vecFreqs.size() == SSP->Gmap.T4_nbLoci);
+                for (size_t T4locus = 0 ; T4locus < SSP->Gmap.T4_nbLoci ; ++T4locus)
+                {
+                    if (T4freqs[patch_index].vecFreqs[T4locus] != 0)
+                    {
+                        auto count = T4freqs[patch_index].vecFreqs[T4locus];
+                        auto locus = SSP->Gmap.FromT4LocusToLocus(T4locus);
+                        assert(counts[locus] == 0);
+                        counts[locus] = count;
+                    }
+                }
+            } else
+            {
+                // T4 is map
+                for (auto it = T4freqs[patch_index].mapFreqs.begin() ; it != T4freqs[patch_index].mapFreqs.end() ; ++it)
+                {
+                    assert(it->second > 0);
+                    auto count = it->second;
+                    auto locus = SSP->Gmap.FromT4LocusToLocus(it->first);
+                    assert(counts[locus] == 0);
+                    counts[locus] = count;
+                }
+            }
+
+            // write
+            for (size_t locus = 0 ; locus < SSP->Gmap.TotalNbLoci ; ++locus)
+            {
+                if (counts[locus] != 0)
+                {
+                    double freq = (double)counts[locus] / maxCount ;
+                    std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                    file.write(s);
+                }
+            }
+        }            
     }
     
     file.close();
@@ -3406,7 +3596,7 @@ void OutputWriter::WriteOutputs_T4_SNPfreq_file_header(OutputFile& file, size_t 
 }
 
 
-void OutputWriter::WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex)
+void OutputWriter::WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<T4TreeRec::PatchCountData>& T4freqs, size_t mutPlacingIndex)
 {
     if (SSP->whenDidExtinctionOccur != -1)
     {
@@ -3422,11 +3612,14 @@ void OutputWriter::WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<st
 
     file.openT4(mutPlacingIndex);
 
+    assert(T4freqs.size() == GP->PatchNumber);
     for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
     {
         // Compute counts
 
-        std::map<uint32_t, uint32_t> counts;
+        /*
+        //std::map<uint32_t, uint32_t> counts;
+        std::vector<uint32_t> counts(SSP->Gmap.T4_nbLoci,0);
 
         for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
         {
@@ -3438,21 +3631,32 @@ void OutputWriter::WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<st
                 }
             }
         }
+        */
 
         
         // Write
-        for (auto it = counts.begin() ; it != counts.end() ; ++it)
-        {
-            auto maxCount = SSP->patchSize[patch_index] * 2;
-            assert(it->second > 0 );// && it->second <= maxCount);
-            // if (it->second != maxCount) // If it is polymorphic in the patch
-            {
-                double freq = (double)it->second / (double)maxCount ;
-                assert(it->first >= 0 && it->first < SSP->Gmap.T4_nbLoci);
+        double maxCount = 2 * SSP->patchSize[patch_index];
 
-                //std::cout << "upper_s: " << upper_s.size() << " " << upper_s.capacity() << "\n";
-                //std::cout << "lower_s: " << lower_s.size() << " " << lower_s.capacity() << "\n";
-                std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(it->first) + "\t" + std::to_string(freq) + "\n";
+        if (T4freqs[patch_index].isVec)
+        {
+            assert(T4freqs[patch_index].vecFreqs.size() == SSP->Gmap.T4_nbLoci);
+            for (size_t locus = 0 ; locus < SSP->Gmap.T4_nbLoci ; ++locus)
+            {
+                if (T4freqs[patch_index].vecFreqs[locus] != 0)
+                {
+                    double freq = (double) T4freqs[patch_index].vecFreqs[locus]  / maxCount;
+                    std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
+                    file.write(s);
+                }
+            }
+        } else
+        {
+            for (auto it = T4freqs[patch_index].mapFreqs.begin() ; it != T4freqs[patch_index].mapFreqs.end() ; ++it)
+            {
+                assert(it->second > 0);
+                double freq = (double) it->second  / maxCount;
+                auto locus = it->first;
+                std::string s = std::to_string(GP->CurrentGeneration) + "\t" + std::to_string(patch_index) + "\t" + std::to_string(locus) + "\t" + std::to_string(freq) + "\n";
                 file.write(s);
             }
         }
@@ -4822,10 +5026,12 @@ void OutputWriter::WriteOutputs(Pop& realPop)
     /*
     std::cout << "GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
     std::cout << "this->isTime() = " << this->isTime() << "\n";
-    */
+    */    
+
     if (this->isTime())
     { 
         // output the pop
+        //std::cout << "About to enter WriteOutputs_forDefinedPop\n";
         WriteOutputs_forDefinedPop(realPop);
 
         // output the population with sequencing errors
@@ -5425,6 +5631,7 @@ void OutputWriter::WriteOutputs_forDefinedPop_T3(Pop& pop)
 
 void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
 {
+    //std::cout << "Enters 'OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq'\n";
     /*
         ---------------------
         - ################# -
@@ -5433,14 +5640,227 @@ void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
         ---------------------
     */
 
-
+    if (SSP->whenDidExtinctionOccur == -1)
+    {
         if ( GP->CurrentGeneration == GP->startAtGeneration)
+            {
+                /*
+                 ########################################
+                 #### T4 painted haplotype diversity ####
+                 ########################################
+                */
+                
+                if (this->isFile(T4_paintedHaploSegmentsDiversity_file))
+                {
+                    if (SSP->Gmap.T4_nbLoci)
+                    {
+                        std::vector<OutputFile>& files = this->get_OutputFiles(T4_paintedHaploSegmentsDiversity_file);
+                        for (auto& file : files)
+                        {
+                            this->WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(file);
+                        }
+                    }
+                }
+
+                for (size_t mutPlacingIndex = 0 ; mutPlacingIndex < SSP->T4_nbMutationPlacingsPerOutput ; ++mutPlacingIndex)
+                {
+                    /*
+                     ##########################
+                     #### T4_LargeOutput  #####
+                     ##########################
+                     */
+                    //std::cout << "line 2896\n";
+                    if (this->isFile(T4_LargeOutputFile))
+                    {
+                        if (SSP->Gmap.T4_nbLoci)
+                        {
+                            std::vector<OutputFile>& files = this->get_OutputFiles(T4_LargeOutputFile);
+                            for (auto& file : files)
+                            {
+                                this->WriteOutputs_T4_LargeOutput_header(file, mutPlacingIndex);
+                            }
+                        }
+                    }
+
+                    /*
+                     ##############################
+                     #### T4 frequency of SNPs ####
+                     ##############################
+                     */
+                    
+                    if (this->isFile(T4_SNPfreq_file))
+                    {
+                        if (SSP->Gmap.T4_nbLoci)
+                        {
+                            std::vector<OutputFile>& files = this->get_OutputFiles(T4_SNPfreq_file);
+                            for (auto& file : files)
+                            {
+                                this->WriteOutputs_T4_SNPfreq_file_header(file, mutPlacingIndex);
+                            }
+                        }
+                    }
+
+
+
+                    /*
+                     ###############
+                     #### T4SFS ####
+                     ###############
+                     */
+                    if (this->isFile(T4_SFS_file))
+                    {
+                        if (SSP->Gmap.T4_nbLoci)
+                        {
+                            std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS_file);
+                            for (auto& file : files)
+                            {
+                                this->WriteOutputs_T4SFS_header(file, mutPlacingIndex);
+                            }
+                        }
+                    }
+
+                    /*
+                     ##############################
+                     #### Tx frequency of SNPs ####
+                     ##############################
+                     */
+                    
+                    if (this->isFile(Tx_SNPfreq_file))
+                    {
+                        std::vector<OutputFile>& files = this->get_OutputFiles(Tx_SNPfreq_file);
+                        for (auto& file : files)
+                        {
+                            //std::cout << "About to enter 'WriteOutputs_Tx_SNPfreq_file_header'\n";
+                            this->WriteOutputs_Tx_SNPfreq_file_header(file, mutPlacingIndex);
+                        }
+                    }
+                }
+            }
+
+
+
+        /*
+            ---------------------------------------------------------------------------------------
+            - ################################################################################### -
+            - #### Figure if simplification or simplification and mutation placing necessary #### -
+            - ################################################################################### -
+            ---------------------------------------------------------------------------------------
+        */
+
+
+        bool isAnyOutputWithoutMutPlacing = false;
+        bool isAnyOutputWithMutPlacing = false;
+        bool isAnyOutputWithMutPlacing_needFreqs = false;
+        bool isAnyOutputWithMutPlacing_needAllData = false;
+
+        if (this->isFile(T4_LargeOutputFile))
+            for (auto& file : this->get_OutputFiles(T4_LargeOutputFile))
+                if (file.isTime())
+                {
+                    isAnyOutputWithMutPlacing = true;
+                    isAnyOutputWithMutPlacing_needAllData = true;
+                }
+
+        if (this->isFile(T4_vcfFile))
+            for (auto& file : this->get_OutputFiles(T4_vcfFile))
+                if (file.isTime())
+                {
+                    isAnyOutputWithMutPlacing = true;
+                    isAnyOutputWithMutPlacing_needAllData = true;
+                }
+
+        if (this->isFile(T4_SNPfreq_file))
+            for (auto& file : this->get_OutputFiles(T4_SNPfreq_file))
+                if (file.isTime())
+                {
+                    isAnyOutputWithMutPlacing = true;
+                    isAnyOutputWithMutPlacing_needFreqs = true;
+                }
+
+        if (this->isFile(T4_SFS_file))
+            for (auto& file : this->get_OutputFiles(T4_SFS_file))
+                if (file.isTime())
+                {
+                    isAnyOutputWithMutPlacing = true;
+                    isAnyOutputWithMutPlacing_needAllData = true;
+                }
+
+        if (this->isFile(Tx_SNPfreq_file))
+            for (auto& file : this->get_OutputFiles(Tx_SNPfreq_file))
+                if (file.isTime())
+                {
+                    isAnyOutputWithMutPlacing = true;
+                    isAnyOutputWithMutPlacing_needFreqs = true;
+                }
+
+        if (this->isFile(T4_paintedHaplo_file))
+            for (auto& file : this->get_OutputFiles(T4_paintedHaplo_file))
+                if (file.isTime())
+                {
+                    isAnyOutputWithoutMutPlacing = true;
+                }
+
+
+        if (this->isFile(T4_paintedHaploSegmentsDiversity_file))
+            for (auto& file : this->get_OutputFiles(T4_paintedHaploSegmentsDiversity_file))
+                if (file.isTime())
+                {
+                    isAnyOutputWithoutMutPlacing = true;
+                }
+
+
+        // If not output, I can exit
+
+        //std::cout << "line 5356: GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
+        //std::cout << "isAnyOutputWithoutMutPlacing = " << isAnyOutputWithoutMutPlacing << "\n";
+        //std::cout << "isAnyOutputWithMutPlacing = " << isAnyOutputWitMutPlacing << "\n";
+
+        if (!(isAnyOutputWithoutMutPlacing || isAnyOutputWithMutPlacing))
+            return;
+        
+
+        //std::cout << "About to simplify (SSP->Gmap.T4_nbLoci = "<< SSP->Gmap.T4_nbLoci <<")\n";
+        if (SSP->Gmap.T4_nbLoci) SSP->T4Tree.simplify(pop);
+
+        /*
+            ------------------------------------------------------
+            - ################################################## -
+            - #### Outputs that don't need mutation placing #### -
+            - ################################################## -
+            ------------------------------------------------------
+        */
+        if (isAnyOutputWithoutMutPlacing)
         {
             /*
+             ##############################
+             #### T4 painted haplotype ####
+             ##############################
+             */
+            
+            if (this->isFile(T4_paintedHaplo_file))
+            {
+                if (SSP->Gmap.T4_nbLoci)
+                {
+                    std::vector<OutputFile>& files = this->get_OutputFiles(T4_paintedHaplo_file);
+                    for (auto& file : files)
+                    {
+                        if (file.isTime())
+                        {
+                            #ifdef DEBUG
+                            std::cout << "Write T4_paintedHaplo_file \n";
+                            #endif
+                            this->WriteOutputs_T4_paintedHaplo_file(pop, file);
+                        }
+                    }
+                }
+            }
+
+
+             /*
              ########################################
              #### T4 painted haplotype diversity ####
              ########################################
-            */
+             */
             
             if (this->isFile(T4_paintedHaploSegmentsDiversity_file))
             {
@@ -5449,13 +5869,137 @@ void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
                     std::vector<OutputFile>& files = this->get_OutputFiles(T4_paintedHaploSegmentsDiversity_file);
                     for (auto& file : files)
                     {
-                        this->WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(file);
+                        if (file.isTime())
+                        {
+                            #ifdef DEBUG
+                            std::cout << "Write T4_paintedHaploSegmentsDiversity_file \n";
+                            #endif
+                            this->WriteOutputs_T4_paintedHaploSegmentsDiversity_file(pop, file);
+                        }
                     }
                 }
             }
 
+            /*
+             ##########################
+             #### T4CoalescenceFst ####
+             ##########################
+             */
+            /*if (this->isFile(T4CoalescenceFst))
+            {
+                if (SSP->Gmap.T4_nbLoci)
+                {
+                    std::vector<OutputFile>& files = this->get_OutputFiles(T4CoalescenceFst);
+                    for (auto& file : files)
+                    {
+                        if ( GP->CurrentGeneration == GP->startAtGeneration)
+                        {
+                            this->WriteOutputs_T4CoalescenceFst_header(file);
+                        }
+                        if (file.isTime())
+                        {
+                            #ifdef DEBUG
+                            std::cout << "Write T4CoalescenceFst\n";
+                            #endif
+                            this->WriteOutputs_T4CoalescenceFst(file); // No need to give Pop as T4Tree is in SSP
+                        }
+                    }
+                }
+            }*/
+        }
+
+
+
+
+        /*
+            ------------------------------------------------
+            - ############################################ -
+            - #### Outputs that need mutation placing #### -
+            - ############################################ -
+            ------------------------------------------------
+        */
+
+        if (isAnyOutputWithMutPlacing)
+        {
+            auto rng_save = GP->rngw.getRNGState();
+            assert(SSP->T4_nbMutationPlacingsPerOutput > 0);
             for (size_t mutPlacingIndex = 0 ; mutPlacingIndex < SSP->T4_nbMutationPlacingsPerOutput ; ++mutPlacingIndex)
             {
+                /*
+                {
+                    std::cout << "sleep for 10 seconds before placing mutations" << std::endl;
+                    //std::chrono::seconds dura(10);
+                    //std::this_thread::sleep_for( dura );
+                    std::cout << "end of sleeping" << std::endl;
+                }
+                */
+                
+
+                std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRec::PatchCountData> > allData;
+
+                if (SSP->Gmap.T4_nbLoci)
+                {
+                    unsigned char placeMutationOutputsType; 
+                    assert(isAnyOutputWithMutPlacing_needFreqs || isAnyOutputWithMutPlacing_needAllData);
+
+                    if (isAnyOutputWithMutPlacing_needFreqs && isAnyOutputWithMutPlacing_needAllData) placeMutationOutputsType = 'b';
+                    if (isAnyOutputWithMutPlacing_needFreqs && !isAnyOutputWithMutPlacing_needAllData) placeMutationOutputsType = 'f';
+                    if (!isAnyOutputWithMutPlacing_needFreqs && isAnyOutputWithMutPlacing_needAllData) placeMutationOutputsType = 'r';
+                    
+                    if (GP->CurrentGeneration == GP->nbGenerations && mutPlacingIndex == SSP->T4_nbMutationPlacingsPerOutput - 1)
+                    {
+                        //std::cout << "placeMutations: Completely Delete tree\n";
+                        allData = SSP->T4Tree.placeMutations(pop, false, true, placeMutationOutputsType);
+                    } else
+                    {
+                        if (SSP->T4_nbMutationPlacingsPerOutput == 1 && SSP->T4_respectPreviousMutationsOutputs)
+                        {
+                            // delete tree
+                            //std::cout << "placeMutations: Partially delete tree\n";
+                            allData = SSP->T4Tree.placeMutations(pop, true, false, placeMutationOutputsType);
+                        } else
+                        {
+                            // keep the tree
+                            //std::cout << "placeMutations: Keep tree\n";
+                            assert(!SSP->T4_respectPreviousMutationsOutputs);
+                            allData = SSP->T4Tree.placeMutations(pop, false, false, placeMutationOutputsType);
+                        }
+                    }
+                    //std::cout << "Mutations placed\n";
+                }
+
+                auto& data = allData.first;
+                auto& T4freqs = allData.second;
+
+                /*
+                {
+                    std::cout << "sleep for 10 seconds after placing mutations" << std::endl;
+                    //std::chrono::seconds dura(10);
+                    //std::this_thread::sleep_for( dura );
+                    std::cout << "end of sleeping" << std::endl;
+                }
+                */
+                
+
+                /*
+                 #######################
+                 ### Sample sequence ###
+                 #######################
+                 */
+                
+                if (this->isFile(sampleSeq_file))
+                {
+                    OutputFile& file = this->get_OutputFiles(sampleSeq_file)[0];
+                    if (file.isTime())
+                    {
+                        #ifdef DEBUG
+                        std::cout << "Write sampleSeq\n";
+                        #endif
+                        this->WriteOutputs_sampleSequences(data, pop, file, mutPlacingIndex);
+                    }
+                }
+
+
                 /*
                  ##########################
                  #### T4_LargeOutput  #####
@@ -5469,28 +6013,43 @@ void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
                         std::vector<OutputFile>& files = this->get_OutputFiles(T4_LargeOutputFile);
                         for (auto& file : files)
                         {
-                            this->WriteOutputs_T4_LargeOutput_header(file, mutPlacingIndex);
+                            if (file.isTime())
+                            {
+                                #ifdef DEBUG
+                                std::cout << "Write T4_LargeOutputFile\n";
+                                #endif
+                                this->WriteOutputs_T4_LargeOutput(file, data, mutPlacingIndex);
+                            }
                         }
                     }
                 }
 
                 /*
-                 ##############################
-                 #### Tx frequency of SNPs ####
-                 ##############################
+                 ################
+                 #### T4 vcf ####
+                 ################
                  */
-                
-                if (this->isFile(Tx_SNPfreq_file))
+                //std::cout << "line 3006\n";
+                if (this->isFile(T4_vcfFile))
                 {
-                    std::vector<OutputFile>& files = this->get_OutputFiles(Tx_SNPfreq_file);
-                    for (auto& file : files)
+                    if (SSP->Gmap.T4_nbLoci)
                     {
-                        this->WriteOutputs_Tx_SNPfreq_file_header(file, mutPlacingIndex);
+                        std::vector<OutputFile>& files = this->get_OutputFiles(T4_vcfFile);
+                        for (auto& file : files)
+                        {
+                            if (file.isTime())
+                            {
+                                #ifdef DEBUG
+                                std::cout << "Write T4_vcfFile \n";
+                                #endif
+                                this->WriteOutputs_T4_vcf(file, data, mutPlacingIndex);
+                            }
+                        }
                     }
                 }
 
 
-                 /*
+                  /*
                  ##############################
                  #### T4 frequency of SNPs ####
                  ##############################
@@ -5503,7 +6062,13 @@ void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
                         std::vector<OutputFile>& files = this->get_OutputFiles(T4_SNPfreq_file);
                         for (auto& file : files)
                         {
-                            this->WriteOutputs_T4_SNPfreq_file_header(file, mutPlacingIndex);
+                            if (file.isTime())
+                            {
+                                #ifdef DEBUG
+                                std::cout << "Write T4_SNPfreq_file \n";
+                                #endif
+                                this->WriteOutputs_T4_SNPfreq_file(file, T4freqs, mutPlacingIndex);
+                            }
                         }
                     }
                 }
@@ -5522,330 +6087,47 @@ void OutputWriter::WriteOutputs_forDefinedPop_T4AndSampledSeq(Pop& pop)
                         std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS_file);
                         for (auto& file : files)
                         {
-                            this->WriteOutputs_T4SFS_header(file, mutPlacingIndex);
+                            if (file.isTime())
+                            {
+                                #ifdef DEBUG
+                                std::cout << "Write T4SFS\n";
+                                #endif
+                                this->WriteOutputs_T4SFS(file, data, mutPlacingIndex);
+                            }
                         }
                     }
                 }
-            }
-        }
 
 
-
-    /*
-        ---------------------------------------------------------------------------------------
-        - ################################################################################### -
-        - #### Figure if simplification or simplification and mutation placing necessary #### -
-        - ################################################################################### -
-        ---------------------------------------------------------------------------------------
-    */
-
-
-    bool isAnyOutputWithoutMutPlacing = false;
-    bool isAnyOutputWithMutPlacing = false;
-
-    if (this->isFile(T4_LargeOutputFile))
-        for (auto& file : this->get_OutputFiles(T4_LargeOutputFile))
-            if (file.isTime())
-                isAnyOutputWithMutPlacing = true;
-
-    if (this->isFile(T4_vcfFile))
-        for (auto& file : this->get_OutputFiles(T4_vcfFile))
-            if (file.isTime())
-                isAnyOutputWithMutPlacing = true;
-
-    if (this->isFile(T4_SNPfreq_file))
-        for (auto& file : this->get_OutputFiles(T4_SNPfreq_file))
-            if (file.isTime())
-                isAnyOutputWithMutPlacing = true;
-
-    if (this->isFile(T4_SFS_file))
-        for (auto& file : this->get_OutputFiles(T4_SFS_file))
-            if (file.isTime())
-                isAnyOutputWithMutPlacing = true;
-
-    if (this->isFile(Tx_SNPfreq_file))
-        for (auto& file : this->get_OutputFiles(Tx_SNPfreq_file))
-            if (file.isTime())
-                isAnyOutputWithMutPlacing = true;
-
-    if (this->isFile(T4_paintedHaplo_file))
-        for (auto& file : this->get_OutputFiles(T4_paintedHaplo_file))
-            if (file.isTime())
-                isAnyOutputWithoutMutPlacing = true;
-
-
-    if (this->isFile(T4_paintedHaploSegmentsDiversity_file))
-        for (auto& file : this->get_OutputFiles(T4_paintedHaploSegmentsDiversity_file))
-            if (file.isTime())
-                isAnyOutputWithoutMutPlacing = true;
-
-
-    // If not output, I can exit
-
-    //std::cout << "line 5356: GP->CurrentGeneration = " << GP->CurrentGeneration << "\n";
-    //std::cout << "isAnyOutputWithoutMutPlacing = " << isAnyOutputWithoutMutPlacing << "\n";
-    //std::cout << "isAnyOutputWithMutPlacing = " << isAnyOutputWitMutPlacing << "\n";
-
-    if (!(isAnyOutputWithoutMutPlacing || isAnyOutputWithMutPlacing))
-        return;
-    
-
-    SSP->T4Tree.simplify(pop);
-
-    /*
-        ------------------------------------------------------
-        - ################################################## -
-        - #### Outputs that don't need mutation placing #### -
-        - ################################################## -
-        ------------------------------------------------------
-    */
-    if (isAnyOutputWithoutMutPlacing)
-    {
-        /*
-         ##############################
-         #### T4 painted haplotype ####
-         ##############################
-         */
-        
-        if (this->isFile(T4_paintedHaplo_file))
-        {
-            if (SSP->Gmap.T4_nbLoci)
-            {
-                std::vector<OutputFile>& files = this->get_OutputFiles(T4_paintedHaplo_file);
-                for (auto& file : files)
+                  /*
+                 ##############################
+                 #### Tx frequency of SNPs ####
+                 ##############################
+                 */
+                
+                if (this->isFile(Tx_SNPfreq_file))
                 {
-                    if (file.isTime())
+                    std::vector<OutputFile>& files = this->get_OutputFiles(Tx_SNPfreq_file);
+                    for (auto& file : files)
                     {
-                        #ifdef DEBUG
-                        std::cout << "Write T4_paintedHaplo_file \n";
-                        #endif
-                        this->WriteOutputs_T4_paintedHaplo_file(pop, file);
+                        if (file.isTime())
+                        {
+                            #ifdef DEBUG
+                            std::cout << "Write Tx_SNPfreq_file \n";
+                            #endif
+                            this->WriteOutputs_Tx_SNPfreq_file(file, T4freqs, mutPlacingIndex, pop);
+                        }
                     }
                 }
-            }
-        }
 
-
-         /*
-         ########################################
-         #### T4 painted haplotype diversity ####
-         ########################################
-         */
-        
-        if (this->isFile(T4_paintedHaploSegmentsDiversity_file))
-        {
-            if (SSP->Gmap.T4_nbLoci)
-            {
-                std::vector<OutputFile>& files = this->get_OutputFiles(T4_paintedHaploSegmentsDiversity_file);
-                for (auto& file : files)
-                {
-                    if (file.isTime())
-                    {
-                        #ifdef DEBUG
-                        std::cout << "Write T4_paintedHaploSegmentsDiversity_file \n";
-                        #endif
-                        this->WriteOutputs_T4_paintedHaploSegmentsDiversity_file(pop, file);
-                    }
-                }
-            }
-        }
-
-        /*
-         ##########################
-         #### T4CoalescenceFst ####
-         ##########################
-         */
-        /*if (this->isFile(T4CoalescenceFst))
-        {
-            if (SSP->Gmap.T4_nbLoci)
-            {
-                std::vector<OutputFile>& files = this->get_OutputFiles(T4CoalescenceFst);
-                for (auto& file : files)
-                {
-                    if ( GP->CurrentGeneration == GP->startAtGeneration)
-                    {
-                        this->WriteOutputs_T4CoalescenceFst_header(file);
-                    }
-                    if (file.isTime())
-                    {
-                        #ifdef DEBUG
-                        std::cout << "Write T4CoalescenceFst\n";
-                        #endif
-                        this->WriteOutputs_T4CoalescenceFst(file); // No need to give Pop as T4Tree is in SSP
-                    }
-                }
-            }
-        }*/
-    }
-
-
-
-
-    /*
-        ------------------------------------------------
-        - ############################################ -
-        - #### Outputs that need mutation placing #### -
-        - ############################################ -
-        ------------------------------------------------
-    */
-
-    if (isAnyOutputWithMutPlacing)
-    {
-        auto rng_save = GP->rngw.getRNGState();
-        assert(SSP->T4_nbMutationPlacingsPerOutput > 0);
-        for (size_t mutPlacingIndex = 0 ; mutPlacingIndex < SSP->T4_nbMutationPlacingsPerOutput ; ++mutPlacingIndex)
-        {
-            std::vector<std::vector<std::vector<uint32_t>>> data;
-            if (SSP->T4_nbMutationPlacingsPerOutput == 1 && SSP->T4_respectPreviousMutationsOutputs)
-            {
-                // delete tree
-                data = SSP->T4Tree.placeMutations(pop, true);
-            } else
-            {
-                // keep the tree
-                assert(!SSP->T4_respectPreviousMutationsOutputs);
-                data = SSP->T4Tree.placeMutations(pop, false);
-            }
-
-
-            /*
-             #######################
-             ### Sample sequence ###
-             #######################
-             */
             
-            if (this->isFile(sampleSeq_file))
-            {
-                OutputFile& file = this->get_OutputFiles(sampleSeq_file)[0];
-                if (file.isTime())
-                {
-                    #ifdef DEBUG
-                    std::cout << "Write sampleSeq\n";
-                    #endif
-                    this->WriteOutputs_sampleSequences(data, pop, file, mutPlacingIndex);
-                }
+                /* WATCH OUT:
+                    WriteOutputs_Tx_SNPfreq_file EMPTIES T4freqs FOR PERFORMANCE REASONS. DO NOT PLACE ANY OUTPUT AFTER WriteOutputs_Tx_SNPfreq_file()
+
+                */
             }
-
-
-            /*
-             ##########################
-             #### T4_LargeOutput  #####
-             ##########################
-             */
-            //std::cout << "line 2896\n";
-            if (this->isFile(T4_LargeOutputFile))
-            {
-                if (SSP->Gmap.T4_nbLoci)
-                {
-                    std::vector<OutputFile>& files = this->get_OutputFiles(T4_LargeOutputFile);
-                    for (auto& file : files)
-                    {
-                        if (file.isTime())
-                        {
-                            #ifdef DEBUG
-                            std::cout << "Write T4_LargeOutputFile\n";
-                            #endif
-                            this->WriteOutputs_T4_LargeOutput(file, data, mutPlacingIndex);
-                        }
-                    }
-                }
-            }
-
-            /*
-             ################
-             #### T4 vcf ####
-             ################
-             */
-            //std::cout << "line 3006\n";
-            if (this->isFile(T4_vcfFile))
-            {
-                if (SSP->Gmap.T4_nbLoci)
-                {
-                    std::vector<OutputFile>& files = this->get_OutputFiles(T4_vcfFile);
-                    for (auto& file : files)
-                    {
-                        if (file.isTime())
-                        {
-                            #ifdef DEBUG
-                            std::cout << "Write T4_vcfFile \n";
-                            #endif
-                            this->WriteOutputs_T4_vcf(file, data, mutPlacingIndex);
-                        }
-                    }
-                }
-            }
-
-
-              /*
-             ##############################
-             #### T4 frequency of SNPs ####
-             ##############################
-             */
-            
-            if (this->isFile(T4_SNPfreq_file))
-            {
-                if (SSP->Gmap.T4_nbLoci)
-                {
-                    std::vector<OutputFile>& files = this->get_OutputFiles(T4_SNPfreq_file);
-                    for (auto& file : files)
-                    {
-                        if (file.isTime())
-                        {
-                            #ifdef DEBUG
-                            std::cout << "Write T4_SNPfreq_file \n";
-                            #endif
-                            this->WriteOutputs_T4_SNPfreq_file(file, data, mutPlacingIndex);
-                        }
-                    }
-                }
-            }
-
-              /*
-             ##############################
-             #### Tx frequency of SNPs ####
-             ##############################
-             */
-            
-            if (this->isFile(Tx_SNPfreq_file))
-            {
-                std::vector<OutputFile>& files = this->get_OutputFiles(Tx_SNPfreq_file);
-                for (auto& file : files)
-                {
-                    if (file.isTime())
-                    {
-                        #ifdef DEBUG
-                        std::cout << "Write Tx_SNPfreq_file \n";
-                        #endif
-                        this->WriteOutputs_Tx_SNPfreq_file(file, data, mutPlacingIndex, pop);
-                    }
-                }
-            }
-
-
-            /*
-             ###############
-             #### T4SFS ####
-             ###############
-             */
-            if (this->isFile(T4_SFS_file))
-            {
-                if (SSP->Gmap.T4_nbLoci)
-                {
-                    std::vector<OutputFile>& files = this->get_OutputFiles(T4_SFS_file);
-                    for (auto& file : files)
-                    {
-                        if (file.isTime())
-                        {
-                            #ifdef DEBUG
-                            std::cout << "Write T4SFS\n";
-                            #endif
-                            this->WriteOutputs_T4SFS(file, data, mutPlacingIndex);
-                        }
-                    }
-                }
-            }
+            GP->rngw.setRNG(rng_save);
         }
-        GP->rngw.setRNG(rng_save);
     }
 }
 
@@ -5963,7 +6245,7 @@ void OutputWriter::WriteOutputs_forDefinedPop_T56(Pop& pop)
 void OutputWriter::WriteOutputs_forDefinedPop(Pop& pop)
 {
 #ifdef CALLENTRANCEFUNCTIONS
-std::cout << "Enters in 'WriteOutputs'\n";
+std::cout << "Enters in 'WriteOutputs_forDefinedPop'\n";
 #endif 
 
     std::cout.precision(8);

@@ -33,6 +33,9 @@ public:
         {{"m", "DispMat"},                              {"PN","S"}, false},
         {{"DispWeightByFitness"},                       {"S","fec"}, false},
         {{"gameteDispersal"},                           {"S"}, false},
+        {{"forcedMigration"},                           {"PN", "N", "S"}, false},
+        {{"stochasticMigration"},                       {"S"}, false},        
+
 
         // Basics Demography
         {{"InitialpatchSize"},                          {"PN","S","N","fec"}, false},
@@ -62,6 +65,7 @@ public:
         // Genetics and Selection T4
         {{"T4_mu","T4_MutationRate"},                   {"S", "L"}, false},
         {{"T4_mutDirection"},                           {"L","S"}, false},
+        {{"T4_nbRunsToPlaceMutations"},                 {"L","S"}, false},
 
         // Genetics and Selection T5
         {{"T5_mu","T5_MutationRate"},                   {"S", "L"}, false},
@@ -101,6 +105,8 @@ public:
 
 
         // Outputs
+        {{"SegDiversityFile_includeMainColor"},     {"L"}, true},
+        {{"SNPfreqCalculationAssumption"},          {"L", "T4_mu", "N", "T5_mu", "T1_mu"}, false},
         {{"GP", "GeneralPath"},                     {}, false},
         {{"T1_vcf_file","T1_VCF_file"},             {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
@@ -132,6 +138,7 @@ public:
         {{"Tx_SNPfreq_file"},                       {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_haplotypeFreqs_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"burnInLength_file"},                     {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
 

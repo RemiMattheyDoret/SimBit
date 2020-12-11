@@ -79,6 +79,7 @@ public:
     int                                             nbGenerations;
     int                                             startAtGeneration;
     int                                             CurrentGeneration;
+    int                                             memory_nbGenerationsInBurnIn = 0;
     int                                             burnInUntilT4Coal_check_every_N_generations;
 
     // SpeciesStuff

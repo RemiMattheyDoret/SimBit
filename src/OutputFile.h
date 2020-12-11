@@ -64,7 +64,8 @@ typedef enum {
     T4_paintedHaplo_file = 34,
     T4_paintedHaploSegmentsDiversity_file = 35,
     T4_SNPfreq_file = 36,
-    Tx_SNPfreq_file = 37
+    Tx_SNPfreq_file = 37,
+    burnInLength_file = 38
 } OutputFileTypes; 
 /* When creating new types I must not forget to 
     1) tell whether the file name should be time specific

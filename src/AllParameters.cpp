@@ -889,7 +889,12 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "GP")
     {
         OutputFile::GeneralPath = std::string("");
-    } else if (flag == "sampleSeq_file")
+    }
+    else if (flag == "sampleSeq_file")
+    {
+        // nothing to do
+    }
+    else if (flag == "burnInLength_file")
     {
         // nothing to do
     }
@@ -1063,7 +1068,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "T4_coalescenceFst_file")
     {
         // Nothing to do
-    } 
+    } else if (flag == "SNPfreqCalculationAssumption")
+    {
+        InputReader input("default","In Default value for --SNPfreqCalculationAssumption,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSNPfreqCalculationAssumption);
+    }
     else if (flag == "outputSFSbinSize")
     {
         InputReader input("default","In Default value for --outputSFSbinSize,");
@@ -1123,6 +1132,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "m")
     {
+        /*
         bool IsThereOnlyOnePatch = true;
         assert(this->GlobalP.__PatchNumber.size() == this->GlobalP.__GenerationChange.size());
         for (int& PN : this->GlobalP.__PatchNumber)
@@ -1138,6 +1148,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
             InputReader input(std::string("@S0 @G0 OnePatch"), "In Default value for --m (--DispMat),");
             wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispMat);
         }
+        */
+        InputReader input(std::string("@S0 @G0 isolate"), "In Default value for --m (--DispMat),");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispMat);
     } else if (flag == "swapInLifeCycle")
     {
         InputReader input(std::string("@S0 default"), "In Default value for --swapInLifeCycle,");
@@ -1147,6 +1160,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 no"), "In Default value for --gameteDispersal,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readGameteDispersal);
+    }
+    else if (flag == "stochasticMigration")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --stochasticMigration,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readStochasticMigration);
     }
     else if (flag == "DispWeightByFitness")
     {
@@ -1229,7 +1247,15 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input("default", "In default value for --T4_mutDirection,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_mutDirection);
-    } 
+    } else if (flag == "T4_nbRunsToPlaceMutations")
+    {
+        InputReader input("default", "In default value for --T4_nbRunsToPlaceMutations,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_nbRunsToPlaceMutations);
+    } else if (flag == "SegDiversityFile_includeMainColor")
+    {
+        InputReader input("default", "In default value for --SegDiversityFile_includeMainColor,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSegDiversityFile_includeMainColor);
+    }
     else if (flag == "T4_nbMutationPlacingsPerOutput")
     {
         InputReader input("default", "In default value for --T4_nbMutationPlacingsPerOutput,");
@@ -1291,7 +1317,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }*/
     else if (flag == "additiveEffectAmongLoci")
     {
-        InputReader input(std::string("@S0 no"), "In Default value for --additiveEffectAmongLoci,");
+        InputReader input(std::string("default"), "In Default value for --additiveEffectAmongLoci,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readadditiveEffectAmongLoci);   
     } 
     else if (flag == "selectionOn")
@@ -1337,6 +1363,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 default"), "In Default value for --redefIndTypes,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readRedefIndTypes);
+    }
+    else if (flag == "forcedMigration")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --forcedMigration,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readForcedMigration);
     }
     else if (flag == "indIni")
     {
@@ -1420,8 +1451,12 @@ void AllParameters::setOptionToDefault(std::string& flag)
             {
                 std::cout << "You asked for T4 loci for species "<<SSPi.speciesName<<"but option '--T4_MutationRate' is missing!\n";
                 abort();
+            } else
+            {
+                SSPi.T4_Total_Mutation_rate = 0.0;
             }
         }
+
     } else if (flag == "T4_simplifyEveryNGenerations")
     {
         InputReader input(std::string("default"), "In Default value for --T4_simplifyEveryNGenerations,");
@@ -1488,6 +1523,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
 
         OutputFile::GeneralPath = input.GetNextElementString();
+    } else if (flag == "burnInLength_file")
+    {
+        OutputFile file(input.GetNextElementString(), burnInLength_file);
+        outputWriter.insertOutputFile(std::move(file));
     } else if (flag == "sampleSeq_file")
     {
         //std::cout << "Times have not been read yet. Input is now '" << input.print() << "'.\n";
@@ -1800,6 +1839,10 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
+    } 
+    else if (flag == "SNPfreqCalculationAssumption")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSNPfreqCalculationAssumption);
     }
     else if (flag == "outputSFSbinSize")
     {
@@ -1908,6 +1951,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "swapInLifeCycle")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readSwapInLifeCycle);
+    } else if (flag == "stochasticMigration")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readStochasticMigration);
     } else if (flag == "DispWeightByFitness")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispWeightByFitness);
@@ -1960,6 +2006,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "T4_mutDirection")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_mutDirection);
+    } else if (flag == "T4_nbRunsToPlaceMutations")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_nbRunsToPlaceMutations);
+    }  else if (flag == "SegDiversityFile_includeMainColor")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readSegDiversityFile_includeMainColor);
     } else if (flag == "T4_nbMutationPlacingsPerOutput")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_nbMutationPlacingsPerOutput);
@@ -1996,8 +2048,6 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     }*/
     else if (flag == "additiveEffectAmongLoci")
     {
-        std::cout << "You are using the option --additiveEffectAmongLoci. The option exists but should not be present in the manual as the option can't be used for the moment. Sorry! Fitness effects are only multiplicative among loci. If you want additivity please, let Remi know and he can eventually code it in for you. It would be quite quick to add this feature in.\n";
-        abort();
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readadditiveEffectAmongLoci);
     } else if (flag == "selectionOn")
     {
@@ -2033,7 +2083,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "redefIndTypes")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readRedefIndTypes);
-        
+    } else if (flag == "forcedMigration")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readForcedMigration);
     } else if (flag == "individualInitialization" || flag == "indIni")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readIndividualInitialization);

@@ -75,6 +75,26 @@ std::vector<uint32_t>&& T4TreeRec::NodeGenetics::moveMutations()
 	return std::move(mutations);
 }
 
+template<typename INT> T4TreeRec::NodeGenetics T4TreeRec::NodeGenetics::getSubsetMutations(INT from, INT to) const
+{
+    assert(from < to);
+    auto l = std::lower_bound(mutations.begin(), mutations.end(), from);
+    auto r = std::lower_bound(l, mutations.end(), to);
+    return NodeGenetics({l,r}, this->getGeneration(), this->getID());
+}
+
+void T4TreeRec::NodeGenetics::push_backMutations(std::vector<uint32_t>& m)
+{
+    if (mutations.size() && m.size()) assert(mutations.back() < m.front());
+    mutations.insert(mutations.end(), m.begin(), m.end());
+}
+
+void T4TreeRec::NodeGenetics::push_backMutations(std::vector<uint32_t>&& m)
+{
+    if (mutations.size() && m.size()) assert(mutations.back() < m.front());
+    mutations.insert(mutations.end(), m.begin(), m.end());
+}
+
 template<typename INT>
 void T4TreeRec::NodeGenetics::mutateLocus(INT MutPosition)
 {

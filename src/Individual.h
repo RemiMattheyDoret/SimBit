@@ -35,7 +35,10 @@ private:
     static std::vector<double> fitnessComponents;
     
 public:
-    static std::vector<double> T3_IndPhenotype; // This variable beeing a static would cause trouble for multithreaded version of SimBit
+    // stat phenotype objects
+    static std::vector<double> T3_IndPhenotype; 
+    static std::vector<std::vector<double>> T7phenotypeOverTime;
+    static std::vector<double> T7_IndPhenotype;
 
     Haplotype& getHaplo(const int& haplo_index);
 
@@ -45,8 +48,14 @@ public:
     double CalculateT1FitnessNoMultiplicity(const int& Habitat);
     double CalculateT1EpistaticFitness(const int& Habitat);
     double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
+    
     void CalculateT3Phenotype(const int& Habitat);
+
+    static void resetT3phenotype();
+    static void resetT7phenotype();
     static double CalculateT3Fitness(const int& Habitat);
+    static double CalculateT7Fitness(const int& Habitat);
+    
     
 
     template<typename Iterator>
@@ -65,7 +74,7 @@ public:
 
     void SetHaplo(int haplo_index, Haplotype& chrom);
     Individual(Haplotype& h0, Haplotype& h1);
-    Individual(const int patch_index,char Abiogenesis, int ind_index);
+    Individual(const int patch_index, char Abiogenesis, int ind_index);
     Individual(bool ShouldReadPopFromBinary);
     Individual(Haplotype& knownHaplotype, char Abiogenesis);
     Individual(const Haplotype& knownHaplotype);   // copy constructor
@@ -74,6 +83,7 @@ public:
     Individual(const Individual&& I);
     Individual operator=(const Individual& I);
     Individual operator=(const Individual&& I);*/
+    void swap(Individual& other);
 
     void PrintBinaryFile(OutputFile& file);
     bool isFreeFromMutations();
@@ -84,4 +94,14 @@ public:
     void toggleT56LociFromHaplotypes(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle, int Habitat);
 
     void freeT56Memory();
+    void shrink_to_fitT56();
+
+
+
+    //////////////////////
+    /// Stuff about T7 ///
+    //////////////////////
+
+    void prepareDevelop(std::vector<std::vector<OneProtEffect>>& protEffects, std::vector<OneProtEffect>& basicSignalEffects);
+    void develop(const int& Habitat);
 };

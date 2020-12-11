@@ -60,56 +60,77 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
     assert(fits.size() == SSP->Gmap.T1_nbLoci * THREE);
 
 
-    double W_T1_WholeIndividual = 1.0;
+    if (SSP->additiveEffectAmongLoci)
+    {
+        double W_T1_WholeIndividual = 0.0;
 
-    // All but the last byte
-    int fitPosStart = 0;
-    for (int byte = 0 ; byte < (SSP->Gmap.T1_nbChars - 1) ; ++byte)
-    {    
-        for (auto bit = 0 ; bit < 8 ; ++bit)       
+        // All but the last byte
+        int fitPosStart = 0;
+        for (int byte = 0 ; byte < (SSP->Gmap.T1_nbChars - 1) ; ++byte)
+        {    
+            for (auto bit = 0 ; bit < 8 ; ++bit)       
+            {
+                W_T1_WholeIndividual += 
+                    fits[
+                        fitPosStart + 
+                        haplo0.getT1_Allele(byte, bit) +
+                        haplo1.getT1_Allele(byte, bit)
+                    ];
+                fitPosStart += 3;
+            }
+        }
+
+        // Last byte
+        auto lastByte = SSP->Gmap.T1_nbChars - 1;
+        for (auto bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit)       
+        {
+            W_T1_WholeIndividual += 
+                fits[
+                    fitPosStart + 
+                    haplo0.getT1_Allele(lastByte, bit) +
+                    haplo1.getT1_Allele(lastByte, bit)
+                ];
+            fitPosStart += 3;
+        }
+        assert(fitPosStart == SSP->Gmap.T1_nbLoci * 3);
+        
+        return W_T1_WholeIndividual;
+    } else
+    {
+        double W_T1_WholeIndividual = 1.0;
+
+        // All but the last byte
+        int fitPosStart = 0;
+        for (int byte = 0 ; byte < (SSP->Gmap.T1_nbChars - 1) ; ++byte)
+        {    
+            for (auto bit = 0 ; bit < 8 ; ++bit)       
+            {
+                W_T1_WholeIndividual *= 
+                    fits[
+                        fitPosStart + 
+                        haplo0.getT1_Allele(byte, bit) +
+                        haplo1.getT1_Allele(byte, bit)
+                    ];
+                fitPosStart += 3;
+            }
+        }
+
+        // Last byte
+        auto lastByte = SSP->Gmap.T1_nbChars - 1;
+        for (auto bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit)       
         {
             W_T1_WholeIndividual *= 
                 fits[
                     fitPosStart + 
-                    haplo0.getT1_Allele(byte, bit) +
-                    haplo1.getT1_Allele(byte, bit)
+                    haplo0.getT1_Allele(lastByte, bit) +
+                    haplo1.getT1_Allele(lastByte, bit)
                 ];
             fitPosStart += 3;
         }
+        assert(fitPosStart == SSP->Gmap.T1_nbLoci * 3);
+        
+        return W_T1_WholeIndividual;
     }
-
-    // Last byte
-    auto lastByte = SSP->Gmap.T1_nbChars - 1;
-    for (auto bit = 0 ; bit < SSP->Gmap.T1_nbLociLastByte ; ++bit)       
-    {
-        /*
-        assert(fitPosStart == (lastByte * 8 + bit) * 3);
-        std::cout << "fitPosStart = " << fitPosStart << "\n";
-        std::cout << "index = " << fitPosStart + haplo0.getT1_Allele(lastByte, bit) + haplo1.getT1_Allele(lastByte, bit) << "\n";
-        std::cout << "fit = " << fits[fitPosStart + haplo0.getT1_Allele(lastByte, bit) +haplo1.getT1_Allele(lastByte, bit)] << "\n";
-        */
-        W_T1_WholeIndividual *= 
-            fits[
-                fitPosStart + 
-                haplo0.getT1_Allele(lastByte, bit) +
-                haplo1.getT1_Allele(lastByte, bit)
-            ];
-        fitPosStart += 3;
-    }
-    assert(fitPosStart == SSP->Gmap.T1_nbLoci * 3);
-
-    /*for (auto& polymorphicLocus : SSP->simTracker.T1SitesForFitnessNoMultiplicityCalculation)
-    {
-        W_T1_WholeIndividual *= 
-            fits[
-                THREE * polymorphicLocus.locus + 
-                haplo0.getT1_Allele(polymorphicLocus.byte_index,polymorphicLocus.bit_index) +
-                haplo1.getT1_Allele(polymorphicLocus.byte_index,polymorphicLocus.bit_index)
-            ];
-    }*/
-    
-    return W_T1_WholeIndividual;
-    //std::cout << "W_T1_WholeIndividual = " << W_T1_WholeIndividual << std::endl;
 }
 
 double Individual::CalculateT1EpistaticFitness(const int& Habitat)
@@ -167,26 +188,64 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
     // Habitat is used here to allow plasticity. One must not confound plasticity on phenotypes and local selection!
 
     // set T3_IndPhenotype zero for all dimensions
+    /*
     T3_IndPhenotype.resize(SSP->T3_PhenoNbDimensions);
     for (auto& DimPheno : T3_IndPhenotype)
     {
         DimPheno = 0.0;
     }
+    */
+
+    //std::cout << "alleles: " << haplo0.getT3_Allele(0) << " " << haplo1.getT3_Allele(0) << "\n";
 
     // Calculate phenotype
-    for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
+
+    auto& phenos = SSP->T3_PhenotypicEffects[Habitat];
+    auto& DNs = SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat];
+    if (SSP->T3_PhenoNbDimensions == 1)
     {
-        double allele = (double) haplo0.getT3_Allele(byte_index);
+        for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
+        {
+            {
+                T3_IndPhenotype[0] += phenos[byte_index] * (double) (haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
+            }
+        }
+
+        {
+            if (DNs[0] != 0.0)
+            {
+                std::normal_distribution<double> dist(0.0,DNs[0]);
+                T3_IndPhenotype[0] += dist(GP->rngw.getRNG());
+            }
+        }
+    } else
+    {
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
-            T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][byte_index * SSP->T3_PhenoNbDimensions + dim] * allele;
-            if (SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim] != 0.0)
+            size_t phenoIndex = dim;
+            for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
             {
-                std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
+                T3_IndPhenotype[dim] += phenos[phenoIndex] * (double) (haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
+                phenoIndex += SSP->T3_PhenoNbDimensions;
+            }
+        }
+
+        for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
+        {
+            if (DNs[dim] != 0.0)
+            {
+                std::normal_distribution<double> dist(0.0,DNs[dim]);
                 T3_IndPhenotype[dim] += dist(GP->rngw.getRNG());
             }
         }
     }
+
+    /*
+    std::cout << "Pheno: ";
+    for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
+        std::cout << T3_IndPhenotype[dim] << " ";
+    std::cout << "\n";
+    */
 }
 
 double Individual::CalculateT3Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
@@ -219,8 +278,51 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
         }
     }
     assert(W <= 1.0 && W >= 0.0);
+
     return W;
 }
+
+
+double Individual::CalculateT7Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
+{
+#ifdef CALLENTRANCEFUNCTIONS
+std::cout << "Enters in 'CalculateT7Fitness'\n";
+#endif  
+    // Calculate fitness of phenotype describe in the static 'T3_IndPhenotype'
+    assert(Individual::T7_IndPhenotype.size() == SSP->T7phenpars.nbDimensions);
+
+    // Calculate Fitness
+    double W = 1.0;
+
+    for (size_t ageSampledIndex = 0 ; ageSampledIndex < SSP->T7phenpars.agesAtwhichPhenotypeIsSampled.size() ; ++ageSampledIndex)
+    {
+        for (int dim = 0 ; dim < SSP->T7phenpars.nbDimensions; dim++)
+        {
+            double diffToOptimal = Individual::T7phenotypeOverTime[ageSampledIndex][dim] - SSP->T7phenpars.fitnessLandscapeOptimum[Habitat][ageSampledIndex][dim];
+            if (SSP->T7phenpars.fitnessLandscapeType == 'L')
+            {
+                W *= 1 - (std::abs(diffToOptimal) * SSP->T7phenpars.fitnessLandscapeLinearGradient[Habitat][dim]);
+                if (W < 0.0)
+                {
+                    W = 0.0;
+                }
+            } else if (SSP->T7phenpars.fitnessLandscapeType == 'G')
+            {
+                W *= exp( - pow(diffToOptimal,2) / SSP->T7phenpars.fitnessLandscapeGaussStrength[Habitat][dim]);
+            } else
+            {
+                std::cout << "Internal error in Individual::CalculateT7Fitness. Unkown SSP->T7phenpars.fitnessLandscapeType.  SSP->T7phenpars.fitnessLandscapeType = " << SSP->T7phenpars.fitnessLandscapeType << "\n";
+            }
+
+            if (W == 0.0) goto fitnessknown;
+        }
+    }
+
+    fitnessknown:
+    assert(W <= 1.0 && W >= 0.0);
+    return W;
+}
+
 
 
 const std::vector<double>& Individual::CalculateFitnessComponents(const int& Habitat)
@@ -237,18 +339,21 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
     double& rT1epistasis = fitnessComponents[2];
     double& rT3 = fitnessComponents[3];
     double& rT56 = fitnessComponents[4];
+    double& rT7 = fitnessComponents[5];
 
     rT1 = 1.0;
     rT2 = 1.0;
     rT1epistasis = 1.0;
     rT3 = 1.0;
     rT56 = 1.0;
+    rT7 = 1.0;
       
     // Trait 1 (excludes epistasis)
     if (SSP->T1_isSelection)
     {
         if (SSP->T1_isMultiplicitySelection)
         {
+            assert(!SSP->additiveEffectAmongLoci);
             rT1 =  haplo0.CalculateT1FitnessMultiplicity(Habitat);
             rT1 *= haplo1.CalculateT1FitnessMultiplicity(Habitat);
         } else
@@ -268,22 +373,35 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
     // Trait 2
     if (SSP->T2_isSelection)
     {
+        assert(!SSP->additiveEffectAmongLoci);
         rT2 = haplo0.CalculateT2Fitness(Habitat);
         rT2 *= haplo1.CalculateT2Fitness(Habitat);
     }
 
     // Trait 3
-    if (SSP->T3_isSelection)
+    if (SSP->Gmap.T3_nbLoci)
     {
+        Individual::resetT3phenotype();
         this->CalculateT3Phenotype(Habitat); // save phenotype in the static attribute 'T3_IndPhenotype'
         rT3 = Individual::CalculateT3Fitness(Habitat); // calculate fitness associated to the phenotype saved in the static attribute 'T3_IndPhenotype'
     }
+
+    // Trait 7 // Yes out of order. And there is no good reason for that outside of the act that one day I might merge fitness calculation for T3 and T7
+    if (SSP->Gmap.T7_nbLoci)
+    {
+        Individual::resetT7phenotype();
+        this->develop(Habitat);
+        rT7 = Individual::CalculateT7Fitness(Habitat);
+    }
+
+
 
     // Trait 5 
     if (SSP->T56_isSelection)
     {
         if (SSP->T56_isMultiplicitySelection)
         {
+            assert(!SSP->additiveEffectAmongLoci);
             rT56  = haplo0.CalculateT56FitnessMultiplicity(Habitat);
             rT56 *= haplo1.CalculateT56FitnessMultiplicity(Habitat);
         } else
@@ -326,9 +444,20 @@ std::cout << "Enters in 'CalculateFitness'\n";
     (void) CalculateFitnessComponents(Habitat); // will set the static fitnessComponents
 
     // Get total fitness
-    double r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4];
+    double r;
+    if (SSP->additiveEffectAmongLoci)
+    {
+        r = 1 - fitnessComponents[0] - fitnessComponents[1] - fitnessComponents[2] - fitnessComponents[3] - fitnessComponents[4] - fitnessComponents[5];
+        if (r < 0) r = 0; 
+    } else
+    {
+        r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4] * fitnessComponents[5];
+    }
+        
     
-    assert(r >= 0 && r <= 1);  
+    assert(r >= 0.0 && r <= 1.0);  
+
+    //std::cout << "fitness = "<< r << "\n";
 
     return  r;
 }
@@ -391,7 +520,21 @@ Individual::Individual(const Haplotype& knownHaplotype)
 }
 
 
-Individual::Individual(){}
+Individual::Individual()
+{
+    haplo0 = Haplotype();
+    haplo1 = Haplotype();
+}
+
+
+void Individual::swap(Individual& other)
+{
+    //std::cout << "\tInd: Before swap: " << haplo0.T4ID << " & " << haplo0.T4ID << " - " << other.haplo0.T4ID << " & " << other.haplo0.T4ID << "\n";
+    haplo0.swap(other.haplo0);
+    haplo1.swap(other.haplo1);
+    //std::cout << "\tInd: After swap: " << haplo0.T4ID << " & " << haplo0.T4ID << " - " << other.haplo0.T4ID << " & " << other.haplo0.T4ID << "\n";
+}
+
 /*
 Individual::Individual(const Individual& I)
 {
@@ -447,28 +590,46 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
     auto& fits = SSP->T1_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T1_nbLoci * THREE);
 
-
-    double W_T1_WholeIndividual = 1.0;
-
-    for (const int locus : LociSet)
+    if (SSP->additiveEffectAmongLoci)
     {
-        int byte_index = locus / 8;
-        int bit_index = locus % 8;
-        //std::cout << "locus = " << locus << "\n";
-        assert(locus >= 0 && locus < SSP->Gmap.T1_nbLoci);
+        double W_T1_WholeIndividual = 0.0;
 
-        W_T1_WholeIndividual *= 
-            fits[
-                THREE * locus + 
-                haplo0.getT1_Allele(byte_index,bit_index) +
-                haplo1.getT1_Allele(byte_index,bit_index)
-            ];
+        for (const int locus : LociSet)
+        {
+            int byte_index = locus / 8;
+            int bit_index = locus % 8;
+            //std::cout << "locus = " << locus << "\n";
+            assert(locus >= 0 && locus < SSP->Gmap.T1_nbLoci);
+
+            W_T1_WholeIndividual += 
+                fits[
+                    THREE * locus + 
+                    haplo0.getT1_Allele(byte_index,bit_index) +
+                    haplo1.getT1_Allele(byte_index,bit_index)
+                ];
+        }
+        return W_T1_WholeIndividual;
+    } else
+    {
+        double W_T1_WholeIndividual = 1.0;
+
+        for (const int locus : LociSet)
+        {
+            int byte_index = locus / 8;
+            int bit_index = locus % 8;
+            //std::cout << "locus = " << locus << "\n";
+            assert(locus >= 0 && locus < SSP->Gmap.T1_nbLoci);
+
+            W_T1_WholeIndividual *= 
+                fits[
+                    THREE * locus + 
+                    haplo0.getT1_Allele(byte_index,bit_index) +
+                    haplo1.getT1_Allele(byte_index,bit_index)
+                ];
+        }
+        assert(W_T1_WholeIndividual >= 0.0 && W_T1_WholeIndividual <= 1.0);
+        return W_T1_WholeIndividual;
     }
-    //std::cout << "W_T1_WholeIndividual = " << W_T1_WholeIndividual << "\n";
-    assert(W_T1_WholeIndividual >= 0.0 && W_T1_WholeIndividual <= 1.0);
-    
-
-    return W_T1_WholeIndividual;
 }
 
 double Individual::CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
@@ -554,6 +715,24 @@ std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
     return r;
 }
 
+void Individual::resetT3phenotype()
+{
+    T3_IndPhenotype.resize(SSP->T3_PhenoNbDimensions);
+    for (auto& DimPheno : T3_IndPhenotype)
+    {
+        DimPheno = 0.0;
+    }
+}
+
+void Individual::resetT7phenotype()
+{
+    T7_IndPhenotype.resize(SSP->T7phenpars.nbDimensions);
+    for (auto& DimPheno : T7_IndPhenotype)
+    {
+        DimPheno = SSP->T7phenpars.initialPhenotype;
+    }
+}
+
 
 void Individual::CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
@@ -562,13 +741,6 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
 #endif      
     // Directly write the phenotype in the stat 'T3_IndPhenotype'. 
     // Habitat is used here to allow plasticity. One must not confound plasticity on phenotypes and local selection!
-
-    // set T3_IndPhenotype zero for all dimensions
-    T3_IndPhenotype.resize(SSP->T3_PhenoNbDimensions);
-    for (auto& DimPheno : T3_IndPhenotype)
-    {
-        DimPheno = 0.0;
-    }
 
     // Calculate phenotype
     for (const int locus : LociSet)
@@ -592,39 +764,75 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
     auto& fits = SSP->T56_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T56sel_nbLoci * 2);
 
-    double w = 1.0;
-
-
-    while (itHaplo0 != itHaplo0End || itHaplo1 != itHaplo1End)
+    if (SSP->additiveEffectAmongLoci)
     {
-        if (itHaplo0 != itHaplo0End && itHaplo1 != itHaplo1End)
+        double w = 0.0;
+
+        while (itHaplo0 != itHaplo0End || itHaplo1 != itHaplo1End)
         {
-            if (*itHaplo0 == *itHaplo1)
+            if (itHaplo0 != itHaplo0End && itHaplo1 != itHaplo1End)
             {
-                w *= fits[*itHaplo0+*itHaplo0 + 1]; // 1-s
+                if (*itHaplo0 == *itHaplo1)
+                {
+                    w += fits[*itHaplo0+*itHaplo0 + 1]; // 1-s
+                    ++itHaplo0;
+                    ++itHaplo1;
+                } else if (*itHaplo0 < *itHaplo1)
+                {
+                    w += fits[*itHaplo0+*itHaplo0]; // 1-hs
+                    ++itHaplo0;
+                } else // if (*itHaplo0 > *itHaplo1)
+                {
+                    w += fits[*itHaplo1+*itHaplo1]; // 1-hs
+                    ++itHaplo1;
+                }
+            } else if (itHaplo0 != itHaplo0End)
+            {
+                w += fits[*itHaplo0+*itHaplo0]; // 1-hs
                 ++itHaplo0;
+            } else // if (itHaplo1 != itHaplo1End)
+            {
+                w += fits[*itHaplo1+*itHaplo1]; // 1-hs
                 ++itHaplo1;
-            } else if (*itHaplo0 < *itHaplo1)
+            }     
+        }
+
+        return w;
+    } else
+    {
+        double w = 1.0;
+
+        while (itHaplo0 != itHaplo0End || itHaplo1 != itHaplo1End)
+        {
+            if (itHaplo0 != itHaplo0End && itHaplo1 != itHaplo1End)
+            {
+                if (*itHaplo0 == *itHaplo1)
+                {
+                    w *= fits[*itHaplo0+*itHaplo0 + 1]; // 1-s
+                    ++itHaplo0;
+                    ++itHaplo1;
+                } else if (*itHaplo0 < *itHaplo1)
+                {
+                    w *= fits[*itHaplo0+*itHaplo0]; // 1-hs
+                    ++itHaplo0;
+                } else // if (*itHaplo0 > *itHaplo1)
+                {
+                    w *= fits[*itHaplo1+*itHaplo1]; // 1-hs
+                    ++itHaplo1;
+                }
+            } else if (itHaplo0 != itHaplo0End)
             {
                 w *= fits[*itHaplo0+*itHaplo0]; // 1-hs
                 ++itHaplo0;
-            } else // if (*itHaplo0 > *itHaplo1)
+            } else // if (itHaplo1 != itHaplo1End)
             {
                 w *= fits[*itHaplo1+*itHaplo1]; // 1-hs
                 ++itHaplo1;
-            }
-        } else if (itHaplo0 != itHaplo0End)
-        {
-            w *= fits[*itHaplo0+*itHaplo0]; // 1-hs
-            ++itHaplo0;
-        } else // if (itHaplo1 != itHaplo1End)
-        {
-            w *= fits[*itHaplo1+*itHaplo1]; // 1-hs
-            ++itHaplo1;
-        }     
-    }
+            }     
+        }
 
-    return w;
+        return w;
+    }
 }
 
 
@@ -659,6 +867,7 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
     double rT1epistasis = 1.0;
     double rT3 = 1.0;
     double rT56 = 1.0;
+    
 
     auto& lociSet = SSP->subsetT5LociForfitnessSubsetLoci_file[lociSetIndex];
       
@@ -741,65 +950,130 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
     auto& fits = SSP->T56_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T56_nbLoci * 2);
 
-    double r = 1.0;
-
-    for (auto& locus : LociSet)
+    if (SSP->additiveEffectAmongLoci)
     {
-        uint32_t impossibleValue = SSP->Gmap.T56_nbLoci;
-        assert(locus < impossibleValue);
-        uint32_t ValueFromH0It = impossibleValue;
-        uint32_t value = *itHaplo0;
-        while (itHaplo0 != itHaplo0End && locus > value)
-        {
-            ++itHaplo0;
-            ValueFromH0It = value;
-        }
+        double r = 0.0;
 
-        uint32_t ValueFromH1It = impossibleValue;
-        value = *itHaplo0;
-        while (itHaplo1 != itHaplo1End && locus > value)
+        for (auto& locus : LociSet)
         {
-            ++itHaplo0;
-            ValueFromH1It = value;
-        }
-
-
-        bool isHaplo0Mutant = false;
-        bool isHaplo1Mutant = false;
-        if (ValueFromH0It != impossibleValue && ValueFromH0It == locus)
-        {
-            isHaplo0Mutant = true;
-        }
-        if (ValueFromH1It != impossibleValue && ValueFromH1It == locus)
-        {
-            isHaplo1Mutant = true;
-        }
-        
-
-        if (isHaplo0Mutant && isHaplo1Mutant)
-        {
-            // homozygote mutant
-            r *= fits[2*locus + 1]; // 1-s
-        } else
-        {
-            if (isHaplo0Mutant)
+            uint32_t impossibleValue = SSP->Gmap.T56_nbLoci;
+            assert(locus < impossibleValue);
+            uint32_t ValueFromH0It = impossibleValue;
+            uint32_t value = *itHaplo0;
+            while (itHaplo0 != itHaplo0End && locus > value)
             {
-                r *= fits[2*(locus)]; // 1-hs    
+                ++itHaplo0;
+                ValueFromH0It = value;
             }
 
-            if (isHaplo1Mutant)
+            uint32_t ValueFromH1It = impossibleValue;
+            value = *itHaplo0;
+            while (itHaplo1 != itHaplo1End && locus > value)
             {
-                r *= fits[2*(locus)]; // 1-hs
+                ++itHaplo0;
+                ValueFromH1It = value;
+            }
+
+
+            bool isHaplo0Mutant = false;
+            bool isHaplo1Mutant = false;
+            if (ValueFromH0It != impossibleValue && ValueFromH0It == locus)
+            {
+                isHaplo0Mutant = true;
+            }
+            if (ValueFromH1It != impossibleValue && ValueFromH1It == locus)
+            {
+                isHaplo1Mutant = true;
+            }
+            
+
+            if (isHaplo0Mutant && isHaplo1Mutant)
+            {
+                // homozygote mutant
+                r += fits[2*locus + 1]; // 1-s
+            } else
+            {
+                if (isHaplo0Mutant)
+                {
+                    r += fits[2*(locus)]; // 1-hs    
+                }
+
+                if (isHaplo1Mutant)
+                {
+                    r += fits[2*(locus)]; // 1-hs
+                }
             }
         }
+
+        return r;
+    } else
+    {
+        double r = 1.0;
+
+        for (auto& locus : LociSet)
+        {
+            uint32_t impossibleValue = SSP->Gmap.T56_nbLoci;
+            assert(locus < impossibleValue);
+            uint32_t ValueFromH0It = impossibleValue;
+            uint32_t value = *itHaplo0;
+            while (itHaplo0 != itHaplo0End && locus > value)
+            {
+                ++itHaplo0;
+                ValueFromH0It = value;
+            }
+
+            uint32_t ValueFromH1It = impossibleValue;
+            value = *itHaplo0;
+            while (itHaplo1 != itHaplo1End && locus > value)
+            {
+                ++itHaplo0;
+                ValueFromH1It = value;
+            }
+
+
+            bool isHaplo0Mutant = false;
+            bool isHaplo1Mutant = false;
+            if (ValueFromH0It != impossibleValue && ValueFromH0It == locus)
+            {
+                isHaplo0Mutant = true;
+            }
+            if (ValueFromH1It != impossibleValue && ValueFromH1It == locus)
+            {
+                isHaplo1Mutant = true;
+            }
+            
+
+            if (isHaplo0Mutant && isHaplo1Mutant)
+            {
+                // homozygote mutant
+                r *= fits[2*locus + 1]; // 1-s
+            } else
+            {
+                if (isHaplo0Mutant)
+                {
+                    r *= fits[2*(locus)]; // 1-hs    
+                }
+
+                if (isHaplo1Mutant)
+                {
+                    r *= fits[2*(locus)]; // 1-hs
+                }
+            }
+        }
+
+        return r;
     }
-
-    return r;
 }
 
+void Individual::shrink_to_fitT56()
+{
+    haplo0.shrink_to_fitT56();
+    haplo1.shrink_to_fitT56();
+}
 
 void Individual::freeT56Memory()
 {
     haplo0.freeT56Memory();
     haplo1.freeT56Memory();
 }
+

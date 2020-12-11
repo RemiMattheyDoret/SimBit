@@ -53,9 +53,10 @@ private:
     static void Mutate_T2(Haplotype& TransmittedChrom, int Habitat);
     static void Mutate_T3(Haplotype& TransmittedChrom);
     static void Mutate_T56(Haplotype& TransmittedChrom, int Habitat);
+    static void Mutate_T7(Haplotype& TransmittedChrom);
     static void Mutate(Haplotype& TransmittedChrom, int Habitat);
     static void findAllParents(Pop& pop, const std::vector<int>& patchSizeNextGeneration);
-    static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD);
+    static CoupleData findCouple(Pop& pop, int& patch_index, int& offspring_index, ParentsData& PD, const int& nextGenPatchSize);
 
     static std::vector<uint32_t> recombination_breakpoints; // for performance reason. It makes things a little messy though
     static ParentsData PD;

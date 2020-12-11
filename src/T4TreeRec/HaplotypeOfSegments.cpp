@@ -356,26 +356,47 @@ void T4TreeRec::HaplotypeOfSegments::simpleTransferSegmentsFromChild(T4TreeRec::
 {
 	assert(childSegments.alreadySegmentized);
 
+	/*
+	if (GP->CurrentGeneration==8) std::cout << "\tfor edge.child "<< edge.child << "[" << edge.left << "-" << edge.right << "]\n";
 
-	//std::cout << "\tchildSegments.size() = " << childSegments.size() << "\n";
+	if (GP->CurrentGeneration==8) 
+	{
+		for (uint32_t childSegmentIndex = 0 ; childSegmentIndex < childSegments.size() ; ++childSegmentIndex)
+			std::cout << "\t\tchildSegments before removing are = " << childSegments[childSegmentIndex].left << "-" << childSegments[childSegmentIndex].right << "\n";
+	}
+	*/
 	for (uint32_t childSegmentIndex = 0 ; childSegmentIndex < childSegments.size() ; ++childSegmentIndex)
 	{
 		
 		auto& childSegment = childSegments[childSegmentIndex];
-		//std::cout << "\tCS: " << childSegment.left << " " << childSegment.right << "\n";
+		//if (GP->CurrentGeneration==8) std::cout << "\tCS: " << childSegment.left << " " << childSegment.right << "\n";
 
-		if (edge.left  >= childSegment.right) continue;  // nothing from this childSegment will be used
-		if (isOrdered && edge.right <= childSegment.left) break;
+		if (edge.left >= childSegment.right) continue;  // nothing from this childSegment will be used
+		if (isOrdered)
+		{
+			if (edge.right <= childSegment.left) break;
+		} else
+		{
+			if (edge.right <= childSegment.left) continue;
+		}
+			
 
 		auto movingSegment = getMovingSegment(edge, childSegment);
 
-		//std::cout << "\tMS: {" << movingSegment.left << " " << movingSegment.right << "}\n";
+		//if (GP->CurrentGeneration==8) std::cout << "\tMS: {" << movingSegment.left << " " << movingSegment.right << "}\n";
 
 		childSegments.removeMovingSequence(movingSegment, childSegmentIndex);
 
-		segments.push_back(movingSegment); // Out of order is fine. It will be ordered after being segmentized	
-		
+		segments.push_back(movingSegment); // Out of order is fine. It will be ordered after being segmentized			
 	}
+
+	/*
+	if (GP->CurrentGeneration==8) 
+	{
+		for (uint32_t childSegmentIndex = 0 ; childSegmentIndex < childSegments.size() ; ++childSegmentIndex)
+			std::cout << "\t\tchildSegments after removing are = " << childSegments[childSegmentIndex].left << "-" << childSegments[childSegmentIndex].right << "\n";
+	}
+	*/
 }
 
 

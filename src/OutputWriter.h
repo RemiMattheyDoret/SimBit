@@ -135,10 +135,10 @@ public:
     void WriteOutputs_T4_paintedHaplo_file(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_paintedHaploSegmentsDiversity_file(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(OutputFile& file);
-    void WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
+    void WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<T4TreeRec::PatchCountData>& T4freqs, size_t mutPlacingIndex);
     void WriteOutputs_T4_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
     void WriteOutputs_Tx_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
-    void WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& T4data, size_t mutPlacingIndex, Pop& pop);
+    void WriteOutputs_Tx_SNPfreq_file(OutputFile& file, std::vector<T4TreeRec::PatchCountData>& T4freqs, size_t mutPlacingIndex, Pop& pop);
     template<typename ntrlIterator, typename selIterator>
     void WriteOutputs_T56_LargeOutput_writeData(ntrlIterator ntrlIt, selIterator selIt, ntrlIterator ntrlItEnd, selIterator selItEnd, OutputFile& file, bool printNA);
     void WriteOutputs_T1_HybridIndex_header(OutputFile& file);
@@ -149,6 +149,7 @@ public:
     void WriteOutputs_T1_ExpectiMinRec(Pop& pop, OutputFile& file);
     void WriteOutputs_T1_vcf(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_vcf(OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data, size_t mutPlacingIndex);
+    void writeOutputs_burnInLength(int positiveGeneration);
     //void WriteOutputs_T4CoalescenceFst_header(OutputFile& file);
     //void WriteOutputs_T4CoalescenceFst(OutputFile& file);
     void WriteOutputs_T56_vcf(Pop& pop, OutputFile& file);
@@ -195,6 +196,10 @@ public:
 
     bool shouldNABePrinted(int patch_index);
     bool shouldNABePrinted(int patch_index, int ind_index);
+
+    template<typename CountContainerType> void WriteOutputs_SNPfreq_computeFreq(CountContainerType& counts, Pop& pop, size_t patch_index);
+    //void mergeT4countsWithOtherCounts(T4TreeRec::PatchCountData& T4freqs, std::vector<uint32_t>& counts);
+    //void mergeT4countsWithOtherCounts(T4TreeRec::PatchCountData& T4freqs, std::map<uint32_t,uint32_t>& counts);
 
 };
 

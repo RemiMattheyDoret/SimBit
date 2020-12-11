@@ -3,7 +3,7 @@
 ##### Instal packages #####
 ###########################
 
-needed_packages <- c("R6", "stringr")
+needed_packages <- c("R6", "stringr", "sna")
 need_to_install_packages = setdiff(needed_packages, rownames(installed.packages()))
 if (length(need_to_install_packages) > 0) {
 	cat(paste("I will try to install the following package(s):", paste(need_to_install_packages, collapse=", ")))
@@ -65,8 +65,8 @@ ParameterFile = R6Class(
 				d = data.frame(superlist[[i]])
 				#rownames(d, prefix = "from_Patch_")
 				#colnames(d, prefix = "to_Patch_")
-				rownames(d) = paste0("from_Patch_", 1:nrow(d))
-				colnames(d) = paste0("to_Patch_", 1:ncol(d))
+				rownames(d) = paste0("from_Patch_", 0:(nrow(d)-1))
+				colnames(d) = paste0("to_Patch_", 0:(ncol(d)-1))
 				r[[i]] = d
 			}
 			return (r)

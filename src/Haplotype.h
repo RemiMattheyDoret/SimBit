@@ -33,15 +33,17 @@ friend class T56_memoryManager;
 private:
     std::vector<unsigned char> T1_Alleles;   // Type 1 Each bit is a binary site
     std::vector<unsigned char> T2_Alleles;   // Type 2 Each byte is a locus for which number of mutations are counted.
-    std::vector<double> T3_Alleles;          // Type 3 QTLs
+    std::vector<int16_t> T3_Alleles;          // Type 3 QTLs
 
     // T4 types are tracked with T4Tree
 
     std::vector<uint32_t> T5sel_Alleles;          // Type 5 SLimM style. Just like T1 except that only mutations are keeping tracked of
     std::vector<uint32_t> T5ntrl_Alleles;
 
-    CompressedSortedDeque T6sel_Alleles;       // Tyoe 6 is like Type 5 except that it tries to reduce RAM by separating values into prefix and suffix
+    CompressedSortedDeque T6sel_Alleles;       // Type 6 is like Type 5 except that it tries to reduce RAM by separating values into prefix and suffix
     CompressedSortedDeque T6ntrl_Alleles;
+
+    std::vector<T7Gene> T7_Alleles; // Type 7 use for ENTWINE type of development and produce a phenotype on the same space than T3
 
     std::vector<double> W_T1;
     std::vector<double> W_T2;
@@ -98,6 +100,10 @@ public:
     void setW_T56(double w, int fitnessMapIndex);
     size_t getW_T56_size();
 
+    template<typename INT = uint32_t> void removeT7Gene(INT index);
+    template<typename INT = uint32_t> void duplicateT7Gene(INT index);
+    void clearT7Genes();
+
     template<typename INT = uint32_t>
     unsigned char getT1_char(INT T1_char_index);
     template<typename INT = uint32_t>
@@ -107,7 +113,10 @@ public:
     template<typename INT = uint32_t>
     unsigned char getT2_Allele(const INT char_index);
     template<typename INT = uint32_t>
-    double getT3_Allele(const INT index);
+    int16_t getT3_Allele(const INT index);
+    template<typename INT = uint32_t>
+    T7Gene& getT7_Allele(const INT index);
+    size_t nbT7Genes();
     //bool getT56_Allele(const int Locus);
     //bool getT5ntrl_Allele(const int Locus);
     //bool getT5sel_Allele(const int Locus);
@@ -226,7 +235,7 @@ public:
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
-    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<double> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info);
+    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<int16_t> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);
@@ -307,5 +316,6 @@ public:
     double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd);
     double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void freeT56Memory();
+    void shrink_to_fitT56();
 };
 

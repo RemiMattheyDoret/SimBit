@@ -476,7 +476,7 @@ std::string InputReader::GetNextElementString()
     std::string r = this->PeakNextElementString();
     if (r.at(0)=='@')
     {
-        std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " Expected a 'string' that is not a species, habitat or generation specific marker but received '" << r << "'" << std::endl;
+        std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " Expected a 'string' that is not a species, habitat or generation specific marker but received '" << r << "'. In some occasions, this error message might also be caused by starting a series of marker with not the first marker. Something like '--N @G200 unif 100 @G0 unif 50' instead of '--N @G0 unif 50 @G200 unif 100 '" << std::endl;
         abort();
     }
     VIndex++;
@@ -635,10 +635,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected a 'Int' value after a species, generation or habitat specific marker (@S, @H or @G) but another '@' instead (received '" << s << "')" << std::endl;
+            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected an integer value after a species, generation or habitat specific marker (@S, @H or @G) but another '@' instead (received '" << s << "')" << std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected a 'Int' value but received a species, generation or habitat specific marker (@S, @H or @G) (received '" << s << "')" << std::endl;
+            std::cout << "Message from 'InputReader::readInt': " << ErrorMessage << " Expected an integer value but received a species, generation or habitat specific marker (@S, @H or @G) (received '" << s << "')" << std::endl;
         }
         std::cout << "It is also possible that this error message comes from an input starting with a marker starting with '@' but does not start with the right one. For example, if you input '--N @G20 100 @100 200' and you forget to specify anything before '@20'. Insread you should do '--N @G0 50 @G20 100 @100 200'\n";
         abort();
@@ -653,10 +653,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "' (error caught at the first security gate)" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "' (error caught at the first security gate)" <<std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' (error caught at the first security gate)" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value but received '" << s << "' (error caught at the first security gate)" <<std::endl;
         }
         abort();
     }
@@ -667,7 +667,7 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
         double fraction = d - ((long)d);
         if (fraction > 0.00001 || fraction < -0.00001)
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value but received '" << s << "' which seems to be a float number to SimBit" <<std::endl;
             abort();
         }
         if (d > std::numeric_limits<int>::max() || d < std::numeric_limits<int>::min())
@@ -682,10 +682,10 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
     {
         if (ComingFromMarker)
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "'' (error caught at the third security gate) " << std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "'' (error caught at the third security gate) " << std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an 'int' value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
         }
         abort();
     }
@@ -901,32 +901,16 @@ void InputReader::interpretKeywords()
                 
         }
 
-        // Actually insert
-        if (toInsert.size() != 0)
+        // replace string
+        if (currentKeyword == "rep" || currentKeyword == "repeach")
         {
-            /*
-            std::cout << "will insert\n";
-            for (auto& elem : toInsert)
-            {
-                std::cout << elem << "\n";
-            }
-            */
-
-            // replace the string
-            if (currentKeyword == "rep" || currentKeyword == "repeach")
-            {
-                V.erase(V.begin() + vi, V.begin() + vi + 3);
-            } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
-            {
-                V.erase(V.begin() + vi, V.begin() + vi + 4);
-            } else
-            {
-                std::cout << ErrorMessage << "internal error in 'InputReader::interpretKeywords'. Unkown keyword\n";
-                abort();
-            }
-                
+            V.erase(V.begin() + vi, V.begin() + vi + 3);
             V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
-        }
+        } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
+        {
+            V.erase(V.begin() + vi, V.begin() + vi + 4);
+            V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+        }        
     }
     /*
     std::cout << "\nEXITING interpretKeywords\n";
