@@ -885,12 +885,12 @@ void OutputWriter::SetAfterSimulationTime()
 void OutputWriter::PrintInitializationTimeToLogFile()
 {
     long double nbSeconds = ((long double) clock_BeforeSimulation - (long double) clock_BeforeInitialization) / (long double) CLOCKS_PER_SEC;
-    printTime(nbSeconds, std::string("Time for initialization: "));    
+    printTime(nbSeconds, std::string("Real time for initialization: "));    
 }
 void OutputWriter::PrintSimulationTimeToLogFile()
 {
     long double nbSeconds = ((long double) clock_AfterSimulation - (long double) clock_BeforeSimulation) / (long double) CLOCKS_PER_SEC;
-    printTime(nbSeconds, std::string("Time for the simulation: "));
+    printTime(nbSeconds, std::string("Real time for the simulation: "));
 }
 
 

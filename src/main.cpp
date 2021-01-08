@@ -25,12 +25,14 @@
     SOFTWARE.
 
 
-Note for Remi of things to do:
+Note of things to improve:
     Test how much slower it is to have N=1e5, L=10 vs N=10, L=1e5 to estimate the cost of having Individuals not contiguous in memory
 
-    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
+    Improve performance of keywords (rep, seq, ...)
 
-    As a general rule. Remi, please always remember that the interlocus n est l'interlocus qui vient juste apres le locus n. The last recombination position is therefore totalNbLoci - 2 as the last locus index is totalNbLoci - 1
+    Improve run function in Rwrapper for cases where the input is too big to be given through the command line (shell's limit)
+
+    When using several environment, fitnessMap should take migration rate into account. This migration rate can vary through time and therefore fitnessMap should be redefined for faster simulations
 
  */
 
@@ -188,7 +190,7 @@ Note for Remi of things to do:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.15.5");
+    std::string VERSION("version 4.15.6");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

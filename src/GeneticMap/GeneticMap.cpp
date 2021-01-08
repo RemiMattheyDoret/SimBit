@@ -105,24 +105,6 @@ void GeneticMap::setT56GenderLoci(std::vector<std::vector<double>>& T56_fit, boo
 }
 
 
-int GeneticMap::readType(const std::string& s_type) const
-{
-    int type;
-    if (s_type.size() == 2)
-    {
-        type = (int) std::stod(s_type.substr(1));
-    } else
-    {
-        if (s_type.size() != 1)
-        {
-            std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
-            abort();
-        }
-        type = (int) std::stod(s_type);
-    }
-    return type;
-}
-
 void GeneticMap::readT56Compression(InputReader& input)
 {
     // Ntrl
@@ -186,13 +168,16 @@ void GeneticMap::readLoci(InputReader& input)
         auto inputCopy = input;
         while( inputCopy.IsThereMoreToRead() )
         {
-            auto s_type = inputCopy.GetNextElementString();
-            auto type = readType(s_type);
-            auto nbElements = inputCopy.GetNextElementInt();
+            auto tmp = inputCopy.GetNextLocusInfo();
+            auto type = tmp.first;
+            auto nbElements = tmp.second;
+
+            //std::cout << nbElements << " T" << type << "\n";
+
             sumNbElements += nbElements;
             if (nbElements < 0)
             {
-                std::cout << "For option --L (--Loci), received a negative number of loci of type " << s_type << ".\n";
+                std::cout << "For option --L (--Loci), received a negative number of loci of type T" << type << ".\n";
                 abort();
             }
 
@@ -219,7 +204,7 @@ void GeneticMap::readLoci(InputReader& input)
                         isT7Used = true;
                         break;
                     default:
-                        std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
+                        std::cout << "For option --L (--Loci), received unknown type " << type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally).\n";
                         abort();
                 }
             }
@@ -276,9 +261,9 @@ void GeneticMap::readLoci(InputReader& input)
     
     while( input.IsThereMoreToRead() )
     {
-        auto s_type = input.GetNextElementString();
-        auto type = readType(s_type);
-        auto nbElements = input.GetNextElementInt();
+        auto tmp = input.GetNextLocusInfo();
+        auto type = tmp.first;
+        auto nbElements = tmp.second;
 
         if (nbElements)
         {
@@ -321,7 +306,7 @@ void GeneticMap::readLoci(InputReader& input)
                         ++T7_nbLoci;
                         break;
                     default:
-                        std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
+                        std::cout << "For option --L (--Loci), received unknown type " << type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
                         abort();
                 }
                 ++TotalNbLoci;

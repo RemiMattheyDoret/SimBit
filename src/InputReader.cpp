@@ -408,6 +408,67 @@ int InputReader::GetNextHabitatMarker(const int habitat)
 
 }
 
+
+
+
+std::pair<int,size_t> InputReader::GetNextLocusInfo()
+{
+    if (pairsInfo.nb > 0)
+    {
+        if (pairsInfo.isNextFirst)
+        {
+            pairsInfo.isNextFirst = false;
+            return {pairsInfo.firstType,1};
+        } else
+        {
+            pairsInfo.isNextFirst = true;
+            --(pairsInfo.nb);
+            if (pairsInfo.nb == 0)
+            {
+                this->skipElement(); // Skip nb elements now only (it was only peeked before) to make sure isThereMoreToRead says yes.
+            }
+            return {pairsInfo.secondType,1};
+        }
+    }
+
+
+    auto s_type = this->GetNextElementString();
+
+    int type;
+    int nbElements;
+    if (s_type.size() == 2)
+    {
+        type = (int) std::stod(s_type.substr(1));
+        nbElements = this->GetNextElementInt();
+    } else if (s_type.size() == 8)
+    {
+        if (s_type.substr(2,4) != "pair")
+        {
+            std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Finally notet that possibility to indicated two loci ate once with a something like 'T5pairT4'.\n";
+            abort();
+        }
+        
+        pairsInfo.firstType = (int) std::stod(s_type.substr(1));
+        pairsInfo.secondType = (int) std::stod(s_type.substr(7));
+        pairsInfo.isNextFirst = false; // because the first is returned now
+        pairsInfo.nb = this->PeakNextElementInt();
+        type = pairsInfo.firstType;
+        nbElements = 1;
+    } else
+    {
+        if (s_type.size() != 1)
+        {
+            std::cout << "For option --L (--Loci), received unknown type " << s_type << ". Only types accepted are T1, T2, T3, T4, T5 and T7. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Finally notet that possibility to indicated two loci ate once with a something like 'T5pairT4'.\n";
+            abort();
+        }
+        type = (int) std::stod(s_type);
+        nbElements = this->GetNextElementInt();
+    }
+
+    return {type, nbElements};
+}
+
+
 bool InputReader::GetNextElementBool()
 {
     std::string r = this->PeakNextElementString();
@@ -428,6 +489,17 @@ bool InputReader::GetNextElementBool()
         std::cout << "Message from 'InputReader method GetNextElementBool': " << ErrorMessage << " Expected a string that contains some boolean information (such as 'f', 't', 'false', '0', '1', ...) but received '" << r << "'" << std::endl;
         abort();   
     }
+}
+
+long long int InputReader::PeakNextElementInt()
+{
+    if (!this->IsThereMoreToRead())
+    {
+        std::cout << "Message from 'InputReader method GetNextElementInt': " << ErrorMessage << " too few arguments received'" << std::endl;
+        abort();
+    }
+    long long int r = readInt(V[VIndex], false);
+    return r;
 }
 
 long long int InputReader::GetNextElementInt()
@@ -815,7 +887,7 @@ void InputReader::interpretKeywords()
     //this->print();
     //std::cout << "V.size() = " << V.size() << "\n";
     //std::cout << "VIndex = " << VIndex << "\n";
-    for (int vi = V.size()-1; vi >= VIndex; vi--) // vi is int because it must be allowed to go to -1
+    for (int vi = 0; vi < V.size(); ++vi) // vi is int because it must be allowed to go to -1
     {
         std::vector<std::string> toInsert;
 
@@ -873,7 +945,7 @@ void InputReader::interpretKeywords()
             {
                 for (uint32_t repeat_i = 0 ; repeat_i < nbRepeats; repeat_i++)
                 {
-                    std::istringstream iss (whatToRepeat );
+                    std::istringstream iss (whatToRepeat);
                     auto str_toRep = std::string{};
 
                     while (iss >> str_toRep)
@@ -904,12 +976,14 @@ void InputReader::interpretKeywords()
         // replace string
         if (currentKeyword == "rep" || currentKeyword == "repeach")
         {
-            V.erase(V.begin() + vi, V.begin() + vi + 3);
-            V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+            //V.erase(V.begin() + vi, V.begin() + vi + 3);
+            //V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+            replace(V, V.begin() + vi, V.begin() + vi + 3, toInsert.begin(), toInsert.end());
         } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
         {
-            V.erase(V.begin() + vi, V.begin() + vi + 4);
-            V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+            //V.erase(V.begin() + vi, V.begin() + vi + 4);
+            //V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
+            replace(V, V.begin() + vi, V.begin() + vi + 4, toInsert.begin(), toInsert.end());
         }        
     }
     /*

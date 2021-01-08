@@ -434,3 +434,7 @@ SimBit_4.15.0
 SimBit_4.15.5
 	Change in T3 phenotype calculation to improve performance
 	Add additive fitness effects among loci and among different types of loci.
+
+SimBit_4.15.6
+	pairs of loci semantic for ease of input to --L
+	Keywords are now interpreted left to right for performance reason

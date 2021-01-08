@@ -513,9 +513,6 @@ void GeneralParameters::readSeed(InputReader& input)
 
 void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool>& neutralBurnIn_hasSpeciesCoalesced)
 {
-    //std::cout << "enters testIfEndOfT4BurnIn\n";
-    //std::cout << "burnInUntilT4Coal_check_every_N_generations = " << burnInUntilT4Coal_check_every_N_generations << "\n";
-    //std::cout << "GP->CurrentGeneration modulo GP->burnInUntilT4Coal_check_every_N_generations = " << GP->CurrentGeneration % GP->burnInUntilT4Coal_check_every_N_generations << "\n";
     auto positiveGeneration = GP->CurrentGeneration - std::numeric_limits<int>::lowest();
     assert(positiveGeneration >= 0);
     if (

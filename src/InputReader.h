@@ -32,10 +32,23 @@ Note for Remi of things to do:
 
  */
 
+
+struct PairsInfo
+{
+    size_t nb = 0;
+    char firstType;
+    char secondType;
+    bool isNextFirst = false;
+};
+
+
+
 class InputReader
 {
 // It is actually a helper to read. It contains functions that are being called in the.readOptions types of functions in class Parameters
 private:
+    PairsInfo pairsInfo;
+
     int VIndex;
     int VIndex_previous_habitat;
     int VIndex_previous_generation;
@@ -58,12 +71,14 @@ public:
 
     int nextUntilPosition(std::vector<std::string> untils);
     long long int GetNextElementInt();
+    long long int PeakNextElementInt();
     bool GetNextElementBool();
     std::string GetErrorMessage();
     double GetNextElementDouble();
     std::string GetNextElementString();
     std::string PeakNextElementString();
     void skipElement();
+    std::pair<int,size_t> GetNextLocusInfo();
     int GetNextHabitatMarker(const int habitat);
     int GetNextGenerationMarker(const int generation_index);
     std::vector<std::pair<int,int>> GetRangeOfIndicesForEachSpecies();

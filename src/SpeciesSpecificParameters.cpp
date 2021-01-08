@@ -4922,7 +4922,7 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
             cumsum += AddToParam;
             this->RecombinationRate.push_back(cumsum);
         }
-    } else if(Mode.compare("A")==0)
+    } else if (Mode.compare("A")==0)
     {
         double cumsum = 0.0;
         int pos=0;
@@ -5032,10 +5032,22 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
         
     assert(this->TotalRecombinationRate >= 0);
     
-    if (this->RecombinationRate.size() != this->Gmap.TotalNbLoci - 1 && this->RecombinationRate.size() != 1)
+    if (
+        (
+            this->RecombinationRate.size() != this->Gmap.TotalNbLoci - 1
+            &&
+            this->RecombinationRate.size() != 1
+        )
+        ||
+        (this->Gmap.TotalNbLoci != 1 && this->RecombinationRate.size() == 1 && Mode.compare("A")==0)
+    )
     {
-        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->Gmap.T1_nbLoci = " << this->Gmap.T1_nbLoci << "    this->Gmap.T2_nbLoci = " << this->Gmap.T2_nbLoci  << "    this->Gmap.T3_nbLoci = " << this->Gmap.T3_nbLoci << "    this->Gmap.T4_nbLoci = " << this->Gmap.T4_nbLoci << "    this->T56_nbBitd = " << this->Gmap.T56_nbLoci << "\n\n";
-        std::cout << "In '--RecombinationRate' did not receive the expected number of elements!" << std::endl;
+        std::cout << "In '--RecombinationRate' did not receive the expected number of elements!\n";
+
+        std::cout << "Nb values expected was " << this->Gmap.TotalNbLoci-1 << " (that is the total number of loci minus 1)\n\n";
+
+        std::cout << "\nthis->RecombinationRate.size() = " << this->RecombinationRate.size() << "    this->Gmap.T1_nbLoci = " << this->Gmap.T1_nbLoci << "    this->Gmap.T2_nbLoci = " << this->Gmap.T2_nbLoci  << "    this->Gmap.T3_nbLoci = " << this->Gmap.T3_nbLoci << "    this->Gmap.T4_nbLoci = " << this->Gmap.T4_nbLoci << "    this->Gmap.T56_nbLoci = " << this->Gmap.T56_nbLoci << "    this->Gmap.TotalNbLoci = " << this->Gmap.TotalNbLoci << "\n\n";
+
         abort();
     }
     assert(this->ChromosomeBoundaries.size() < this->Gmap.TotalNbLoci);
@@ -5947,27 +5959,28 @@ void SpeciesSpecificParameters::readQuickScreenOfOptionL(InputReader& input)
     quickScreenAtL_T56_nbLoci = 0;
     while( input.IsThereMoreToRead() )
     {
-        std::string Type = input.GetNextElementString();
-        if (Type == "5" || Type == "T5" || Type == "t5")
+        auto tmp = input.GetNextLocusInfo();
+        auto type = tmp.first;
+        auto nbElements = tmp.second;
+        
+        if (type == 5)
         {
-            quickScreenAtL_T56_nbLoci += input.GetNextElementInt();
+            quickScreenAtL_T56_nbLoci += nbElements;
         } else
         {
             if (
-                Type != "1" && Type != "T1" && Type != "t1"
+                type != 1
                 &&
-                Type != "2" && Type != "T2" && Type != "t2"
+                type != 2
                 &&
-                Type != "3" && Type != "T3" && Type != "t3"
+                type != 3
                 &&
-                Type != "4" && Type != "T4" && Type != "t4"
+                type != 4
                 )
             {
-                std::cout << "While making a quick screen through the option --L (--Loci), SimBit has found a unexpected type of trait (type "<< Type << ").\n";
+                std::cout << "While making a quick screen through the option --L (--Loci), SimBit has found a unexpected type of trait (type "<< type << ").\n";
                 abort();
             }
-
-            input.skipElement();
         }
     }
     //std::cout << "quickScreenAtL_T56_nbLoci = " << quickScreenAtL_T56_nbLoci << "\n";

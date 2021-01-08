@@ -458,3 +458,34 @@ void tokenize(std::vector<std::string>& tokens, const std::string& s, const char
     pos = nextPos + 1;
   }
 }
+
+
+
+template<typename T>
+void replace(typename std::vector<T>& A, typename std::vector<T>::iterator Afrom, typename std::vector<T>::iterator Ato, typename std::vector<T>::iterator Bfrom, typename std::vector<T>::iterator Bto)
+{
+  auto nbToRemove = Ato - Afrom;
+  auto nbToAdd = Bto - Bfrom;
+  auto nbToCopy = nbToRemove > nbToAdd ? nbToAdd : nbToRemove ;
+  assert(nbToCopy >= 0);
+  auto copyTo = Afrom + nbToCopy;
+  while ( Afrom < copyTo )
+  {
+    *Afrom = *Bfrom;
+    ++Afrom;
+    ++Bfrom;
+  }
+
+  if (Bfrom != Bto)
+  {
+    assert(Afrom == Ato);
+    assert(Bfrom < Bto);
+    A.insert(Ato, Bfrom, Bto);
+  } else if (Afrom != Ato)
+  {
+    assert(Afrom < Ato);
+    assert(Bfrom == Bto);
+    A.erase(Afrom, Ato);
+  }
+}
+
