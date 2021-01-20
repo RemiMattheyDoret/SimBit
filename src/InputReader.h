@@ -42,12 +42,20 @@ struct PairsInfo
 };
 
 
+struct REPInfoClass
+{
+    size_t nb = 0;
+    std::string str;
+};
+
+
 
 class InputReader
 {
 // It is actually a helper to read. It contains functions that are being called in the.readOptions types of functions in class Parameters
 private:
     PairsInfo pairsInfo;
+    REPInfoClass REPInfo;
 
     int VIndex;
     int VIndex_previous_habitat;

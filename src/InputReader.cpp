@@ -214,6 +214,13 @@ void InputReader::workDone()
 
 int InputReader::GetNextGenerationMarker(const int generation_index)
 {
+    if (REPInfo.nb != 0)
+    {
+        std::cout << "Message from 'InputReader method GetNextGenerationMarker'. "<<ErrorMessage<<" you are looking for a generation specific marker (@G..) while there are still values to be delivered by a 'REP' keyword. This sounds like an SimBit bug but you might want to check whether you did not deliver more values than you wished.\n";
+        abort();
+    }
+
+
     int r = -1;
     char markerLetter = 'G';
 
@@ -312,7 +319,13 @@ int InputReader::GetNextGenerationMarker(const int generation_index)
 
 int InputReader::GetNextHabitatMarker(const int habitat)
 {
-     int r = -1;
+    if (REPInfo.nb != 0)
+    {
+        std::cout << "Message from 'InputReader method GetNextHabitatMarker'. "<<ErrorMessage<<" you are looking for a habitat specific marker (@H..) while there are still values to be delivered by a 'REP' keyword. This sounds like an SimBit bug but you might want to check whether you did not deliver more values than you wished.\n";
+        abort();
+    }
+
+    int r = -1;
     char markerLetter = 'H';
 
     // Security
@@ -471,13 +484,13 @@ std::pair<int,size_t> InputReader::GetNextLocusInfo()
 
 bool InputReader::GetNextElementBool()
 {
-    std::string r = this->PeakNextElementString();
+    std::string r = this->GetNextElementString();
     if (r.at(0)=='@')
     {
         std::cout << "Message from 'InputReader method GetNextElementBool': " << ErrorMessage << " Expected a string that contains some boolean information (such as 'f', 't', 'false', '0', '1', ...) that is not a species, habitat or generation specific marker but received '" << r << "'" << std::endl;
         abort();
     }
-    VIndex++;
+    
     if (r == "f" || r == "false" || r == "False" || r == "FALSE" || r == "0" || r == "F")
     {
         return false;
@@ -498,7 +511,7 @@ long long int InputReader::PeakNextElementInt()
         std::cout << "Message from 'InputReader method GetNextElementInt': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
-    long long int r = readInt(V[VIndex], false);
+    long long int r = readInt(PeakNextElementString(), false);
     return r;
 }
 
@@ -509,8 +522,7 @@ long long int InputReader::GetNextElementInt()
         std::cout << "Message from 'InputReader method GetNextElementInt': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
-    long long int r = readInt(V[VIndex], false);
-    VIndex++;
+    long long int r = readInt(GetNextElementString(), false);
     return r;
 }
 
@@ -521,8 +533,7 @@ double InputReader::GetNextElementDouble()
         std::cout << "Message from 'InputReader method GetNextElementDouble': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
-    double r = readDouble(V[VIndex]);
-    VIndex++;
+    double r = readDouble(GetNextElementString());
     return r;
 }
 
@@ -533,8 +544,25 @@ std::string InputReader::PeakNextElementString()
         std::cout << "Message from 'InputReader method PeakNextElementString': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
+
+    if (REPInfo.nb != 0)
+    {
+        return REPInfo.str;
+    }
+
+
+    if (V[VIndex] == "REP")
+    { 
+        auto str = V[VIndex+1];
+        auto nb = readInt(V[VIndex+2], false);
+        if (nb > 0)
+        {
+            return str;
+        }
+    }
+
     std::string r = V[VIndex];
-    
+
     return r;
 }
 
@@ -545,12 +573,45 @@ void InputReader::skipElement()
 
 std::string InputReader::GetNextElementString()
 {
-    std::string r = this->PeakNextElementString();
-    if (r.at(0)=='@')
+    if (!this->IsThereMoreToRead() )
     {
-        std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " Expected a 'string' that is not a species, habitat or generation specific marker but received '" << r << "'. In some occasions, this error message might also be caused by starting a series of marker with not the first marker. Something like '--N @G200 unif 100 @G0 unif 50' instead of '--N @G0 unif 50 @G200 unif 100 '" << std::endl;
+        std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " too few arguments received'" << std::endl;
         abort();
     }
+
+    if (REPInfo.nb != 0)
+    {
+        --REPInfo.nb;
+        if (REPInfo.nb == 0)
+        {
+            VIndex += 3;
+        }
+        return REPInfo.str;
+    }
+
+
+    if (V[VIndex] == "REP")
+    {
+        if (VIndex+2 >= V.size())
+        {
+            std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " received keyword 'REP'. This keyword must be followed by at least two entries (the second of which must be a non-negative integer value) but instead the input stops without providing these two entries." << std::endl;
+        }
+        REPInfo.str = V[VIndex+1];
+        REPInfo.nb = readInt(V[VIndex+2], false);
+
+        if (REPInfo.nb > 0)
+        {
+            --REPInfo.nb;
+            if (REPInfo.nb == 0)
+            {
+                VIndex += 3;
+                REPInfo.str = ""; // Just for safety
+            }
+            return REPInfo.str;
+        }
+    }
+
+    std::string r = V[VIndex];
     VIndex++;
     return r;
 }

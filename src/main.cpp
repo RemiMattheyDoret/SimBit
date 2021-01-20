@@ -190,7 +190,7 @@ Note of things to improve:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.15.6");
+    std::string VERSION("version 4.15.8");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

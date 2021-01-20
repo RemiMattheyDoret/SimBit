@@ -221,144 +221,146 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     double sumOfProb = 0.0; // only used if not whole description
     int FitnessMapIndex = 0;
     int nbLociInPiece = 0;
-    for (int interlocus = 0 ; interlocus < (this->Gmap.TotalNbLoci - 1) ; interlocus++)
+    if (ShouldThereBeSeveralFitnessBlocks)
     {
-        nbLociInPiece++; // only used if not whole description
-
-        // Get Locus info
-        int T1_locus = this->Gmap.FromLocusToNextT1Locus(interlocus);
-        int T2_locus = this->Gmap.FromLocusToNextT2Locus(interlocus);
-        int T3_locus = this->Gmap.FromLocusToNextT3Locus(interlocus);
-        int T4_locus = this->Gmap.FromLocusToNextT4Locus(interlocus);
-        int T56ntrl_locus = this->Gmap.FromLocusToNextT56ntrlLocus(interlocus);
-        int T56sel_locus = this->Gmap.FromLocusToNextT56selLocus(interlocus);
-        int locusType;
-
-
-        if (ShouldThereBeSeveralFitnessBlocks)
+        for (int interlocus = 0 ; interlocus < (this->Gmap.TotalNbLoci - 1) ; interlocus++)
         {
-            //std::cout << "interlocus " << interlocus << " / " << this->Gmap.TotalNbLoci - 1 << "\n";
-            // Get locusType and long security
-            if (interlocus == 0)
-            {
-                assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus == 1);
-                if (T1_locus == 1)
-                {
-                    locusType = 1;
-                } else if (T2_locus == 1)
-                {
-                    locusType = 2;
-                } else if (T3_locus == 1)
-                {
-                    locusType = 3;
-                } else if (T4_locus == 1)
-                {
-                    locusType = 4;
-                } else if (T56ntrl_locus == 1)
-                {
-                    locusType = 50;
-                } else if (T56sel_locus == 1)
-                {
-                    locusType = 51;
-                } else
-                {
-                    std::cout << "Internal error in void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex(): unknown locusType received.\n";
-                    abort();
-                }
-            } else
-            {
-                assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus - this->Gmap.FromLocusToNextT1Locus(interlocus - 1) - this->Gmap.FromLocusToNextT2Locus(interlocus - 1) - this->Gmap.FromLocusToNextT3Locus(interlocus - 1) - this->Gmap.FromLocusToNextT4Locus(interlocus - 1) - this->Gmap.FromLocusToNextT56ntrlLocus(interlocus - 1) - this->Gmap.FromLocusToNextT56selLocus(interlocus - 1) == 1);
-                if (T1_locus - this->Gmap.FromLocusToNextT1Locus(interlocus - 1) == 1)
-                {
-                    locusType = 1;
-                } else if (T2_locus - this->Gmap.FromLocusToNextT2Locus(interlocus - 1) == 1)
-                {
-                    locusType = 2;
-                } else if (T3_locus - this->Gmap.FromLocusToNextT3Locus(interlocus - 1) == 1)
-                {
-                    locusType = 3;
-                } else if (T4_locus - this->Gmap.FromLocusToNextT4Locus(interlocus - 1) == 1)
-                {
-                    locusType = 4;
-                } else if (T56ntrl_locus - this->Gmap.FromLocusToNextT56ntrlLocus(interlocus - 1) == 1)
-                {
-                    locusType = 50;
-                } else if (T56sel_locus - this->Gmap.FromLocusToNextT56selLocus(interlocus - 1) == 1)
-                {
-                    locusType = 51;
-                } else
-                {
-                    std::cout << "Internal error in 'void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()'.\n";
-                    abort();
-                }
-            }
-            //assert(locusType == this->FromLocusToTXLocus[interlocus].TType);
+            nbLociInPiece++; // only used if not whole description
 
-            // Has there been a whole description of the map
-            if (this->FitnessMapInfo_wholeDescription.size())
+            // Get Locus info
+            int T1_locus = this->Gmap.FromLocusToNextT1Locus(interlocus);
+            int T2_locus = this->Gmap.FromLocusToNextT2Locus(interlocus);
+            int T3_locus = this->Gmap.FromLocusToNextT3Locus(interlocus);
+            int T4_locus = this->Gmap.FromLocusToNextT4Locus(interlocus);
+            int T56ntrl_locus = this->Gmap.FromLocusToNextT56ntrlLocus(interlocus);
+            int T56sel_locus = this->Gmap.FromLocusToNextT56selLocus(interlocus);
+            int locusType;
+
+            
             {
-                //std::cout << "this->FitnessMapInfo_wholeDescription.size() = " << this->FitnessMapInfo_wholeDescription.size() << "\n";
-                //std::cout << "FitnessMapIndex = " << FitnessMapIndex << "\n";
-                assert(this->FitnessMapInfo_wholeDescription.size() > FitnessMapIndex);
-                //std::cout << "nbLociInPiece = " << nbLociInPiece << "\n";
-                //std::cout << "this->FitnessMapInfo_wholeDescription["<<FitnessMapIndex<<"] = " << this->FitnessMapInfo_wholeDescription[FitnessMapIndex] << "\n";
-                if (nbLociInPiece == this->FitnessMapInfo_wholeDescription[FitnessMapIndex] && FitnessMapIndex != this->FitnessMapInfo_wholeDescription.size() - 1) // Don't add the last element in FromFitnessMapIndexToTXLocus as it will be done afterward.
+                //std::cout << "interlocus " << interlocus << " / " << this->Gmap.TotalNbLoci - 1 << "\n";
+                // Get locusType and long security
+                if (interlocus == 0)
                 {
-                    FitnessMapIndex++;
-                    nbLociInPiece = 0;
-                    //std::cout << T1_locus << "\n";
-                    FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
-                    FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
-                }
-            } else
-            {
-                // Get Recombination Rate info
-                double r;
-                if (locusType == 1 || locusType == 2 || locusType == 50  || locusType == 51)
-                {
-                    if (this->RecombinationRate.size() == 1) // which is the case if the rate is constant between any two loci.
+                    assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus == 1);
+                    if (T1_locus == 1)
                     {
-                        r = this->RecombinationRate[0];
+                        locusType = 1;
+                    } else if (T2_locus == 1)
+                    {
+                        locusType = 2;
+                    } else if (T3_locus == 1)
+                    {
+                        locusType = 3;
+                    } else if (T4_locus == 1)
+                    {
+                        locusType = 4;
+                    } else if (T56ntrl_locus == 1)
+                    {
+                        locusType = 50;
+                    } else if (T56sel_locus == 1)
+                    {
+                        locusType = 51;
                     } else
                     {
-                        if (interlocus == 0)
+                        std::cout << "Internal error in void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex(): unknown locusType received.\n";
+                        abort();
+                    }
+                } else
+                {
+                    assert(T1_locus + T2_locus + T3_locus + T4_locus + T56ntrl_locus + T56sel_locus - this->Gmap.FromLocusToNextT1Locus(interlocus - 1) - this->Gmap.FromLocusToNextT2Locus(interlocus - 1) - this->Gmap.FromLocusToNextT3Locus(interlocus - 1) - this->Gmap.FromLocusToNextT4Locus(interlocus - 1) - this->Gmap.FromLocusToNextT56ntrlLocus(interlocus - 1) - this->Gmap.FromLocusToNextT56selLocus(interlocus - 1) == 1);
+                    if (T1_locus - this->Gmap.FromLocusToNextT1Locus(interlocus - 1) == 1)
+                    {
+                        locusType = 1;
+                    } else if (T2_locus - this->Gmap.FromLocusToNextT2Locus(interlocus - 1) == 1)
+                    {
+                        locusType = 2;
+                    } else if (T3_locus - this->Gmap.FromLocusToNextT3Locus(interlocus - 1) == 1)
+                    {
+                        locusType = 3;
+                    } else if (T4_locus - this->Gmap.FromLocusToNextT4Locus(interlocus - 1) == 1)
+                    {
+                        locusType = 4;
+                    } else if (T56ntrl_locus - this->Gmap.FromLocusToNextT56ntrlLocus(interlocus - 1) == 1)
+                    {
+                        locusType = 50;
+                    } else if (T56sel_locus - this->Gmap.FromLocusToNextT56selLocus(interlocus - 1) == 1)
+                    {
+                        locusType = 51;
+                    } else
+                    {
+                        std::cout << "Internal error in 'void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()'.\n";
+                        abort();
+                    }
+                }
+                //assert(locusType == this->FromLocusToTXLocus[interlocus].TType);
+
+                // Has there been a whole description of the map
+                if (this->FitnessMapInfo_wholeDescription.size())
+                {
+                    //std::cout << "this->FitnessMapInfo_wholeDescription.size() = " << this->FitnessMapInfo_wholeDescription.size() << "\n";
+                    //std::cout << "FitnessMapIndex = " << FitnessMapIndex << "\n";
+                    assert(this->FitnessMapInfo_wholeDescription.size() > FitnessMapIndex);
+                    //std::cout << "nbLociInPiece = " << nbLociInPiece << "\n";
+                    //std::cout << "this->FitnessMapInfo_wholeDescription["<<FitnessMapIndex<<"] = " << this->FitnessMapInfo_wholeDescription[FitnessMapIndex] << "\n";
+                    if (nbLociInPiece == this->FitnessMapInfo_wholeDescription[FitnessMapIndex] && FitnessMapIndex != this->FitnessMapInfo_wholeDescription.size() - 1) // Don't add the last element in FromFitnessMapIndexToTXLocus as it will be done afterward.
+                    {
+                        FitnessMapIndex++;
+                        nbLociInPiece = 0;
+                        //std::cout << T1_locus << "\n";
+                        FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
+                        FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
+                    }
+                } else
+                {
+                    // Get Recombination Rate info
+                    double r;
+                    if (locusType == 1 || locusType == 2 || locusType == 50  || locusType == 51)
+                    {
+                        if (this->RecombinationRate.size() == 1) // which is the case if the rate is constant between any two loci.
                         {
                             r = this->RecombinationRate[0];
                         } else
                         {
-                            assert(this->RecombinationRate.size() > interlocus);
-                            r = this->RecombinationRate[interlocus] - this->RecombinationRate[interlocus - 1];
+                            if (interlocus == 0)
+                            {
+                                r = this->RecombinationRate[0];
+                            } else
+                            {
+                                assert(this->RecombinationRate.size() > interlocus);
+                                r = this->RecombinationRate[interlocus] - this->RecombinationRate[interlocus - 1];
+                            }
                         }
+                    } else
+                    {
+                        r = 0.0;
                     }
-                } else
-                {
-                    r = 0.0;
-                }
-                if (locusType == 50 || locusType == 51)
-                {
-                    r *= this->FitnessMapT5WeightProbOfEvent;
-                }
-                
+                    if (locusType == 50 || locusType == 51)
+                    {
+                        r *= this->FitnessMapT5WeightProbOfEvent;
+                    }
+                    
 
-                // Sum probabilities of an event
-                sumOfProb += r;
+                    // Sum probabilities of an event
+                    sumOfProb += r;
 
-                // test if needs to make a new boundary
-                bool avoidTooMuchByteSplitting_mustRunDecidingFun = true;
-                if (locusType == 1 && (T1_locus%8) != 7)
-                {
-                    avoidTooMuchByteSplitting_mustRunDecidingFun = false;
+                    // test if needs to make a new boundary
+                    bool avoidTooMuchByteSplitting_mustRunDecidingFun = true;
+                    if (locusType == 1 && (T1_locus%8) != 7)
+                    {
+                        avoidTooMuchByteSplitting_mustRunDecidingFun = false;
+                    }
+                    if (avoidTooMuchByteSplitting_mustRunDecidingFun && setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
+                    {
+                        FitnessMapIndex++;
+                        sumOfProb = 0.0;
+                        FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
+                        FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
+                        nbLociInPiece = 0;
+                    }
                 }
-                if (avoidTooMuchByteSplitting_mustRunDecidingFun && setFromLocusToFitnessMapIndex_DecidingFunction(sumOfProb, nbLociInPiece))
-                {
-                    FitnessMapIndex++;
-                    sumOfProb = 0.0;
-                    FromLocusToTXLocusElement E(T1_locus, T2_locus, T3_locus, T4_locus, T56ntrl_locus, T56sel_locus, locusType);
-                    FromFitnessMapIndexToTXLocus.push_back(E); // last locus included of each type
-                    nbLociInPiece = 0;
-                }
-            }
-        } 
+            } 
+        }
     }
 
     ++FitnessMapIndex;
@@ -383,27 +385,29 @@ void SpeciesSpecificParameters::setFromLocusToFitnessMapIndex()
     assert(FromFitnessMapIndexToTXLocus.size() == NbElementsInFitnessMap);
 
     // Create FromLocusToFitnessMapIndex from FromFitnessMapIndexToTXLocus
-    int previous_b_interlocus = 0;
-    for (int i = 0 ; i < FromFitnessMapIndexToTXLocus.size() ; i++)
+    if ( ShouldThereBeSeveralFitnessBlocks )
     {
-        auto& b = FromFitnessMapIndexToTXLocus[i];
-        assert(b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel <= this->Gmap.TotalNbLoci);
-        int b_interlocus = b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel;
-
-        for (int j = previous_b_interlocus  ; j < b_interlocus ; j++)
+        int previous_b_interlocus = 0;
+        for (int i = 0 ; i < FromFitnessMapIndexToTXLocus.size() ; i++)
         {
-            FromLocusToFitnessMapIndex.push_back(i);        
+            auto& b = FromFitnessMapIndexToTXLocus[i];
+            assert(b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel <= this->Gmap.TotalNbLoci);
+            int b_interlocus = b.T1 + b.T2 + b.T3 + b.T4 + b.T56ntrl + b.T56sel;
+
+            for (int j = previous_b_interlocus  ; j < b_interlocus ; j++)
+            {
+                FromLocusToFitnessMapIndex.push_back(i);        
+            }
+            previous_b_interlocus = b_interlocus;
         }
-        previous_b_interlocus = b_interlocus;
+        //std::cout << "FromLocusToFitnessMapIndex.size() = " << FromLocusToFitnessMapIndex.size() << " this->Gmap.TotalNbLoci = " << this->Gmap.TotalNbLoci << "\n";
+        assert(FromLocusToFitnessMapIndex.size() == this->Gmap.TotalNbLoci);
+        //std::cout << "NbElementsInFitnessMap = " << NbElementsInFitnessMap << "\n";
+        //std::cout << "FromLocusToFitnessMapIndex.back() = " << FromLocusToFitnessMapIndex.back() << "\n";
+        assert(NbElementsInFitnessMap == FromLocusToFitnessMapIndex.back()+1);
     }
-    //std::cout << "FromLocusToFitnessMapIndex.size() = " << FromLocusToFitnessMapIndex.size() << " this->Gmap.TotalNbLoci = " << this->Gmap.TotalNbLoci << "\n";
-    assert(FromLocusToFitnessMapIndex.size() == this->Gmap.TotalNbLoci);
-    //std::cout << "NbElementsInFitnessMap = " << NbElementsInFitnessMap << "\n";
-    //std::cout << "FromLocusToFitnessMapIndex.back() = " << FromLocusToFitnessMapIndex.back() << "\n";
-    assert(NbElementsInFitnessMap == FromLocusToFitnessMapIndex.back()+1);
     
     // print to console
-    
     if ( ShouldThereBeSeveralFitnessBlocks )
     {
         assert(NbElementsInFitnessMap >= 1);

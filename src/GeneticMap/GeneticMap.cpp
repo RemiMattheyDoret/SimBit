@@ -232,7 +232,7 @@ void GeneticMap::readLoci(InputReader& input)
         if (isT1Used)
             onlyTypeUsed = 1;
         else if (isT2Used)
-            onlyTypeUsed = 3;
+            onlyTypeUsed = 2;
         else if (isT3Used)
             onlyTypeUsed = 3;
         else if (isT4Used)
@@ -259,6 +259,7 @@ void GeneticMap::readLoci(InputReader& input)
     // Find change positions and set the nbLoci objects //
     //////////////////////////////////////////////////////
     
+
     while( input.IsThereMoreToRead() )
     {
         auto tmp = input.GetNextLocusInfo();
@@ -267,52 +268,52 @@ void GeneticMap::readLoci(InputReader& input)
 
         if (nbElements)
         {
-            for (uint32_t element = 0 ; element < nbElements; ++element)
+            if (onlyTypeUsed == 250)
             {
-                switch (type)
+                for (uint32_t element = 0 ; element < nbElements; ++element)
                 {
-                    case 1:
-                        if (onlyTypeUsed == 250) _FromT1LocusToLocus.push_back(TotalNbLoci);
-                        ++T1_nbLoci;
-                        break;
-                    case 2:
-                        if (onlyTypeUsed == 250)_FromT2LocusToLocus.push_back(TotalNbLoci);
-                        ++T2_nbLoci;
-                        break;
-                    case 3:
-                        if (onlyTypeUsed == 250) _FromT3LocusToLocus.push_back(TotalNbLoci);
-                        ++T3_nbLoci;
-                        break;
-                    case 4:
-                        if (onlyTypeUsed == 250) _FromT4LocusToLocus.push_back(TotalNbLoci);
-                        ++T4_nbLoci;
-                        break;
-                    case 5:
-                        if (isT56neutral(T56_nbLoci))
-                        {
-                            if (onlyTypeUsed == 250) _FromT56ntrlLocusToLocus.push_back(TotalNbLoci);
-                            ++T56ntrl_nbLoci;                        
-                        } else
-                        {
-                            if (onlyTypeUsed == 250) _FromT56selLocusToLocus.push_back(TotalNbLoci);
-                            ++T56sel_nbLoci;                        
-                        }
+                    switch (type)
+                    {
+                        case 1:
+                            _FromT1LocusToLocus.push_back(TotalNbLoci);
+                            ++T1_nbLoci;
+                            break;
+                        case 2:
+                            _FromT2LocusToLocus.push_back(TotalNbLoci);
+                            ++T2_nbLoci;
+                            break;
+                        case 3:
+                            _FromT3LocusToLocus.push_back(TotalNbLoci);
+                            ++T3_nbLoci;
+                            break;
+                        case 4:
+                            _FromT4LocusToLocus.push_back(TotalNbLoci);
+                            ++T4_nbLoci;
+                            break;
+                        case 5:
+                            if (isT56neutral(T56_nbLoci))
+                            {
+                                _FromT56ntrlLocusToLocus.push_back(TotalNbLoci);
+                                ++T56ntrl_nbLoci;                        
+                            } else
+                            {
+                                _FromT56selLocusToLocus.push_back(TotalNbLoci);
+                                ++T56sel_nbLoci;                        
+                            }
 
-                        if (onlyTypeUsed == 250) _FromT56LocusToLocus.push_back(TotalNbLoci);
-                        ++T56_nbLoci;
-                        break;
-                    case 7:
-                        if (onlyTypeUsed == 250) _FromT7LocusToLocus.push_back(TotalNbLoci);
-                        ++T7_nbLoci;
-                        break;
-                    default:
-                        std::cout << "For option --L (--Loci), received unknown type " << type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
-                        abort();
-                }
-                ++TotalNbLoci;
+                            _FromT56LocusToLocus.push_back(TotalNbLoci);
+                            ++T56_nbLoci;
+                            break;
+                        case 7:
+                            _FromT7LocusToLocus.push_back(TotalNbLoci);
+                            ++T7_nbLoci;
+                            break;
+                        default:
+                            std::cout << "For option --L (--Loci), received unknown type " << type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
+                            abort();
+                    }
+                    ++TotalNbLoci;
 
-                if (onlyTypeUsed == 250)
-                {
                     if (isT1Used) _FromLocusToNextT1Locus.push_back(T1_nbLoci);
                     if (isT2Used) _FromLocusToNextT2Locus.push_back(T2_nbLoci);
                     if (isT3Used) _FromLocusToNextT3Locus.push_back(T3_nbLoci);
@@ -321,6 +322,49 @@ void GeneticMap::readLoci(InputReader& input)
                     if (isT56ntrlUsed) _FromLocusToNextT56ntrlLocus.push_back(T56ntrl_nbLoci);
                     if (isT56selUsed) _FromLocusToNextT56selLocus.push_back(T56sel_nbLoci);
                     if (isT7Used) _FromLocusToNextT7Locus.push_back(T7_nbLoci);
+                }
+            } else
+            {
+                assert(onlyTypeUsed != 250);
+                TotalNbLoci += nbElements;
+                switch (type)
+                {
+                    case 1:
+                        T1_nbLoci += nbElements;
+                        assert(onlyTypeUsed == 1);
+                        break;
+                    case 2:
+                        T2_nbLoci += nbElements;
+                        assert(onlyTypeUsed == 2);
+                        break;
+                    case 3:
+                        T3_nbLoci += nbElements;
+                        assert(onlyTypeUsed == 3);
+                        break;
+                    case 4:
+                        T4_nbLoci += nbElements;
+                        assert(onlyTypeUsed == 4);
+                        break;
+                    case 5:
+                        if (isT56neutral(T56_nbLoci))
+                        {
+                            T56ntrl_nbLoci += nbElements;
+                            assert(onlyTypeUsed == 50);
+                        } else
+                        {
+                            T56sel_nbLoci += nbElements;
+                            assert(onlyTypeUsed == 51);
+                        }
+
+                        T56_nbLoci += nbElements;
+                        break;
+                    case 7:
+                        T7_nbLoci += nbElements;
+                        assert(onlyTypeUsed == 7);
+                        break;
+                    default:
+                        std::cout << "For option --L (--Loci), received unknown type " << type << ". Only types accepted are T1, T2, T3, T4 and T5. Note that the 'T' can be lower case (t1, t2, ...) and can be ignored (1, 2, ...). Note also that T5 might be compressed to T6 (see compression options) but you must still call it 'T5' and not 'T6' (not 'T56' either as SimBit does internally). Note this error was found at the second security gate within GeneticMap::readLoci. That sounuds like an internal bug!\n";
+                        abort();
                 }
             }
         }
