@@ -1454,6 +1454,7 @@ void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
 {
     int TotalNbIndsAtStart = 0;
+    assert(this->patchSize.size() == 0);
 
     std::string Mode = input.GetNextElementString();
 
@@ -1534,8 +1535,7 @@ void SpeciesSpecificParameters::readInitialpatchSize(InputReader& input)
     {
         TotalpatchSize += patchSize[patch_index];
     }
-    assert(TotalpatchSize <= TotalpatchCapacity);
-        
+    assert(TotalpatchSize <= TotalpatchCapacity);        
 }
 
 
@@ -1573,7 +1573,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
         input.skipElement();
         std::vector<unsigned char> T1_info(Gmap.T1_nbChars,0);
         std::vector<unsigned char> T2_info(Gmap.T2_nbLoci, 0);
-        std::vector<int16_t> T3_info(Gmap.T3_nbLoci, 0);
+        std::vector<T3type> T3_info(Gmap.T3_nbLoci, 0);
         uint32_t T4ID = std::numeric_limits<uint32_t>::max();
         std::vector<uint32_t> T56_info;
         return Haplotype(T1_info, T2_info, T3_info, T4ID, T56_info);
@@ -1588,7 +1588,7 @@ Haplotype SpeciesSpecificParameters::getHaplotypeForIndividualType(InputReader& 
     bool receivedT56_info = false;
     std::vector<unsigned char> T1_info;
     std::vector<unsigned char> T2_info;
-    std::vector<int16_t> T3_info;
+    std::vector<T3type> T3_info;
     uint32_t T4ID = std::numeric_limits<uint32_t>::max();
     std::vector<uint32_t> T56_info;
 
@@ -4132,6 +4132,48 @@ void SpeciesSpecificParameters::readT2_MutationRate(InputReader& input)
     
 }
 
+
+void SpeciesSpecificParameters::readT3_mutationalEffect(InputReader& input)
+{
+    #ifdef DEBUG
+        std::cout << "For option 'T3_mutationalEffect', the std::string that is read is: " << input.print() << std::endl;
+    #endif
+
+    auto type = input.GetNextElementString();
+    if (type == "default")
+    {
+        T3_mutationType = '1';
+        T3_mutationType_effectSizeInfo = 1.0;
+    }
+    else if (type == "cst")
+    {
+        T3_mutationType = '1';
+        T3_mutationType_effectSizeInfo = input.GetNextElementDouble();
+    }
+    else if (type == "gauss1")
+    {
+        T3_mutationType = 'g';
+        T3_mutationType_effectSizeInfo = input.GetNextElementDouble();
+    }
+    else if (type == "gauss2") 
+    {
+        T3_mutationType = 'G';
+        T3_mutationType_effectSizeInfo = input.GetNextElementDouble();
+    }
+    else
+    {
+        std::cout << "For option 'T3_mutationType', received type '"<< type << "'. Sorry, only types 'default', 'cst', 'gauss1' and 'gauss2' are accepted. Note that 'default' and 'cst' are the same and mean that at each mutation a constant value is either added or removed (with equal probability). For the types 'gauss1' and 'gauss2', at each mutation, SimBit draws an mutation effect from a normal (Gaussian) distribution with specified variance and mean of zero. With 'gauss1' this mutational effect is added to the current allelic value while with 'gauss2', the mutational effect replaces the current allelic value." << std::endl;
+        abort();
+    }
+
+    if (T3_mutationType_effectSizeInfo < 0.0)
+    {
+        std::cout << "For option 'T3_mutationType', received type '"<< type << "' followed by the value "<<T3_mutationType_effectSizeInfo<<". This value cannot be negative." << std::endl;
+        abort();
+    }
+}
+
+
 void SpeciesSpecificParameters::readT3_MutationRate(InputReader& input)
 {
 #ifdef DEBUG
@@ -4320,7 +4362,7 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
     {
         if (this->Gmap.T3_nbLoci != 0)
         {
-            std::cout << "In option 'T3_FitnessLandscape', for species "<<this->speciesName<<", received 'NA' but there are T3 loci as indiciated in --L (--Loci) (this->Gmap.T3_nbLoci = "<<this->Gmap.T3_nbLoci<<").\n";
+            std::cout << "In option 'T3_FitnessLandscape', for species "<<this->speciesName<<", received 'NA' (default value if nothing is specified) but there are T3 loci as indiciated in --L (--Loci) (this->Gmap.T3_nbLoci = "<<this->Gmap.T3_nbLoci<<").\n";
             abort();   
         }
         input.skipElement();
@@ -4336,11 +4378,11 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
         
             std::string EntryMode = input.GetNextElementString();
 
-            std::vector<double> T3_fitnessLandscapeOptimum_OneHabitat;
-            std::vector<double> T3_fitnessLandscapeLinearGradient_OneHabitat;
-            std::vector<double> T3_fitnessLandscapeGaussStrength_OneHabitat;
+            std::vector<float> T3_fitnessLandscapeOptimum_OneHabitat;
+            std::vector<float> T3_fitnessLandscapeLinearGradient_OneHabitat;
+            std::vector<float> T3_fitnessLandscapeGaussStrength_OneHabitat;
 
-            if (SelectionMode.compare("linear")==0)
+            if (SelectionMode.compare("linear")==0 || SelectionMode.compare("simple")==0)
             {
                 this->T3_fitnessLandscapeType='L';
                 if (EntryMode.compare("A")==0)
@@ -4350,19 +4392,9 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
                         double mean = input.GetNextElementDouble();
                         double gradient = input.GetNextElementDouble();
 
-                        if (mean < CHAR_MIN || mean > CHAR_MAX)
-                        {
-                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a mean of "<<mean<<" which is either lower than the minimal possible mean (" << CHAR_MIN << ") or higher that the maximal possible mean ("<<CHAR_MAX<<")\n";
-                            abort();
-                        }
                         if (gradient < 0.0)
                         {
                             std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a gradient of "<<gradient<<". Gradient must be non-negative.\n";
-                            abort();
-                        }
-                        if (gradient > 1.0)
-                        {
-                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a gradient of "<<gradient<<". Gradient cannot be greater than 1. As 1 is the smallest possible deviation from the optimal phenotype, a gradient of 1 would mean that any deviation would be lethal. Cannot be worst than that!\n";
                             abort();
                         }
 
@@ -4374,21 +4406,12 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
                 {
                     double mean = input.GetNextElementDouble();
                     double gradient = input.GetNextElementDouble();
-                    if (mean < CHAR_MIN || mean > CHAR_MAX)
-                    {
-                        std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'unif', received a mean of "<<mean<<" which is either lower than the minimal possible mean (" << CHAR_MIN << ") or higher that the maximal possible mean ("<<CHAR_MAX<<")\n";
-                        abort();
-                    }
+                    
                     if (gradient < 0.0)
                     {
                         std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'unif', received a gradient of "<<gradient<<". Gradient must be non-negative.\n";
                         abort();
                     }
-                    if (gradient > 1.0)
-                        {
-                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'linear', EntryMode 'unif', (counting zero-based) received a gradient of "<<gradient<<". Gradient cannot be greater than 1. As 1 is the smallest possible deviation from the optimal phenotype, a gradient of 1 would mean that any deviation would be lethal. Can be worst than that!\n";
-                            abort();
-                        }
 
                     for (int dim = 0 ; dim < this->T3_PhenoNbDimensions  ; dim++)
                     {
@@ -4410,11 +4433,6 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
                         double mean = input.GetNextElementDouble();
                         double strength = input.GetNextElementDouble();
 
-                        if (mean < CHAR_MIN || mean > CHAR_MAX)
-                        {
-                            std::cout << "In '--T3_FitnessLandscape', SelectionMode 'gauss', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a mean of "<<mean<<" which is either lower than the minimal possible mean (" << CHAR_MIN << ") or higher that the maximal possible mean ("<<CHAR_MAX<<")\n";
-                            abort();
-                        }
                         if (strength <= 0.0)
                         {
                             std::cout << "In '--T3_FitnessLandscape', SelectionMode 'gauss', EntryMode 'A', for dimension "<<dim<<" (counting zero-based) received a strength of "<<strength<<". strength must be non-negative.\n";
@@ -4430,11 +4448,6 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
                     double mean = input.GetNextElementDouble();
                     double strength = input.GetNextElementDouble();
                     
-                    if (mean < CHAR_MIN || mean > CHAR_MAX)
-                    {
-                        std::cout << "In '--T3_FitnessLandscape', SelectionMode 'gauss', EntryMode 'unif', received a mean of "<<mean<<" which is either lower than the minimal possible mean (" << CHAR_MIN << ") or higher that the maximal possible mean ("<<CHAR_MAX<<")\n";
-                        abort();
-                    }
                     if (strength <= 0.0)
                     {
                         std::cout << "In '--T3_FitnessLandscape', SelectionMode 'gauss', EntryMode 'unif', received a strength of "<<strength<<". strength must be non-negative.\n";
@@ -4479,11 +4492,8 @@ void SpeciesSpecificParameters::readT3_FitnessLandscape(InputReader& input)
         } else if (SelectionMode.compare("linear")==0)
         {
             assert(this->T3_fitnessLandscapeLinearGradient.size() == this->MaxEverHabitat+1);
-        }
-            
+        }       
     }
-
-    
 }
 
 
@@ -5240,6 +5250,9 @@ void SpeciesSpecificParameters::IsThereSelection()
         this->T1_isLocalSelection = false;
     }
     T1isLocalSelectionDone:
+
+    if (!this->T1_isSelection)
+        this->T1_isMultiplicitySelection = false;
     
   
 
@@ -5519,6 +5532,13 @@ void SpeciesSpecificParameters::IsThereSelection()
             }
         }
     }
+
+    if (!this->T56_isSelection)
+    {
+        this->T56_isMultiplicitySelection = false;
+        this->T56_isLocalSelection = false;
+    }
+
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' end of T56_isSelection\n";
 #endif
@@ -5736,7 +5756,7 @@ void SpeciesSpecificParameters::readReadPopFromBinary(InputReader& input)
         readPopFromBinaryPath = "";
     } else
     {
-        std::cout << "For option '--readReadPopFromBinary', the first element received is " << yesNo << ". Expected 'yes' (or 'y', 'Y', 'true', '1', etc...), 'no' (or 'n', 'NO', '0', 'false', etc...) or 'default' as to whether the random seed must be initialized based on the seed present in a binary file.\n";
+        std::cout << "For option '--readReadPopFromBinary', the first element received is " << yesNo << ". Expected 'yes' (or 'y', 'Y', 'true', '1', etc...), 'no' (or 'n', 'NO', '0', 'false', etc...) as to whether the population must be initialized based on a binary file.\n";
         abort();
     }
 

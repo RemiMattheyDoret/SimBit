@@ -112,9 +112,19 @@ Patch::Patch(int patch_index, bool ShouldReadPopFromBinary)
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'Patch::Patch(int patch_index, bool ShouldReadPopFromBinary)'\n";
 #endif
-    GP->BinaryFileToRead >> SSP->patchSize[patch_index];
-    assert(SSP->patchSize[patch_index] >= 0);
-    assert(SSP->patchSize[patch_index] <= SSP->patchCapacity[patch_index]);
+    GP->binaryFileToRead.read(SSP->patchSize[patch_index]);
+
+    if (SSP->patchSize[patch_index] < 0)
+    {
+        std::cout << "For patch index " << patch_index << " (zero-based counting), the binary file indicate a negative patch size. Patch size read is " << SSP->patchSize[patch_index] << "\n";
+        abort();   
+    }
+
+    if (SSP->patchSize[patch_index] > SSP->patchCapacity[patch_index])
+    {
+        std::cout << "For patch index " << patch_index << " (zero-based counting), you set a patch capacity of " << SSP->patchCapacity[patch_index] << " but it received a patch size that is greater than that. Patch size from the binary file is " << SSP->patchSize[patch_index] << "\n";
+        abort();
+    }
 
     if (SSP->patchSize[patch_index] != SSP->patchCapacity[patch_index])
     {
@@ -130,7 +140,9 @@ std::cout << "Enters in 'Patch::Patch(int patch_index, bool ShouldReadPopFromBin
     inds.reserve(SSP->patchSize[patch_index]);
     for (int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
     {
+        //std::cout << "About to read individual index " << ind_index << "\n";
         inds.push_back(Individual(ShouldReadPopFromBinary));
+        //std::cout << "Individual read\n";
     }
 
     //std::cout << "inds.size() = " << inds.size() << "\n";

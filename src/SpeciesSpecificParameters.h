@@ -176,11 +176,13 @@ public:
     char                                            T3_fitnessLandscapeType;
     //std::vector<double>                             T3_fitnessLandscapeGaussMean;
     //std::vector<double>                             T3_fitnessLandscapeGaussVar;
-    std::vector<std::vector<double>>                T3_fitnessLandscapeOptimum;
-    std::vector<std::vector<double>>                T3_fitnessLandscapeLinearGradient;
-    std::vector<std::vector<double>>                T3_fitnessLandscapeGaussStrength;
+    std::vector<std::vector<float>>                 T3_fitnessLandscapeOptimum;
+    std::vector<std::vector<float>>                 T3_fitnessLandscapeLinearGradient;
+    std::vector<std::vector<float>>                 T3_fitnessLandscapeGaussStrength;
     bool                                            T3_isSelection;
     std::vector<double>                             T3_MutationRate;  // cumulative
+    char                                            T3_mutationType;
+    double                                          T3_mutationType_effectSizeInfo;
     double                                          T3_Total_Mutation_rate;
     int                                             T3_PhenoNbDimensions;
     std::vector<std::vector<double>>                T3_DevelopmentalNoiseStandardDeviation;
@@ -335,6 +337,7 @@ public:
     void readT56_mutDirection(InputReader& input);
     void readT4_paintedHaplo_ignorePatchSizeSecurityChecks(InputReader& input);
     void readkillIndividuals(InputReader& input);
+    void readT3_mutationalEffect(InputReader& input);
     void killIndividualsIfAskedFor();
 
     void readT4_nbMutationPlacingsPerOutput(InputReader& input);

@@ -202,14 +202,17 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
 
     auto& phenos = SSP->T3_PhenotypicEffects[Habitat];
     auto& DNs = SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat];
+    assert(phenos.size() == SSP->Gmap.T3_nbLoci * SSP->T3_PhenoNbDimensions);
     if (SSP->T3_PhenoNbDimensions == 1)
     {
+        //T3_IndPhenotype[0] += haplo0.sumOfT3Alleles() + haplo1.sumOfT3Alleles();
         for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
         {
             {
-                T3_IndPhenotype[0] += phenos[byte_index] * (double) (haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
+                T3_IndPhenotype[0] += phenos[byte_index] * (haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
             }
         }
+        
 
         {
             if (DNs[0] != 0.0)
@@ -225,7 +228,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
             size_t phenoIndex = dim;
             for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
             {
-                T3_IndPhenotype[dim] += phenos[phenoIndex] * (double) (haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
+                T3_IndPhenotype[dim] += phenos[phenoIndex] * (double)(haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
                 phenoIndex += SSP->T3_PhenoNbDimensions;
             }
         }
@@ -239,6 +242,9 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
             }
         }
     }
+
+
+    //std::cout << T3_IndPhenotype[0] << " -> ";
 
     /*
     std::cout << "Pheno: ";
@@ -258,27 +264,50 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
 
     // Calculate Fitness
     double W = 1.0;
-    for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
+
+    if (SSP->T3_PhenoNbDimensions == 1)
     {
-        double diffToOptimal = Individual::T3_IndPhenotype[dim] - SSP->T3_fitnessLandscapeOptimum[Habitat][dim];
+        T3type diffToOptimal = Individual::T3_IndPhenotype[0] - SSP->T3_fitnessLandscapeOptimum[Habitat][0];
         if (SSP->T3_fitnessLandscapeType == 'L')
         {
-            W *= 1 - (std::abs(diffToOptimal) * SSP->T3_fitnessLandscapeLinearGradient[Habitat][dim]);
+            W = 1 - (std::abs(diffToOptimal) * SSP->T3_fitnessLandscapeLinearGradient[Habitat][0]);
             if (W < 0.0)
             {
                 W = 0.0;
-                break;
             }
         } else if (SSP->T3_fitnessLandscapeType == 'G')
         {
-            W *= exp( - pow(diffToOptimal,2) / SSP->T3_fitnessLandscapeGaussStrength[Habitat][dim]);
+            W *= exp( - pow(diffToOptimal, 2.0) / SSP->T3_fitnessLandscapeGaussStrength[Habitat][0]);
         } else
         {
             std::cout << "Internal error in Individual::CalculateT3Fitness. Unkown SSP->T3_fitnessLandscapeType.  SSP->T3_fitnessLandscapeType = " << SSP->T3_fitnessLandscapeType << "\n";
         }
+    } else
+    {
+        for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
+        {
+            T3type diffToOptimal = Individual::T3_IndPhenotype[dim] - SSP->T3_fitnessLandscapeOptimum[Habitat][dim];
+            if (SSP->T3_fitnessLandscapeType == 'L')
+            {
+                W *= 1 - (std::abs(diffToOptimal) * SSP->T3_fitnessLandscapeLinearGradient[Habitat][dim]);
+                if (W < 0.0)
+                {
+                    W = 0.0;
+                    break;
+                }
+            } else if (SSP->T3_fitnessLandscapeType == 'G')
+            {
+                W *= exp( - pow(diffToOptimal, 2.0) / SSP->T3_fitnessLandscapeGaussStrength[Habitat][dim]);
+            } else
+            {
+                std::cout << "Internal error in Individual::CalculateT3Fitness. Unkown SSP->T3_fitnessLandscapeType.  SSP->T3_fitnessLandscapeType = " << SSP->T3_fitnessLandscapeType << "\n";
+            }
+        }
     }
+
     assert(W <= 1.0 && W >= 0.0);
 
+    //std::cout << W << "\n";
     return W;
 }
 
@@ -745,7 +774,7 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
     // Calculate phenotype
     for (const int locus : LociSet)
     {
-        double allele = (double) haplo0.getT3_Allele(locus);
+        T3type allele = haplo0.getT3_Allele(locus);
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
             std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);

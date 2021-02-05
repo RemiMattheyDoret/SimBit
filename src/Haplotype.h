@@ -27,13 +27,16 @@
  */
 
 
+
+
+
 class Haplotype // a Haplotype is a whole halotype but can correspond to several independent chromosomes.
 {
 friend class T56_memoryManager;
 private:
     std::vector<unsigned char> T1_Alleles;   // Type 1 Each bit is a binary site
     std::vector<unsigned char> T2_Alleles;   // Type 2 Each byte is a locus for which number of mutations are counted.
-    std::vector<int16_t> T3_Alleles;          // Type 3 QTLs
+    std::vector<T3type> T3_Alleles;          // Type 3 QTLs
 
     // T4 types are tracked with T4Tree
 
@@ -113,7 +116,7 @@ public:
     template<typename INT = uint32_t>
     unsigned char getT2_Allele(const INT char_index);
     template<typename INT = uint32_t>
-    int16_t getT3_Allele(const INT index);
+    T3type getT3_Allele(const INT index);
     template<typename INT = uint32_t>
     T7Gene& getT7_Allele(const INT index);
     size_t nbT7Genes();
@@ -235,7 +238,7 @@ public:
     
     void print(bool WithRecDist, std::string& prefix);
     void AssertBitSetSize(int T1_nbChars);
-    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<int16_t> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info);
+    Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<T3type> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info);
     Haplotype(const std::vector<unsigned char>& T1_Allel);
     Haplotype(const int patch_index,char Abiogenesis, int indHaplo_index);
     Haplotype(bool ShouldReadPopFromBinary);
@@ -317,5 +320,7 @@ public:
     double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void freeT56Memory();
     void shrink_to_fitT56();
+
+    T3type sumOfT3Alleles(){return std::accumulate(T3_Alleles.begin(), T3_Alleles.end(), 0);}
 };
 

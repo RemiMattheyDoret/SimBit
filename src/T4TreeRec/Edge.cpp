@@ -45,3 +45,19 @@ bool T4TreeRec::Edge::operator<(const T4TreeRec::Edge& other) const
 		return this->parent < other.parent;
 	}
 }
+
+void T4TreeRec::Edge::PrintBinaryFile(OutputFile& file) const
+{
+	file.writeBinary(left);
+	file.writeBinary(right);
+	file.writeBinary(parent);
+	file.writeBinary(child);
+}
+
+void T4TreeRec::Edge::readFromBinaryFile(BinaryFileToRead& binfile)
+{
+	binfile.read(left);
+	binfile.read(right);
+	binfile.read(parent);
+	binfile.read(child);
+}

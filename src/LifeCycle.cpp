@@ -505,12 +505,14 @@ std::cout << "Enters in 'copyOver'\n";
 #endif
     if (recombination_breakpoints.size()==1)
     {
+        
         //if (GP->CurrentGeneration >= 50) std::cout << "parent.getHaplo(segregationIndex).getW_T1(0) = " << parent.getHaplo(segregationIndex).getW_T1(0) << "\n";
         TransmittedChrom = parent.getHaplo(segregationIndex); // ID should be correctly incremented here
         //if (GP->CurrentGeneration >= 50) std::cout << "TransmittedChrom.getW_T1(0) = " << TransmittedChrom.getW_T1(0) << "\n";
         
     } else if (recombination_breakpoints.size()>1)
     {
+        
         //std::cout << "breakpoints.size() " << breakpoints.size() << "\n";
         #ifdef DEBUG
         long long Safety_T1_Absolutefrom = std::numeric_limits<uint32_t>::max();
@@ -558,9 +560,11 @@ std::cout << "Enters in 'copyOver'\n";
 
         for (auto b : recombination_breakpoints)
         {
+            
             // Get positions for the two traits
             if (b == std::numeric_limits<uint32_t>::max())
             {
+                
                 // Copy is over the range [from, to)
                 T1_to = SSP->Gmap.T1_nbLoci;
                 T2_to = SSP->Gmap.T2_nbLoci;
@@ -569,16 +573,19 @@ std::cout << "Enters in 'copyOver'\n";
                 T56ntrl_to = SSP->Gmap.T56ntrl_nbLoci;
                 T56sel_to = SSP->Gmap.T56sel_nbLoci;
                 b = SSP->Gmap.TotalNbLoci - 1;
+                
             } else
             {
                 assert(b >= 0);
                 // because copy is over the range [from, to) and if recombination happens at position 4, then the 4th element belongs to the previous stretch of DNA while the 5th element belongs to the next stretch of DNA.
+                
                 T1_to = SSP->Gmap.FromLocusToNextT1Locus(b);
                 T2_to = SSP->Gmap.FromLocusToNextT2Locus(b);
                 T3_to = SSP->Gmap.FromLocusToNextT3Locus(b);
                 T4_to = SSP->Gmap.FromLocusToNextT4Locus(b);
                 T56ntrl_to = SSP->Gmap.FromLocusToNextT56ntrlLocus(b);
                 T56sel_to = SSP->Gmap.FromLocusToNextT56selLocus(b);
+                
             }
 
             #ifdef DEBUG
@@ -595,6 +602,7 @@ std::cout << "Enters in 'copyOver'\n";
             //////////////////
             // Set Fitnesses//
             //////////////////
+
 
             if (SSP->T1_isMultiplicitySelection || SSP->T2_isSelection || SSP->T56_isMultiplicitySelection)
             {  
@@ -732,6 +740,7 @@ std::cout << "Enters in 'copyOver'\n";
             // Copy for T1. from included, to excluded
             if (T1_from < T1_to)
             {
+                
                 assert(T1_to > 0 && T1_to <= SSP->Gmap.T1_nbLoci + 1);
                 TransmittedChrom.copyIntoT1(T1_from, T1_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
@@ -743,6 +752,7 @@ std::cout << "Enters in 'copyOver'\n";
             // Copy for T2. from included, to excluded
             if (T2_from < T2_to)
             {
+                
                 assert(T2_to > 0 && T2_to <= SSP->Gmap.T2_nbLoci + 1);
                 TransmittedChrom.copyIntoT2(T2_from, T2_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
@@ -766,7 +776,7 @@ std::cout << "Enters in 'copyOver'\n";
             if (T4_from < T4_to)
             {
                 // nothing to do
-
+                
                 assert(T4_to > 0 && T4_to <= SSP->Gmap.T4_nbLoci + 1);
                 //std::cout <<"\tLIFECYCLE!! b = "<<b<<" T4_from = "<<T4_from<<" T4_to = "<<T4_to<<"\n";
                 #ifdef DEBUG
@@ -779,7 +789,7 @@ std::cout << "Enters in 'copyOver'\n";
             if (T56ntrl_from < T56ntrl_to)
             {
                 assert(T56ntrl_to > 0 && T56ntrl_to <= SSP->Gmap.T56ntrl_nbLoci + 1);
-
+                
                 
                 TransmittedChrom.copyIntoT56ntrl(T56ntrl_from, T56ntrl_to, parent.getHaplo(haplo_index));
                 #ifdef DEBUG
@@ -791,6 +801,7 @@ std::cout << "Enters in 'copyOver'\n";
             // Copy for T56sel. from included, to excluded
             if (T56sel_from < T56sel_to)
             {
+                
                 assert(T56sel_to > 0 && T56sel_to <= SSP->Gmap.T56sel_nbLoci + 1);
                 
                 TransmittedChrom.copyIntoT56sel(T56sel_from, T56sel_to, parent.getHaplo(haplo_index));
@@ -810,9 +821,12 @@ std::cout << "Enters in 'copyOver'\n";
             
             // Switch parent chromosome
             haplo_index = !haplo_index;
+
+            
         }
 
 #ifdef DEBUG
+        
         // Security Checks
         if (SSP->Gmap.T1_nbChars)
         {
@@ -855,6 +869,7 @@ std::cout << "Enters in 'copyOver'\n";
             assert(Safety_T56sel_Absoluteto == SSP->Gmap.T56sel_nbLoci);
             assert(Safety_T56sel_Absolutefrom == 0);
         }
+        
 #endif
 
         
@@ -863,10 +878,11 @@ std::cout << "Enters in 'copyOver'\n";
         std::cout << "Internal error. 'breakpoints' has size of zero. It should always contain at least the element std::numeric_limits<uint32_t>::max()\n";
         abort();
     }
-
+    
 #ifdef DEBUG
     TransmittedChrom.assertT5orderAndUniqueness();
 #endif
+    
 }
 
 void LifeCycle::reproduceThroughCopy(Individual& parent, Haplotype& TransmittedChrom, HaplotypeData& parentData, int& patch_index)

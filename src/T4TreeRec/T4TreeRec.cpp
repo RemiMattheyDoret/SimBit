@@ -1875,3 +1875,43 @@ void T4TreeRec::deleteAll()
 }
 
 
+void T4TreeRec::PrintBinaryFile(OutputFile& file) const
+{
+	edges.PrintBinaryFile(file);
+	nodes.PrintBinaryFile(file);
+
+	file.writeBinary(ancestorsGenetics.size());
+	for (auto& ancestorsGenetic : ancestorsGenetics)
+	{
+		ancestorsGenetic.PrintBinaryFile(file);
+	}
+
+	file.writeBinary(ancestralGeneration);
+	file.writeBinary(lastGenerationSimplified);
+	file.writeBinary(haveAllLociCoallesced_info);
+	file.writeBinary(haveAllLociCoallesced_info);
+}
+
+
+
+void T4TreeRec::readFromBinaryFile(BinaryFileToRead& binfile)
+{
+	edges.readFromBinaryFile(binfile);
+	nodes.readFromBinaryFile(binfile);
+
+	{
+		size_t ancestorsGeneticsSize;
+		binfile.read(ancestorsGeneticsSize);
+		ancestorsGenetics.resize(ancestorsGeneticsSize);
+
+		for (auto& ancestorsGenetic : ancestorsGenetics)
+		{
+			ancestorsGenetic.readFromBinaryFile(binfile);
+		}
+	}
+
+	binfile.read(ancestralGeneration);
+	binfile.read(lastGenerationSimplified);
+	binfile.read(haveAllLociCoallesced_info);
+	binfile.read(haveAllLociCoallesced_info);
+}

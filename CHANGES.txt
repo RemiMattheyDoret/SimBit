@@ -438,3 +438,12 @@ SimBit_4.15.5
 SimBit_4.15.6
 	pairs of loci semantic for ease of input to --L
 	Keywords are now interpreted left to right for performance reason
+
+SimBit_4.15.9
+	Keyword REP
+
+SimBit_4.15.10
+	Binary files can now use T4 loci. WATCH OUT new binary files system has not been formally tested
+
+SimBit_4.15.12
+	Improve intuition of T3_MeanVar outputs

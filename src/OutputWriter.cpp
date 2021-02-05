@@ -4414,12 +4414,12 @@ void OutputWriter::WriteOutputs_T3_MeanVar_header(OutputFile& file)
     std::string s("Generation");
     for ( int patch_index = 0 ; patch_index < GP->maxEverPatchNumber ; ++patch_index )
     {
-        s += std::string("\tP") + std::to_string(patch_index) + std::string("_meanT3W");
-        s += std::string("\tP") + std::to_string(patch_index) + std::string("_varT3W");
+        s += std::string("\tP") + std::to_string(patch_index) + std::string("_meanT3fitness");
+        s += std::string("\tP") + std::to_string(patch_index) + std::string("_varT3fitness");
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions ; dim++)
         {
-            s += std::string("\tP") + std::to_string(patch_index) + std::string("_dim") + std::to_string(dim) + std::string("_meanP");
-            s += std::string("\tP") + std::to_string(patch_index) + std::string("_dim") + std::to_string(dim) + std::string("_varP");
+            s += std::string("\tP") + std::to_string(patch_index) + std::string("_dim") + std::to_string(dim) + std::string("_meanPheno");
+            s += std::string("\tP") + std::to_string(patch_index) + std::string("_dim") + std::to_string(dim) + std::string("_varPheno");
         }
     }
     s += std::string("\n");
@@ -4475,6 +4475,7 @@ void OutputWriter::WriteOutputs_T3_MeanVar(Pop& pop, OutputFile& file)
             // calculate all phenotypes and fitnesses
             for (int ind_index=0;ind_index<SSP->patchSize[patch_index];++ind_index)
             {
+                Individual::resetT3phenotype();
                 CurrentPatch.getInd(ind_index).CalculateT3Phenotype(Habitat); // Save Phenotype in the static 'T3_IndPhenotype'
                 double W;
                 if (SSP->T3_isSelection)
@@ -4491,7 +4492,7 @@ void OutputWriter::WriteOutputs_T3_MeanVar(Pop& pop, OutputFile& file)
                 {
                     Phenotypes[dim][ind_index] = Individual::T3_IndPhenotype[dim];
                     MeanP[dim] += Individual::T3_IndPhenotype[dim];
-                }   
+                }
             }
 
             // Get means and variances for fitness

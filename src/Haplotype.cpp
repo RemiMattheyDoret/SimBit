@@ -203,7 +203,7 @@ unsigned char Haplotype::getT2_Allele(const INT char_index)
 }
 
 template<typename INT>
-int16_t Haplotype::getT3_Allele(const INT index)
+T3type Haplotype::getT3_Allele(const INT index)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->Gmap.T2_nbLoci);
@@ -424,25 +424,38 @@ template<typename INT>
 void Haplotype::mutateT3_Allele(INT index)
 {
     // Add or substract while preventing
-#ifdef DEBUG
-std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
-std::cout << "SSP->Gmap.T3_nbLoci = " << SSP->Gmap.T3_nbLoci << "\n";
-assert(SSP->Gmap.T3_nbLoci == T3_Alleles.size());    
-assert(index < T3_Alleles.size());
-assert(index >= 0);
-#endif
-    if (GP->rngw.get_1b())
+    #ifdef DEBUG
+    std::cout << "T3_Alleles.size() = " << T3_Alleles.size() << "\n";
+    std::cout << "SSP->Gmap.T3_nbLoci = " << SSP->Gmap.T3_nbLoci << "\n";
+    assert(SSP->Gmap.T3_nbLoci == T3_Alleles.size());    
+    assert(index < T3_Alleles.size());
+    assert(index >= 0);
+    #endif
+
+    if (SSP->T3_mutationType == '1')
     {
-        if (T3_Alleles[index] != std::numeric_limits<double>::max())
+        if (GP->rngw.get_1b())
         {
-            T3_Alleles[index]++;
+            if (T3_Alleles[index] != std::numeric_limits<T3type>::max())
+            {
+                T3_Alleles[index] += SSP->T3_mutationType_effectSizeInfo;
+            }
+        } else
+        {
+            if (T3_Alleles[index] != std::numeric_limits<T3type>::lowest())
+            {
+                T3_Alleles[index] -= SSP->T3_mutationType_effectSizeInfo;
+            }
         }
-    } else
+    } else if (SSP->T3_mutationType_effectSizeInfo != 0.0)
     {
-        if (T3_Alleles[index] != std::numeric_limits<double>::lowest())
+        if (SSP->T3_mutationType == 'g')
         {
-            T3_Alleles[index]--;
-        }
+            T3_Alleles[index] += GP->rngw.normal((double)0.0, SSP->T3_mutationType_effectSizeInfo);
+        } else if (SSP->T3_mutationType == 'G')
+        {
+            T3_Alleles[index] = GP->rngw.normal((double)0.0, SSP->T3_mutationType_effectSizeInfo);
+        } else abort();
     }
 }
 
@@ -548,11 +561,23 @@ void Haplotype::copyIntoT3(INT from, INT to, Haplotype& SourceChromo)
     //std::cout << "to = " << to << "  from = " << from << "  SourceChromo.T3_Alleles.size() = " << SourceChromo.T3_Alleles.size() << "\n";
     assert(to <= SourceChromo.T3_Alleles.size() + 1);
     
+    
     std::copy(
-              SourceChromo.T3_Alleles.begin() + from,
-              SourceChromo.T3_Alleles.begin() + to,
-              this->T3_Alleles.begin() + from
-              );
+      SourceChromo.T3_Alleles.begin() + from,
+      SourceChromo.T3_Alleles.begin() + to,
+      this->T3_Alleles.begin() + from
+    );
+    
+
+    /*
+    // Just wanted to test testing before copying but that's slower
+    for (size_t i = from ; i < to; ++i)
+    {
+        if (this->T3_Alleles[i] != SourceChromo.T3_Alleles[i])
+            this->T3_Alleles[i] = SourceChromo.T3_Alleles[i];
+    }
+    */
+    
 }
 
 
@@ -592,37 +617,35 @@ Haplotype::Haplotype()
 void Haplotype::PrintBinaryFile(OutputFile& file)
 {
     // Print T1_alleles
-    file.writeBinary(reinterpret_cast<const char*>(&T1_Alleles[0]), T1_Alleles.size()*sizeof(unsigned char));
+    if (SSP->Gmap.T1_nbLoci) file.writeBinary(T1_Alleles);
 
     // Print T2_alleles
-    file.writeBinary(reinterpret_cast<const char*>(&T2_Alleles[0]), T2_Alleles.size()*sizeof(unsigned char));
+    if (SSP->Gmap.T2_nbLoci) file.writeBinary(T2_Alleles);
 
     // Print T3_alleles
-    file.writeBinary(reinterpret_cast<const char*>(&T3_Alleles[0]), T3_Alleles.size()*sizeof(char));
+    if (SSP->Gmap.T3_nbLoci) file.writeBinary(T3_Alleles);
 
-    // Print T4_alleles
+    // Print T4 tree aside
+    /*
     if (SSP->Gmap.T4_nbLoci)
         std::cout << "\n\tWARNING: You are printing to a binary file while you have T4 loci. In the current version of SimBit, T4 loci cannot be printed on a binary file (sorry). The binary file will be produced ignoring T4 loci\n";
+    */
 
-    // Print T5_alleles (there should not be any flipped meaning normally)
+    // Print T56_alleles (there should not be any flipped meaning normally)
     if (SSP->Gmap.T56ntrl_nbLoci)
     {
         std::vector<uint32_t> T5ntrlTrueHaplotype = this->getT56ntrlTrueHaplotype();
-        T5ntrlTrueHaplotype.insert(T5ntrlTrueHaplotype.begin(), T5ntrlTrueHaplotype.size()); // insert the size of the vector as a start
-
-        file.writeBinary(reinterpret_cast<const char*>(&T5ntrlTrueHaplotype[0]), T5ntrlTrueHaplotype.size()*sizeof(uint32_t));
+        file.writeBinary(T5ntrlTrueHaplotype);
     }
 
     if (SSP->Gmap.T56sel_nbLoci)
     {
         std::vector<uint32_t> T5selTrueHaplotype = this->getT56selTrueHaplotype();
-        T5selTrueHaplotype.insert(T5selTrueHaplotype.begin(), T5selTrueHaplotype.size()); // insert the size of the vector as a start
-        
-        file.writeBinary(reinterpret_cast<const char*>(&T5selTrueHaplotype[0]), T5selTrueHaplotype.size()*sizeof(uint32_t));
+        file.writeBinary(T5selTrueHaplotype);
     }
 }
 
-Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<int16_t> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info)
+Haplotype::Haplotype(std::vector<unsigned char> T1_info, std::vector<unsigned char> T2_info, std::vector<T3type> T3_info, uint32_t t4id, std::vector<uint32_t> T56_info)
 {
     assert(SSP != nullptr); 
 
@@ -705,74 +728,70 @@ Haplotype::Haplotype(bool ShouldReadPopFromBinary)
     (void) ShouldReadPopFromBinary;
 
     //.read T1_alleles
-    T1_Alleles.resize(SSP->Gmap.T1_nbChars);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T1_Alleles[0]), SSP->Gmap.T1_nbChars*sizeof(unsigned char));
+    if (SSP->Gmap.T1_nbLoci) GP->binaryFileToRead.readVector(T1_Alleles);
 
+    
     //.read T2_alleles
-    T2_Alleles.resize(SSP->Gmap.T2_nbLoci);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T2_Alleles[0]), SSP->Gmap.T2_nbLoci*sizeof(unsigned char));
+    if (SSP->Gmap.T2_nbLoci) GP->binaryFileToRead.readVector(T2_Alleles);
 
+    
     //.read T3_alleles
-    T3_Alleles.resize(SSP->Gmap.T2_nbLoci);
-    GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T3_Alleles[0]), SSP->Gmap.T3_nbLoci*sizeof(char));
+    if (SSP->Gmap.T3_nbLoci) GP->binaryFileToRead.readVector(T3_Alleles);
 
+    
     //.read T4_alleles
-    if (SSP->Gmap.T4_nbLoci)
-    {
-        //std::cout << "\n\n\tERROR: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data and cannot set the ID of a haplotype as used on a T4 coalescent tree\n\n";
-        //abort();
-        std::cout << "\n\n\tWARNING: You asked for T4 alleles and asked for data to be read from binary file. As per the current version of SimBit, binary file cannot store T4 alleles data. Those loci will be initiated as perfectly unmutated\n\n";
-    }
+    // nothiung to do. T4Tree read later
 
-    //.read T56_alleles
+    //.read T56_alleles    
     if (SSP->Gmap.T56ntrl_nbLoci)
-    {
-        uint32_t nbElements = 99999;
-        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(uint32_t));
-        assert(nbElements >= 0);
-        assert(nbElements < SSP->Gmap.T56ntrl_nbLoci);
-        
+    {        
         if (SSP->Gmap.isT56ntrlCompress)
         {
-            T6ntrl_Alleles = CompressedSortedDeque(SSP->Gmap.T56ntrl_nbLoci);
-            std::vector<uint32_t> tmp(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(uint32_t));
-            assert(tmp.size() == nbElements);
-            CompressedSortedDeque tmp2(tmp, SSP->Gmap.T6ntrl_nbLoci);
-            T6ntrl_Alleles = tmp2;
+            std::vector<uint32_t> tmp;
+            GP->binaryFileToRead.readVector(tmp);
+            T6ntrl_Alleles = CompressedSortedDeque(tmp, SSP->Gmap.T56ntrl_nbLoci);
+            if (T6ntrl_Alleles.size() > SSP->Gmap.T56ntrl_nbLoci)
+            {
+                std::cout << "Reading population from a binary file. Read a vector of T6ntrl loci that is longer than the number of T6ntrl loci set in this simulation.\n";
+                abort();
+            }
         } else
         {
-            T5ntrl_Alleles.resize(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5ntrl_Alleles[0]), nbElements*sizeof(uint32_t));
+            GP->binaryFileToRead.readVector(T5ntrl_Alleles);
+            if (T5ntrl_Alleles.size() > SSP->Gmap.T56ntrl_nbLoci)
+            {
+                std::cout << "Reading population from a binary file. Read a vector of T5ntrl loci that is longer than the number of T5ntrl loci set in this simulation.\n";
+                abort();
+            }
         }
     }
         
 
     if (SSP->Gmap.T56sel_nbLoci)
-    {
-        int nbElements = -1;
-        GP->BinaryFileToRead.read(reinterpret_cast<char*>(&nbElements), sizeof(uint32_t));
-        assert(nbElements >= 0);
-        assert(nbElements < SSP->Gmap.T56sel_nbLoci);
+    {        
         if (SSP->Gmap.isT56selCompress)
         {
-            T6sel_Alleles = CompressedSortedDeque(SSP->Gmap.T56sel_nbLoci);
-            std::vector<uint32_t> tmp(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&tmp[0]), nbElements*sizeof(uint32_t));
-            assert(tmp.size() == nbElements);
-            CompressedSortedDeque tmp2(tmp, SSP->Gmap.T6sel_nbLoci);
-            T6sel_Alleles = tmp2;
+            std::vector<uint32_t> tmp;
+            GP->binaryFileToRead.readVector(tmp);
+            T6sel_Alleles = CompressedSortedDeque(tmp, SSP->Gmap.T56sel_nbLoci);
+            if (T6sel_Alleles.size() > SSP->Gmap.T56sel_nbLoci)
+            {
+                std::cout << "Reading population from a binary file. Read a vector of T6sel loci that is longer than the number of T6sel loci set in this simulation.\n";
+                abort();
+            }
         } else
         {
-            T5sel_Alleles.resize(nbElements);
-            GP->BinaryFileToRead.read(reinterpret_cast<char*>(&T5sel_Alleles[0]), nbElements*sizeof(uint32_t));
+            GP->binaryFileToRead.readVector(T5sel_Alleles);
+            if (T5sel_Alleles.size() > SSP->Gmap.T56sel_nbLoci)
+            {
+                std::cout << "Reading population from a binary file. Read a vector of T5sel loci that is longer than the number of T5sel loci set in this simulation.\n";
+                abort();
+            }
         }
     }
-        
-    
 
 
-    // Initiate W_T1, W_T2 and W_T5
+    // Initiate W_T1, W_T2 and W_T56
     if (SSP->T1_isMultiplicitySelection)
         this->W_T1.resize(SSP->NbElementsInFitnessMap, -1.0);
 
@@ -2409,6 +2428,7 @@ std::vector<uint32_t> Haplotype::getT56ntrlTrueHaplotype()
             for (; it != itEnd ; ++it)
             {
                 r.push_back(*it);
+                assert(r.back() < SSP->Gmap.T6ntrl_nbLoci);
             }
         } else
         {
@@ -2417,6 +2437,7 @@ std::vector<uint32_t> Haplotype::getT56ntrlTrueHaplotype()
             for (; it != itEnd ; ++it)
             {
                 r.push_back(*it);
+                assert(r.back() < SSP->Gmap.T5ntrl_nbLoci);
             }
         }
     }
@@ -2424,7 +2445,7 @@ std::vector<uint32_t> Haplotype::getT56ntrlTrueHaplotype()
     return r;
 }
 
-std::vector<uint32_t> Haplotype::getT56selTrueHaplotype()
+std::vector<uint32_t> Haplotype::getT56selTrueHaplotype() 
 {
     std::vector<uint32_t> r;
     if (SSP->Gmap.T56sel_nbLoci)
@@ -2436,6 +2457,7 @@ std::vector<uint32_t> Haplotype::getT56selTrueHaplotype()
             for (; it != itEnd ; ++it)
             {
                 r.push_back(*it);
+                assert(r.back() < SSP->Gmap.T6sel_nbLoci);
             } 
         } else
         {
@@ -2444,6 +2466,7 @@ std::vector<uint32_t> Haplotype::getT56selTrueHaplotype()
             for (; it != itEnd ; ++it)
             {
                 r.push_back(*it);
+                assert(r.back() < SSP->Gmap.T5sel_nbLoci);
             }
         }
     }

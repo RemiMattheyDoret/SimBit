@@ -74,3 +74,19 @@ void T4TreeRec::NodeTable::deleteAll()
 {
 	std::vector<Node>().swap(data);
 }
+
+void T4TreeRec::NodeTable::PrintBinaryFile(OutputFile& file) const
+{
+	file.writeBinary(data.size());
+	for (auto& node : data)
+		node.PrintBinaryFile(file);
+}
+
+void T4TreeRec::NodeTable::readFromBinaryFile(BinaryFileToRead& binfile)
+{
+	size_t size;
+	binfile.read(size);
+	data.resize(size);
+	for (auto& node : data)
+		node.readFromBinaryFile(binfile);
+}

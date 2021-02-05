@@ -136,6 +136,9 @@ public:
 			std::vector<uint32_t>&& moveMutations();
 			template<typename INT> void mutateLocus(INT MutPosition);
 			template<typename INT> NodeGenetics getSubsetMutations(INT from, INT to) const;
+
+			void PrintBinaryFile(OutputFile& file) const;
+			void readFromBinaryFile(BinaryFileToRead& binfile);
 	};
 
 	class Edge
@@ -150,6 +153,8 @@ public:
 			bool operator>(const Edge& other) const;
 			bool operator<(const Edge& other) const;
 			void print() const;
+			void PrintBinaryFile(OutputFile& file) const;
+			void readFromBinaryFile(BinaryFileToRead& binfile);
 	};
 
 	class EdgeTable
@@ -173,12 +178,26 @@ public:
 			EdgeTable();
 			void reserve(uint32_t size);
 			void deleteAll();
+			void PrintBinaryFile(OutputFile& file) const;
+			void readFromBinaryFile(BinaryFileToRead& binfile);
 	};
 
 	struct Node
 	{
 		int generation;
 		int patch;
+
+		void PrintBinaryFile(OutputFile& file) const
+		{
+			file.writeBinary(generation);
+			file.writeBinary(patch);
+		}
+
+		void readFromBinaryFile(BinaryFileToRead& binfile)
+		{
+			binfile.read(generation);
+			binfile.read(patch);
+		}
 	};
 
 	class NodeTable
@@ -200,6 +219,8 @@ public:
 			template<typename INT>  Node& operator[](const INT i);
 			Node& back();
 			void deleteAll();
+			void PrintBinaryFile(OutputFile& file) const;
+			void readFromBinaryFile(BinaryFileToRead& binfile);
 	};
 
 	class HaplotypeOfSegments
@@ -390,6 +411,7 @@ public:
 	bool isLocusForWhichFixationHadToBeComputedFixed();
 	void assertIsFullySimplified() const;
 	void deleteAll();
-	
+	void PrintBinaryFile(OutputFile& file) const;
+	void readFromBinaryFile(BinaryFileToRead& binfile);
 };
 

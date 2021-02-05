@@ -121,3 +121,17 @@ void T4TreeRec::NodeGenetics::mutateLocus(INT MutPosition)
     }
 }
 
+void T4TreeRec::NodeGenetics::PrintBinaryFile(OutputFile& file) const
+{
+    file.writeBinary(mutations);
+    file.writeBinary(birth);
+    file.writeBinary(ID);
+}
+
+void T4TreeRec::NodeGenetics::readFromBinaryFile(BinaryFileToRead& binfile)
+{
+    binfile.readVector(mutations);
+    binfile.read(birth);
+    binfile.read(ID);
+}
+

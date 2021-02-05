@@ -82,58 +82,46 @@ std::cout << "Enters in 'Pop::Pop'\n";
 #endif
     if (ShouldReadPopFromBinary)
     {
+        std::cout << "Binary files have not been extensively tested (esp. reusing seeds from biniary file and T4 loci). Please pay attention and ensure your results are meaningful.\n";
+        if (GP->nbSpecies > 1)
+        {
+            std::cout << "Trying to read several species population from a binary file. Sorry, in the current version, binary files only work for a single species.\n";
+            abort();
+        }
+
         // What is below sounds misleading but it is used to indicate to SimulationTracker::Initialization that there is (potentially) genetic variance.
         SSP->T1_Initial_AlleleFreqs_AllZeros = false;
         SSP->T1_Initial_AlleleFreqs_AllOnes = false;
 
 
-        GP->BinaryFileToRead.open(SSP->readPopFromBinaryPath.c_str(), std::ios::in | std::ios::binary);
-        if (!GP->BinaryFileToRead.is_open())
-        {
-            std::cout << "GP->BinaryFileToRead (" << SSP->readPopFromBinaryPath << ") failed to open! Please note that 'readPopFromBinary' should NOT be relative to 'GeneralPath' but should be a root path.\n";
-            abort();
-        }
-            
+        GP->binaryFileToRead.open(SSP->readPopFromBinaryPath);
 
-        //.read each patch (each patch starts with its PatchSize)
+        // Read each patch (each patch starts with its PatchSize)
+        {
+            int PN;
+            GP->binaryFileToRead.read(PN);
+            if (GP->PatchNumber != PN)
+            {
+                std::cout << "The binary file contained " << PN << " patches while this simulation is set to start with " << GP->PatchNumber << " patches.\n";
+                abort();
+            }
+        }
+        
        	patches.reserve(GP->PatchNumber);
         for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
         {
             patches.push_back(Patch(patch_index, ShouldReadPopFromBinary));
         }
 
-        // Test that we've reached the end
-        {
-            if (GP->BinaryFileToRead.eof())
-            {
-                std::cout << "There seems to have not enough data in the binary file '" << SSP->readPopFromBinaryPath << "', given the input parameters.\n";
-                abort();   
-            }
+        // Read T4tree
+        if (SSP->Gmap.T4_nbLoci)
+            SSP->T4Tree.readFromBinaryFile(GP->binaryFileToRead);
 
-            char nothing;
-            GP->BinaryFileToRead >> nothing; // sets EOF to true if there was nothing left to read
-
-            if (!GP->BinaryFileToRead.eof())
-            {
-                std::cout << "There seems to have more data in the binary file '" << SSP->readPopFromBinaryPath << "', than expected from the input parameters.\n";
-                int nbExtraBytes = 1;
-                while (GP->BinaryFileToRead >> nothing)
-                {
-                    nbExtraBytes++;
-                    if (nbExtraBytes > 99999)
-                    {
-                        std::cout << "There were more than " << nbExtraBytes << " extra bytes!\n";
-                        abort();   
-                    }
-                }
-                std::cout << "There were " << nbExtraBytes << " extra bytes!\n";
-                abort();
-            }
-        }
-            
+        // Test everything is read
+        GP->binaryFileToRead.testReachedEnd();
 
         // close
-        GP->BinaryFileToRead.close();
+        GP->binaryFileToRead.close();
     } else
     {
     	patches.reserve(GP->PatchNumber);
@@ -157,12 +145,13 @@ std::cout << "Enters in 'Pop::Pop'\n";
 
 void Pop::PrintBinaryFile()
 {
-
     if (outputWriter.isFile(SaveBinaryFile))
     {
         auto& file = outputWriter.get_OutputFiles(SaveBinaryFile)[0];
         if (file.isTime())
         {
+            std::cout << "Binary files have not been extensively tested (esp. reusing seeds from biniary file and T4 loci). Please pay attention and ensure your results are meaningful.\n";
+
             ////// Seed
             if (SSP->speciesIndex == (GP->nbSpecies-1))
             {
@@ -176,10 +165,18 @@ void Pop::PrintBinaryFile()
             // open
             file.open(); // reopen a different path for saving the population
 
+            file.writeBinary(GP->PatchNumber);
+
             // Write each patch (each patch will start with PatchSize info)
             for (int patch_index = 0 ; patch_index < GP->PatchNumber; patch_index++)
             {
                 this->getPatch(patch_index).PrintBinaryFile(file, patch_index);
+            }
+
+            // Write T4 tree
+            if (SSP->Gmap.T4_nbLoci)
+            {
+                SSP->T4Tree.PrintBinaryFile(file);
             }
 
             // close

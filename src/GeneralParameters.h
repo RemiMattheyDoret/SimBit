@@ -70,7 +70,7 @@ public:
 
 
     // BinaryFileToRead The path will be species specific though and are stored in SSP
-    std::ifstream                                   BinaryFileToRead;
+    BinaryFileToRead                                binaryFileToRead; 
 
     // sequencing error rate
     double                                          sequencingErrorRate;

@@ -170,3 +170,22 @@ void T4TreeRec::EdgeTable::deleteAll()
 	std::vector<Edge>().swap(data);
 }
 
+void T4TreeRec::EdgeTable::PrintBinaryFile(OutputFile& file) const
+{
+	file.writeBinary(data.size());
+	for (auto& edge : data)
+	{
+		edge.PrintBinaryFile(file);
+	}
+}
+
+void T4TreeRec::EdgeTable::readFromBinaryFile(BinaryFileToRead& binfile)
+{
+	size_t size;
+	binfile.read(size);
+	data.resize(size);
+	for (auto& edge : data)
+	{
+		edge.readFromBinaryFile(binfile);
+	}
+}

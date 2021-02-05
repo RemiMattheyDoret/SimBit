@@ -135,8 +135,9 @@ public:
     void write(const std::string& s);
     void write(const std::vector<std::string>& s);
     void writeBinary(const RNG_type x);
-    void writeBinary(const int x);
     void writeBinary(const char* first, int second);
+    template<typename T> void writeBinary(const T x);
+    template<typename T> void writeBinary(const std::vector<T>& x);
     //template<typename T> void writeBinary(const T* first, int second);
     void close();
     void setTimes(std::vector<int> x);

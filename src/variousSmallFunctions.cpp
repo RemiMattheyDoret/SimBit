@@ -464,6 +464,21 @@ void tokenize(std::vector<std::string>& tokens, const std::string& s, const char
 template<typename T>
 void replace(typename std::vector<T>& A, typename std::vector<T>::iterator Afrom, typename std::vector<T>::iterator Ato, typename std::vector<T>::iterator Bfrom, typename std::vector<T>::iterator Bto)
 {
+  /*
+  std::cout << "replacing '";
+  for (auto it = Afrom ; it != Ato ; ++it)
+    std::cout << *it << " ";
+  std::cout << "' at position "<< Afrom - A.begin() << " by '";
+  for (auto it = Bfrom ; it != Bto ; ++it)
+    std::cout << *it << " ";
+  std::cout << "'\n";
+
+  std::cout << "before replacing string is '";
+  for (size_t i = 0 ; i < A.size() ; ++i)
+    std::cout << A[i] << " ";
+  std::cout << "'\n";
+  */
+
   auto nbToRemove = Ato - Afrom;
   auto nbToAdd = Bto - Bfrom;
   auto nbToCopy = nbToRemove > nbToAdd ? nbToAdd : nbToRemove ;
@@ -487,5 +502,12 @@ void replace(typename std::vector<T>& A, typename std::vector<T>::iterator Afrom
     assert(Bfrom == Bto);
     A.erase(Afrom, Ato);
   }
+
+  /*
+  std::cout << "after replacing string is '";
+  for (size_t i = 0 ; i < A.size() ; ++i)
+    std::cout << A[i] << " ";
+  std::cout << "'\n";
+  */
 }
 

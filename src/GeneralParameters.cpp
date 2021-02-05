@@ -491,6 +491,7 @@ void GeneralParameters::readSeed(InputReader& input)
         std::ifstream file;
         file.open(seedBinaryFilePath, std::ios::out | std::ios::binary);
         file >> rngw.getRNG();
+        //std::cout << rngw.getRNG() << "\n";
         random_seed = std::numeric_limits<int>::quiet_NaN();
     } else 
     {

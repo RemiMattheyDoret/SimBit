@@ -78,6 +78,7 @@ public:
 
         // Genetics and Selection T3
         {{"T3_mu","T3_MutationRate"},                   {"S", "L"}, false},
+        {{"T3_mutationalEffect"},                       {"S", "L"}, false},
         {{"T3_pheno", "T3_PhenotypicEffects"},          {"S", "H", "L"}, false},
         {{"T3_fit","T3_FitnessLandscape"},              {"S", "H", "L", "T3_pheno"}, false},
         {{"T3_DN","T3_DevelopmentalNoise"},             {"S", "H", "L", "T3_pheno"}, false},

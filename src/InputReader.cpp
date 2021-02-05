@@ -80,10 +80,8 @@ std::string InputReader::print()
     std::string s;
     for (auto& elem : V)
     {
-        std::cout << "\t" << elem << "\n";
         s += elem + " ";
     }
-    std::cout << "(current index is " + std::to_string(VIndex) + ")";
     s += "(current index is " + std::to_string(VIndex) + ")";
     return this->toString();
 }
@@ -196,17 +194,40 @@ void InputReader::workDone()
 {
     if (this->IsThereMoreToRead())
     {
-        std::cout << "Message from 'InputReader method workDone': " << ErrorMessage << "there seems to have more values inputted than expected.\n";
-        std::cout << "The entire string being read now is '" << this->toString() << "'\n";
-        if (VIndex == 0)
+        bool isProblem = true;
+        if (V[VIndex] == "REP")
         {
-            std::cout << "Nothing has been read from this string. This may suggest an internal bug but please check your input parameters, it is possible that in some circumstance, no input was expected." << std::endl;
-        } else
-        {
-            std::cout << "The last token (or word) to have been read from this string was '"<< V[VIndex-1] << "'' and the following token that has not been read yet is '" << V[VIndex] << "'" << std::endl;
+            isProblem = false;
+            while (this->IsThereMoreToRead() && V[VIndex] == "REP")
+            {
+                if (VIndex+2 >= V.size())
+                {
+                    std::cout << "Message from 'InputReader method PeekNextElementString': " << ErrorMessage << " received keyword 'REP'. This keyword must be followed by at least two entries (the second of which must be a non-negative integer value) but instead the input stops without providing these two entries." << std::endl;
+                }
+                auto str = V[VIndex+1];
+                auto nb = readInt(V[VIndex+2], false);
+                VIndex+=3;
+                if (nb > 0)
+                {
+                    isProblem = true;
+                    break;
+                }
+            }
         }
-        
-        abort();
+
+        if (isProblem)
+        {
+            std::cout << "Message from 'InputReader method workDone': " << ErrorMessage << "there seems to have more values inputted than expected.\n";
+            std::cout << "The entire string being read now is '" << this->toString() << "'\n";
+            if (VIndex == 0)
+            {
+                std::cout << "Nothing has been read from this string. This may suggest an internal bug but please check your input parameters, it is possible that in some circumstance, no input was expected." << std::endl;
+            } else
+            {
+                std::cout << "The last token (or word) to have been read from this string was '"<< V[VIndex-1] << "'' and the following token that has not been read yet is '" << V[VIndex] << "'" << std::endl;
+            }
+            abort();
+        }
     }
 }
 
@@ -551,18 +572,30 @@ std::string InputReader::PeakNextElementString()
     }
 
 
-    if (V[VIndex] == "REP")
+    while (V[VIndex] == "REP")
     { 
+        if (VIndex+2 >= V.size())
+        {
+            std::cout << "Message from 'InputReader method PeekNextElementString': " << ErrorMessage << " received keyword 'REP'. This keyword must be followed by at least two entries (the second of which must be a non-negative integer value) but instead the input stops without providing these two entries." << std::endl;
+        }
         auto str = V[VIndex+1];
         auto nb = readInt(V[VIndex+2], false);
         if (nb > 0)
         {
             return str;
+        } else
+        {
+            VIndex += 3;
+
+            if (!this->IsThereMoreToRead() )
+            {
+                std::cout << "Message from 'InputReader method PeakNextElementString': " << ErrorMessage << " too few arguments received'" << std::endl;
+                abort();
+            }
         }
     }
 
     std::string r = V[VIndex];
-
     return r;
 }
 
@@ -590,7 +623,7 @@ std::string InputReader::GetNextElementString()
     }
 
 
-    if (V[VIndex] == "REP")
+    while (V[VIndex] == "REP")
     {
         if (VIndex+2 >= V.size())
         {
@@ -605,9 +638,23 @@ std::string InputReader::GetNextElementString()
             if (REPInfo.nb == 0)
             {
                 VIndex += 3;
+                auto toRet = REPInfo.str;
                 REPInfo.str = ""; // Just for safety
+                return toRet;
+            } else
+            {
+                return REPInfo.str;
             }
-            return REPInfo.str;
+        } else
+        {
+            VIndex += 3;
+            REPInfo.str = ""; // Just for safety
+
+            if (!this->IsThereMoreToRead() )
+            {
+                std::cout << "Message from 'InputReader method GetNextElementString': " << ErrorMessage << " too few arguments received'" << std::endl;
+                abort();
+            }
         }
     }
 
@@ -944,10 +991,12 @@ void InputReader::consideredFullyRead()
 
 void InputReader::interpretKeywords()
 {
-    //std::cout << "\n\n\n\nENTERING interpretKeywords with ErrorMessage '"<<ErrorMessage<<"'\n";
-    //this->print();
-    //std::cout << "V.size() = " << V.size() << "\n";
-    //std::cout << "VIndex = " << VIndex << "\n";
+    /*
+    std::cout << "\n\n\n\nENTERING interpretKeywords with ErrorMessage '"<<ErrorMessage<<"'\n";
+    std::cout << this->print();
+    std::cout << "V.size() = " << V.size() << "\n";
+    std::cout << "VIndex = " << VIndex << "\n";
+    */
     for (int vi = 0; vi < V.size(); ++vi) // vi is int because it must be allowed to go to -1
     {
         std::vector<std::string> toInsert;
@@ -1040,18 +1089,22 @@ void InputReader::interpretKeywords()
             //V.erase(V.begin() + vi, V.begin() + vi + 3);
             //V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
             replace(V, V.begin() + vi, V.begin() + vi + 3, toInsert.begin(), toInsert.end());
+            if (toInsert.size() == 0) --vi;
         } else if (currentKeyword == "seq" || currentKeyword == "seqInt")
         {
             //V.erase(V.begin() + vi, V.begin() + vi + 4);
             //V.insert(std::begin(V) + vi, toInsert.begin(), toInsert.end());
             replace(V, V.begin() + vi, V.begin() + vi + 4, toInsert.begin(), toInsert.end());
+            if (toInsert.size() == 0) --vi;
         }        
     }
+    
     /*
     std::cout << "\nEXITING interpretKeywords\n";
-    this->print();
+    std::cout << this->print();
     std::cout << "\n\n\n";
     */
+    
 }
 
 

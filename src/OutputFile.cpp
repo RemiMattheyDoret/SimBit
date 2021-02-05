@@ -1219,7 +1219,7 @@ void OutputFile::open()
     
     if (OutputFileType == SaveBinaryFile)
     {
-        ofs.open(path, std::ios::out | std::ios::binary);
+        ofs.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
     } else
     {
         ofs.open(path, std::ios_base::app);
@@ -1399,22 +1399,50 @@ void OutputFile::write(const std::vector<std::string>& s)
 }
 
 
+template<typename T>
+void OutputFile::writeBinary(const T x)
+{
+    //std::cout << "sizeof(x) = " << sizeof(x) << "\n";
+    assert(this->isOpen());
+    ofs.write((char*)&x, sizeof(T));
+    //std::cout << "write: " << x << " of type " << typeid(T).name() << "\n";
+}
+
+template<typename T>
+void OutputFile::writeBinary(const std::vector<T>& x)
+{
+    assert(this->isOpen());
+
+    this->writeBinary((size_t) x.size());
+
+    /*
+    std::cout <<"write: ";
+    for (size_t i = 0 ; i < x.size() ; ++i)
+    {
+        std::cout << x[i] << " ";
+    }
+    std::cout << " of type " << typeid(T).name() << "\n";
+    */
+    
+    ofs.write(
+        reinterpret_cast<const char*>(&x[0]),
+        x.size()*sizeof(T)
+    );
+}
+
 void OutputFile::writeBinary(const char* first, int second)
 {
+    //std::cout << "write first second\n";
     assert(this->isOpen());
     ofs.write(first, second);
 }
 
 void OutputFile::writeBinary(const RNG_type x)
 {
+    //std::cout << "write RNG\n";
     assert(this->isOpen());
-    ofs << x;   
-}
-
-void OutputFile::writeBinary(const int x)
-{
-    assert(this->isOpen());
-    ofs << x;   
+    ofs << x; 
+    //std::cout << x << "\n";
 }
 
 void OutputFile::close()

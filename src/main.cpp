@@ -38,8 +38,6 @@ Note of things to improve:
 
 //#define CALLENTRANCEFUNCTIONS  
 
-
-
 // Libraries
 #include <iostream>
 #include <list>
@@ -72,6 +70,7 @@ Note of things to improve:
 //#include <moreRNG/FastDiceRoller.cpp>
 //#include <moreRNG/xorshiro128.cpp>
 
+typedef float T3type;
 
 // forward class declaration and global variables
 #include "ForwardClassDeclarations.h"
@@ -89,6 +88,7 @@ Note of things to improve:
 #include "variousSmallFunctions.cpp"
 
 // other .h
+#include "BinaryFileToRead.h"
 #include "CompressedSortedDeque.h" // also contains the .h for CompressedSortedDeque::CompressedSortedDequeBlock and CompressedSortedDeque::iterator 
 #include "Genealogy.h"
 #include "Option.h"
@@ -127,6 +127,7 @@ Note of things to improve:
 
 
 // .cpp
+#include "BinaryFileToRead.cpp"
 #include "T7stuff/T7Gene.cpp"
 #include "T7stuff/develop.cpp"
 #include "CompressedSortedDeque.cpp"      // also contains the .cpp for CompressedSortedDeque::iterator and CompressedSortedDeque::CompressedSortedDequeBlock
@@ -190,7 +191,7 @@ Note of things to improve:
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.15.8");
+    std::string VERSION("version 4.15.12");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -243,7 +244,6 @@ LifeCycle::ParentsData LifeCycle::PD;
 bool KillOnDemand::justAboutToKill = false;
 std::vector<int> T4TreeRec::generationsToKeepInTheTree;
 std::vector<double> T7Gene::K_values_map = {5, 36.94528, 272.99075, 2017.14397, std::numeric_limits<double>::max()};
-
 
 
 /*
@@ -315,6 +315,10 @@ int main(int argc, char *argv[])
     assert(GP->nbSpecies > 0);
     assert(SSP == nullptr);
 
+    /*
+    GP->CurrentGeneration = GP->startAtGeneration;
+    allParameters.UpdatePopsAndParameters();
+    */
 
     // Build population and do stuff
     {
@@ -332,7 +336,7 @@ int main(int argc, char *argv[])
             
             // Create populations
             Pop pop_odd(SSP->readPopFromBinary);
-            
+
 
             SSP->resetGenetics.resetPopIfNeeded(pop_odd);
             if (SSP->Gmap.T56_nbLoci)

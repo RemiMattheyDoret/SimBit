@@ -1332,7 +1332,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "T1_fit")
     {
-        InputReader input(std::string("@S0 @H0 MultiplicityUnif 1.0"), "In Default value for --T1_FitnessEffects,");
+        InputReader input(std::string("@S0 @H0 unif 1 1 1"), "In Default value for --T1_FitnessEffects,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
     } else if (flag == "shrinkT56EveryNGeneration")
     {
@@ -1421,6 +1421,11 @@ void AllParameters::setOptionToDefault(std::string& flag)
                 SSPi.T3_Total_Mutation_rate = 0.0;
             }
         }
+    }
+    else if (flag == "T3_mutationalEffect")
+    {
+        InputReader input(std::string("default"), "In Default value for --T3_mutationalEffect,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_mutationalEffect);
     }
     else if (flag == "T3_pheno")
     {   
@@ -2114,7 +2119,12 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_MutationRate);
         
-    }  else if (flag == "T3_PhenotypicEffects" || flag == "T3_pheno")
+    }  else if (flag == "T3_mutationalEffect")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_mutationalEffect);
+    }
+
+    else if (flag == "T3_PhenotypicEffects" || flag == "T3_pheno")
     {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT3_PhenotypicEffects);
         
