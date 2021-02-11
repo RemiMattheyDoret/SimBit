@@ -298,6 +298,7 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
         
         assert(CumSumFits.size() > patch_index);
         assert(CumSumFits[patch_index].size() > 0);
+        
         if (!SSP->malesAndFemales) 
         {
             assert(CumSumFits[patch_index][0].size() == SSP->patchSize[patch_index]);
@@ -314,12 +315,41 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
                 }
             }
         }
+    } else // SSP->fecundityForFitnessOfOne != -1.0
+    {
+        if (!SSP->fecundityDependentOfFitness)
+        {
+            assert(CumSumFits[patch_index][0].size() == SSP->patchSize[patch_index]);
+            if (SSP->patchSize[patch_index] > 0)
+            {
+                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
+                {
+                    std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates." << std::endl;
+                    if (GP->CurrentGeneration == 1)
+                    {
+                        std::cout << "As the error message poped up at the first generation, you should probably check the initial conditions. Maybe you start with 'AllOnes' with selection against the the '1' variant (selection is against the '1' variant when making the 'Multiplicity' assumption). It is also possible that you start the simulation with a fixed lethal variant." << std::endl;
+                    }
+                    abort();
+                }
+            }
+        }
     }
 
-    if (CumSumFits[patch_index][0].size() && SSP->isAnySelection && (CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) > 1.0)
+
+
+    if (CumSumFits[patch_index][0].size() && SSP->isAnySelection)
     {
-        std::cout << "The average fitness of hermaphrodites in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". This makes no sense and it must be caused by an internal bug!" << std::endl;
-        abort();
+        if (CumSumFits[patch_index][0].back() < 0.0)
+        {
+            std::cout << "The average fitness of hermaphrodites in patch " << patch_index << " is negative (it is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << "). This makes no sense. It must be caused by an internal bug!" << std::endl;
+            abort();
+        }
+
+        if (CumSumFits[patch_index][0].back() > 1e300)
+        {
+            std::cout << "The sum of fitnesses of hermaphrodites in patch " << patch_index << " is gigantic (it is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << "). This is likely to cause round-off errors! Please ensure to keep fitness values within reasonable values." << std::endl;
+            abort();
+        }
     }
 }  
 
@@ -328,7 +358,7 @@ void Pop::CalculateFitnesses()
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::CalculateFitnesses\n";
-#endif   
+#endif 
 
     /*
     std::cout << "SSP->malesAndFemales = " << SSP->malesAndFemales << "\n";
@@ -398,7 +428,7 @@ void Pop::CalculateFitnesses()
         }
 
         // Security to avoid round off error in extreme parameter sets
-        if (SSP->isAnySelection) checkIfCumSumFitsIsNotTooSmall(patch_index);
+        if (SSP->isAnySelection) {checkIfCumSumFitsIsNotTooSmall(patch_index);}
 
         assert(CumSumFits.size() == GP->PatchNumber);
 
@@ -452,6 +482,7 @@ int Pop::SelectionParent(int patch_from, int sex)
         {
             assert(this->CumSumFits[patch_from].size() > sex);
             double rnd = GP->rngw.uniform_real_distribution(this->CumSumFits[patch_from][sex].back());
+            
             //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].back() = " << this->CumSumFits[patch_from][sex].back() << "\n";
             //std::cout << "rnd = " << rnd << "\n";
             std::vector<double>::iterator high = std::upper_bound(CumSumFits[patch_from][sex].begin(), CumSumFits[patch_from][sex].end(), rnd);
@@ -493,11 +524,16 @@ int Pop::SelectionParent(int patch_from, int sex)
         }
     }
 
-    
-    //std::cout << "selected parent " << parent_index << " from patch " << patch_from <<  "\n";
-    //std::cout << "haplo indices = " << getPatch(0).getInd(parent_index).getHaplo(0).T4ID << " & " << getPatch(0).getInd(parent_index).getHaplo(1).T4ID << "\n";
-    //std::cout << "SSP->patchSize["<<patch_from<<"] = " << SSP->patchSize[patch_from] << "\n";
-    
+    /*
+    if (!(parent_index >= 0 && parent_index < SSP->patchSize[patch_from]))
+    {
+        std::cout << "selected parent " << parent_index << " from patch " << patch_from <<  "\n";
+        std::cout << "SSP->patchSize["<<patch_from<<"] = " << SSP->patchSize[patch_from] << "\n";
+        std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].back() = " << this->CumSumFits[patch_from][sex].back() << "\n";
+        std::cout << "rndSave = " << rndSave << "\n";
+    }
+    */
+
     assert(parent_index >= 0 && parent_index < SSP->patchSize[patch_from]);
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Exits in Pop::SelectionParent\n";

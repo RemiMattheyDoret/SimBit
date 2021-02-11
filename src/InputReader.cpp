@@ -788,7 +788,7 @@ double InputReader::readDouble(const std::string& s)
     if (
             std::count(s.begin(), s.end(), '.') > 1
         || 
-             (s.at(0) != '-' && !isdigit(s.at(0)))
+             (s.at(0) != '-' && !isdigit(s.at(0)) && s.at(0) != '.')
         ||
             !isdigit(s.at(s.size() - 1))
     )

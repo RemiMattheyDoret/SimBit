@@ -128,6 +128,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
             fitPosStart += 3;
         }
         assert(fitPosStart == SSP->Gmap.T1_nbLoci * 3);
+        assert(W_T1_WholeIndividual >= 0.0);
         
         return W_T1_WholeIndividual;
     }
@@ -170,11 +171,12 @@ std::cout << "Enters in 'CalculateT1EpistaticFitness'\n";
             FitnessValueIndex += (haplo0.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index) + haplo1.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index)) * pow(THREE,nbLociUnderEpistasis - i - 1);
         }
         assert(FitnessValueIndex >= 0 && FitnessValueIndex < pow(THREE,nbLociUnderEpistasis));
-        assert(fits[FitnessValueIndex] >= 0.0 && fits[FitnessValueIndex] <= 1.0);
+        assert(fits[FitnessValueIndex] >= 0.0);
         //std::cout << "SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] = " << SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] << std::endl;
         r *= fits[FitnessValueIndex];
     }
-        
+    
+    assert(r >= 0.0); 
     return r;
 }
 
@@ -484,7 +486,7 @@ std::cout << "Enters in 'CalculateFitness'\n";
     }
         
     
-    assert(r >= 0.0 && r <= 1.0);  
+    assert(r >= 0.0);  
 
     //std::cout << "fitness = "<< r << "\n";
 
@@ -656,7 +658,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
                     haplo1.getT1_Allele(byte_index,bit_index)
                 ];
         }
-        assert(W_T1_WholeIndividual >= 0.0 && W_T1_WholeIndividual <= 1.0);
+        assert(W_T1_WholeIndividual >= 0.0);
         return W_T1_WholeIndividual;
     }
 }
@@ -721,7 +723,7 @@ std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
                 FitnessValueIndex += (haplo0.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index) + haplo1.getT1_Allele(T1_locus.byte_index, T1_locus.bit_index)) * pow(THREE,nbLociUnderEpistasis - i - 1);
             }
             assert(FitnessValueIndex >= 0 && FitnessValueIndex < pow(THREE,nbLociUnderEpistasis));
-            assert(fits[FitnessValueIndex] >= 0.0 && fits[FitnessValueIndex] <= 1.0);
+            assert(fits[FitnessValueIndex] >= 0.0);
             //std::cout << "SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] = " << SSP->T1_Epistasis_FitnessEffects[Habitat][FitnessValueIndex] << std::endl;
             r *= fits[FitnessValueIndex];
 
@@ -740,7 +742,8 @@ std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
             assert(LociSet.size() == 0);
         }
     }
-        
+      
+    assert(r >= 0.0);  
     return r;
 }
 
@@ -826,6 +829,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
             }     
         }
 
+        assert(w >= 0.0);
         return w;
     } else
     {
@@ -860,6 +864,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
             }     
         }
 
+        assert(w >= 0.0);
         return w;
     }
 }
@@ -1034,6 +1039,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
             }
         }
 
+        assert(r >= 0.0);
         return r;
     } else
     {
@@ -1090,6 +1096,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
             }
         }
 
+        assert(r >= 0.0);
         return r;
     }
 }

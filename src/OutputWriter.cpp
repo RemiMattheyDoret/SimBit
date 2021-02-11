@@ -1156,6 +1156,13 @@ void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)
                 double currentDistanceInRate = (1 - exp(-2*currentDistanceIncM)) / 2;
                 assert(currentDistanceInRate >= 0.0);
                 assert(currentDistanceInRate <= 0.5);
+
+                if (t < 0.0) 
+                {
+                    std::cout << "Error message from 'void OutputWriter::WriteOutputs_extraGeneticInfo(OutputFile& file)', there appears to fitness values greater than 1. The BGS statistics can not be computed with these loci. Note also that the BGS statistics assumes that loci are initialized fixed for the '0' allele (as is by default).\n";
+                    abort();
+                }
+                
                 assert(t <= 1.0);
                 assert(t >= 0.0);
 

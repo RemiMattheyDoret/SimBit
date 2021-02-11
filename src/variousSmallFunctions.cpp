@@ -511,3 +511,18 @@ void replace(typename std::vector<T>& A, typename std::vector<T>::iterator Afrom
   */
 }
 
+bool isLocusConsideredNeutral(double w, double appro)
+{
+  if (w == 1.0) return true;
+
+  if (w < 1.0)
+  {
+    auto threshold = 1.0 / (1.0 + appro);
+    if (w > threshold) return true; else return false;
+  } else // w  >= 1.0
+  {
+    auto threshold = 1.0 + appro;
+    if (w < threshold) return true; else return false;
+  }
+}
+

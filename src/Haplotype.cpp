@@ -323,7 +323,7 @@ void Haplotype::mutateT1_Allele(INT MutPosition, int& Habitat)
                 if ( this->getT1_Allele(byte_index, bit_index) ) // mutation added
                 {
                     w *= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index];
-                    assert(w >= 0.0 && w <= 1.0);
+                    assert(w >= 0.0);
                 } else // mutation removed
                 {
                     if (SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index] == 0)
@@ -332,7 +332,7 @@ void Haplotype::mutateT1_Allele(INT MutPosition, int& Habitat)
                     } else
                     {
                         w /= SSP->T1_FitnessEffects[Habitat][byte_index * 8 + bit_index]; 
-                        assert(w >= 0.0 && w <= 1.0);
+                        assert(w >= 0.0);
                     }
                 }
                 this->setW_T1( w,   fitnessMapIndex );
@@ -2569,7 +2569,7 @@ void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundIn
             w *= SSP->T56_FitnessEffects[Habitat][MutPosition];
 
 
-            assert(w >= 0.0 && w <= 1.0);
+            assert(w >= 0.0);
         } else
         {
             if (SSP->T56_FitnessEffects[Habitat][MutPosition] == 0.0)
@@ -2578,7 +2578,7 @@ void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundIn
             } else
             {
                 w /= SSP->T56_FitnessEffects[Habitat][MutPosition];
-                assert(w >= 0.0 && w <= 1.0);
+                assert(w >= 0.0);
             }
         }
         this->setW_T56( w,   fitnessMapIndex );
@@ -2799,7 +2799,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
                 
             }*/
             
-            assert(w<=1.0 && w>=0.0);
+            assert(w>=0.0);
             setW_T1(w, fitnessMapIndex);
             r *= w;
         } else
@@ -2808,7 +2808,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
         }
     }
 
-    assert(r<=1.0 && r>=0.0);
+    assert(r>=0.0);
     return r;
 }
 
@@ -2837,7 +2837,7 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
                 //assert(SSP->T2_FitnessEffects[Habitat].size() > char_index);
                 w *= pow(fits[T2_locus], getT2_Allele(T2_locus));
             }
-            assert(w<=1.0 && w>=0.0);
+            assert(w>=0.0);
             setW_T2(w, fitnessMapIndex);
             r *= w;
             //if (W_T2haplo0!=1.0) std::cout << "W_T2haplo0 = " << W_T2haplo0 << std::endl;
@@ -2849,7 +2849,7 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
         }          
     }
     
-    assert(r >= 0.0 && r <= 1.0);
+    assert(r >= 0.0);
     return r;
 }
 
@@ -2889,7 +2889,7 @@ double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
             }
             needToRecomputeIt = false;
             
-            assert(w<=1.0 && w>=0.0);
+            assert(w>=0.0);
             setW_T56(w, fitnessMapIndex);
             r *= w;
         }
@@ -2932,7 +2932,7 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
             }
             needToRecomputeIt = false;
             
-            assert(w<=1.0 && w>=0.0);
+            assert(w>=0.0);
             setW_T56(w, fitnessMapIndex);
             r *= w;
         }
@@ -2960,7 +2960,7 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicity'\n";
     }
 
 
-    assert(r >= 0.0 && r <= 1.0);
+    assert(r >= 0.0);
     return r;
 }
 
@@ -2997,7 +2997,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
         }
     }
 
-    assert(r<=1.0 && r>=0.0);
+    assert(r>=0.0);
 
     return r;
 }
@@ -3018,7 +3018,7 @@ std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
     }
 
     //if (r!=1.0)  std::cout << "T2 fit: = " << r << " ";
-    assert(r<=1.0 && r>=0.0);
+    assert(r>=0.0);
     return r;
 }
 
@@ -3072,7 +3072,7 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
         r = CalculateT56FitnessMultiplicityOnSubsetOfLoci(Habitat, LociSet, T6sel_Alleles.begin(), T6sel_Alleles.end());
     }
     
-    assert(r>=0.0 && r <= 1.0);
+    assert(r>=0.0);
     return r;
 }
 

@@ -1351,7 +1351,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "T5_approximationForNtrl")
     {
-        InputReader input(std::string("@S0 1.0"), "In Default value for --T5_approximationForNtrl,");
+        InputReader input(std::string("@S0 default"), "In Default value for --T5_approximationForNtrl,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT56_approximationForNtrl);
     }
     else if (flag == "indTypes")

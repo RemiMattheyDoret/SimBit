@@ -191,7 +191,7 @@ typedef float T3type;
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.15.12");
+    std::string VERSION("version 4.16.0");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

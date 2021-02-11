@@ -668,10 +668,20 @@ void SpeciesSpecificParameters::readT56_compress(InputReader& input)
 
 void SpeciesSpecificParameters::readT56_approximationForNtrl(InputReader& input)
 {
-    T56_approximationForNtrl = input.GetNextElementDouble();
-    if (T56_approximationForNtrl > 1.0 || T56_approximationForNtrl < 0.0)
+    if (input.PeakNextElementString() == "default")
     {
-        std::cout << "In --T56_approximationForNtrl, the value received is " << T56_approximationForNtrl << ". Sorry only values between 1.0 and 0.0 (included) make sense.\n";
+        input.skipElement();
+        T56_approximationForNtrl = 0.0;
+    } else
+    {
+        T56_approximationForNtrl = input.GetNextElementDouble();
+    }
+
+
+        
+    if (T56_approximationForNtrl < 0.0 || T56_approximationForNtrl > 1.0)
+    {
+        std::cout << "In --T56_approximationForNtrl, the value received is " << T56_approximationForNtrl << ". Sorry only values greater or equal to 0.0 and smaller or equal to 1.0 make sense. Default is 0.0, which means 'no approximation'. The approximation is computed as following. For a fitness value 'fit' greater than 1.0, SimBit will consider the locus to be neutral if 'fit' is greater than '1+T56_approximationForNtrl'. For a fitness value 'fit' lower than 1.0, SimBit will consider the locus to be neutral if 'fit' is lower than '1 / (1+T56_approximationForNtrl)'.\n";
         abort();
     }
 }
@@ -2859,9 +2869,9 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
                 for (int i = 0 ; i < TotalNbFitnessesToIndicate; i++)
                 {
                     double fit = input.GetNextElementDouble();
-                    if ( fit < 0.0 || fit > 1.0 )
+                    if ( fit < 0.0)
                     {
-                      std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', the " << i << "th fitness value indicated after habitat " << habitat << "is either lower than zero or greater than one. The fitness value indicated is  " << fit << ".\n";
+                      std::cout << "In option '--T1_epistasis (--T1_EpistaticFitnessEffects)', the " << i << "th fitness value indicated after habitat " << habitat << "is either lower than zero. The fitness value indicated is  " << fit << ".\n";
                         abort();  
                     }
                     FitnessEffects_ForASingleGroupOfLoci.push_back(fit);               
@@ -2944,12 +2954,13 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 for (int entry_index = 0 ; entry_index < (2 * this->quickScreenAtL_T56_nbLoci) ; entry_index++)    
                 {
                     double fit = input.GetNextElementDouble();
-                    if (fit < 0 || fit > 1 )
+                    if (fit < 0.0)
                     {
-                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'A', one 'fit' value is either greater than 1 or lower than 0 ( is " << fit << " ).\n";
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'A', one 'fit' value is lower than 0 ( is " << fit << " ).\n";
                         abort();
                     }
-                    if (fit > T56_approximationForNtrl) fit = 1.0;
+                    if (isLocusConsideredNeutral(fit, T56_approximationForNtrl)) fit = 1.0;
+                    
                     ForASingleHabitat.push_back(fit);
                 }
                 if (ForASingleHabitat.size() != 2 * this->quickScreenAtL_T56_nbLoci)
@@ -3004,13 +3015,14 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                         fitHetero = dist(GP->rngw.getRNG());
                         fitHomo   = 1 - (1-fitHetero)/h;
                     }
-                    if (fitHomo > 1.0) fitHomo = 1.0;
+                    //if (fitHomo > 1.0) fitHomo = 1.0;
                     if (fitHomo < 0.0) fitHomo = 0.0;
-                    if (fitHetero > 1.0) fitHetero = 1.0;
+                    //if (fitHetero > 1.0) fitHetero = 1.0;
                     if (fitHetero < 0.0) fitHetero = 0.0;
 
-                    if (fitHetero > T56_approximationForNtrl) fitHetero = 1.0;
-                    if (fitHomo > T56_approximationForNtrl) fitHomo = 1.0;
+                    if (isLocusConsideredNeutral(fitHetero, T56_approximationForNtrl)) fitHetero = 1.0;
+                    if (isLocusConsideredNeutral(fitHomo, T56_approximationForNtrl)) fitHomo = 1.0;
+
                     ForASingleHabitat.push_back(fitHetero);
                     ForASingleHabitat.push_back(fitHomo);
                 }
@@ -3056,19 +3068,21 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                         fitHomo   = 1 - (1-fitHetero)/h;
                     }
 
-                    if (fitHomo < 0 || fitHomo > 1 )
+                    if (fitHomo < 0 )
                     {
-                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHomo' value is either greater than 1 or lower than 0 ( is " << fitHomo << " ).\n";
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHomo' value is lower than 0 ( is " << fitHomo << " ).\n";
                         abort();
                     }
-                    if (fitHetero < 0 || fitHetero > 1 )
+                    if (fitHetero < 0 )
                     {
-                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHetero' value is either greater than 1 or lower than 0 ( is " << fitHetero << ", fitHomo = "<<fitHomo<<", h = "<<h<<" ).\n";
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'cstH', one 'fitHetero' value is lower than 0 ( is " << fitHetero << ", fitHomo = "<<fitHomo<<", h = "<<h<<" ).\n";
                         abort();
                     }
 
-                    if (fitHetero > T56_approximationForNtrl) fitHetero = 1.0;
-                    if (fitHomo > T56_approximationForNtrl) fitHomo = 1.0;
+                    if (isLocusConsideredNeutral(fitHetero, T56_approximationForNtrl)) fitHetero = 1.0;
+                    if (isLocusConsideredNeutral(fitHomo, T56_approximationForNtrl)) fitHomo = 1.0;
+
+                    
                     ForASingleHabitat.push_back(fitHetero);
                     ForASingleHabitat.push_back(fitHomo);
                 }
@@ -3084,12 +3098,14 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 for (int entry_index = 0 ; entry_index < this->quickScreenAtL_T56_nbLoci ; )
                 {
                     double fit01 = input.GetNextElementDouble();
-                    if (fit01 < 0 || fit01 > 1 )
+                    if (fit01 < 0)
                     {
-                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
+                        std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value is lower than 0 ( is " << fit01 << " ).\n";
                         abort();
                     }
-                    if (fit01 > T56_approximationForNtrl) fit01 = 1.0;
+
+                    if (isLocusConsideredNeutral(fit01, T56_approximationForNtrl)) fit01 = 1.0;
+
                     ForASingleHabitat.push_back(fit01);
                     entry_index++;
                 }
@@ -3106,14 +3122,16 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 double fitHet = input.GetNextElementDouble();
                 double fitHom = input.GetNextElementDouble();
                 
-                if (fitHet<0 || fitHom<0 || fitHet>1 || fitHom>1)
+                if (fitHet<0 || fitHom<0)
                 {
-                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'unif', value for fitness are negative or great than 1 (they are " << fitHet << " " << fitHom << " )\n";
+                    std::cout << "In option '--T5_FitnessEffects', habitat " << habitat << ", Mode 'unif', value for fitness are negative (they are " << fitHet << " " << fitHom << " )\n";
                     abort();
                 }
                 
-                if (fitHet > T56_approximationForNtrl) fitHet = 1.0;
-                if (fitHom > T56_approximationForNtrl) fitHom = 1.0;
+
+                if (isLocusConsideredNeutral(fitHet, T56_approximationForNtrl)) fitHet = 1.0;
+                if (isLocusConsideredNeutral(fitHom, T56_approximationForNtrl)) fitHom = 1.0;
+
                 for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbLoci ; ++locus)
                 {
                     ForASingleHabitat.push_back(fitHet);
@@ -3130,12 +3148,13 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 
                 ForASingleHabitat.reserve(this->quickScreenAtL_T56_nbLoci);
                 double fit01 = input.GetNextElementDouble();
-                if (fit01<0 || fit01>1)
+                if (fit01<0)
                 {
-                    std::cout << "In option '--T5_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
+                    std::cout << "In option '--T5_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative (is " << fit01 << ")\n";
                     abort();
                 }
-                if (fit01 > T56_approximationForNtrl) fit01 = 1.0;
+                if (isLocusConsideredNeutral(fit01, T56_approximationForNtrl)) fit01 = 1.0;
+                
                 for (int locus = 0 ; locus < this->quickScreenAtL_T56_nbLoci ; locus++)
                 {
                     ForASingleHabitat.push_back(fit01);
@@ -3162,8 +3181,8 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 {
                     double fit = 1 - dist(GP->rngw.getRNG());
                     if (fit < 0.0) fit = 0.0;
-                    if (fit > 1.0) fit = 1.0;
-                    if (fit > T56_approximationForNtrl) fit = 1.0;
+                    //if (fit > 1.0) fit = 1.0;
+                    if (isLocusConsideredNeutral(fit, T56_approximationForNtrl)) fit = 1.0;
                     ForASingleHabitat.push_back(fit);
                 }
                 assert(ForASingleHabitat.size() == this->quickScreenAtL_T56_nbLoci);
@@ -3291,7 +3310,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
             
 
                 double dominance = input.GetNextElementDouble(); // either cst or mean dominance
-                if (dominance < 0.0 || dominance > 0.5)
+                if (dominance < 0.0 || dominance > 1.0)
                 {
                     std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'domA', the dominance value is either smaller than 0.0 or larger than 1.0. dominance recevied = " << dominance << std::endl;
                     abort();
@@ -3304,9 +3323,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     if (input.isNextRKeyword())
                     {
                         double fit11 = input.GetNextElementDouble();
-                        if (fit11 < 0 || fit11 > 1 )
+                        if (fit11 < 0)
                         {
-                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'domA', one 'fit' value (directly after keyword 'R') is either greater than 1 or lower than 0 ( is " << fit11 << " ).\n";
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'domA', one 'fit' value (directly after keyword 'R') is lower than 0 ( is " << fit11 << " ).\n";
                             abort();
                         }
                         double fit01;
@@ -3435,9 +3454,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     } else
                     {
                         double fit = input.GetNextElementDouble();
-                        if (fit < 0 || fit > 1 )
+                        if (fit < 0)
                         {
-                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'A', one 'fit' value is either greater than 1 or lower than 0 ( is " << fit << " ).\n";
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'A', one 'fit' value is lower than 0 ( is " << fit << " ).\n";
                             abort();
                         }
                         ForASingleHabitat.push_back(fit);
@@ -3458,9 +3477,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     {
                         double fit01 = input.GetNextElementDouble();
                         int nbRepeats = input.GetNextElementInt();
-                        if (fit01 < 0 || fit01 > 1 )
+                        if (fit01 < 0 )
                         {
-                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value (coming after keyword 'R') is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'multfitA', one 'fit01' value (coming after keyword 'R') is lower than 0 ( is " << fit01 << " ).\n";
                             abort();
                         }
                         for (int i = 0 ; i < nbRepeats; i++)
@@ -3476,9 +3495,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                     } else
                     {
                         double fit01 = input.GetNextElementDouble();
-                        if (fit01 < 0 || fit01 > 1 )
+                        if (fit01 < 0 )
                         {
-                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA', one 'fit01' value is either greater than 1 or lower than 0 ( is " << fit01 << " ).\n";
+                            std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'MultiplicityA', one 'fit01' value is lower than 0 ( is " << fit01 << " ).\n";
                             abort();
                         }
                         ForASingleHabitat.push_back(fit01);
@@ -3497,9 +3516,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 double fit00 = input.GetNextElementDouble();
                 double fit01 = input.GetNextElementDouble();
                 double fit11 = input.GetNextElementDouble();
-                if (fit00<0 || fit01<0 || fit11<0 || fit00>1 || fit01>1 || fit11>1)
+                if (fit00<0 || fit01<0 || fit11<0)
                 {
-                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'unif', value for fitness are negative or great than 1 (they are " << fit00 << " " << fit01 << " " << fit11 << " )\n";
+                    std::cout << "In option '--T1_FitnessEffects', habitat " << habitat << ", Mode 'unif', value for fitness are negative (they are " << fit00 << " " << fit01 << " " << fit11 << " )\n";
                     abort();
                 }
                 
@@ -3519,9 +3538,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 this->T1_isMultiplicitySelection = true;
                 
                 double fit01 = input.GetNextElementDouble();
-                if (fit01<0 || fit01>1)
+                if (fit01<0)
                 {
-                    std::cout << "In option '--T1_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative or greater than zero (is " << fit01 << ")\n";
+                    std::cout << "In option '--T1_FitnessEffects' Mode 'multfitUnif', habitat " << habitat << ", value for 'fit01' is negative (is " << fit01 << ")\n";
                     abort();
                 }
                 for (int locus = 0 ; locus < this->Gmap.T1_nbLoci ; locus++)
@@ -3547,7 +3566,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 {
                     double fit = 1 - dist(GP->rngw.getRNG());
                     if (fit < 0.0) fit = 0.0;
-                    if (fit > 1.0) fit = 1.0;
+                    //if (fit > 1.0) fit = 1.0;
                     ForASingleHabitat.push_back(fit);
                 }
             } else if (Mode.compare("cstHgamma") == 0)
@@ -3597,9 +3616,9 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                         fitHetero = dist(GP->rngw.getRNG());
                         fitHomo   = 1 - (1-fitHetero)/h;
                     }
-                    if (fitHomo > 1.0) fitHomo = 1.0;
+                    //if (fitHomo > 1.0) fitHomo = 1.0;
                     if (fitHomo < 0.0) fitHomo = 0.0;
-                    if (fitHetero > 1.0) fitHetero = 1.0;
+                    //if (fitHetero > 1.0) fitHetero = 1.0;
                     if (fitHetero < 0.0) fitHetero = 0.0;
 
                     
@@ -3651,9 +3670,9 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
             if (Mode.compare("unif") == 0)
             {
                 double fit = input.GetNextElementDouble();
-                if (fit < 0.0 || fit > 1.0)
+                if (fit < 0.0)
                 {
-                    std::cout <<  "In option '--T2_FitnessEffects', habitat " << habitat << ", Mode 'unif', 'fit' value received is " << fit << " which is either lower than zero or greater than 1.\n";
+                    std::cout <<  "In option '--T2_FitnessEffects', habitat " << habitat << ", Mode 'unif', 'fit' value received is " << fit << " which is lower than zero.\n";
                     abort();
                 }
                 for (int char_index = 0 ; char_index < this->Gmap.T2_nbLoci ; char_index++)
@@ -3665,9 +3684,9 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
                 for (int entry_index = 0 ; entry_index < this->Gmap.T2_nbLoci ; ++entry_index)
                 {
                     double fit = input.GetNextElementDouble();
-                    if (fit < 0.0 || fit > 1.0)
+                    if (fit < 0.0)
                     {
-                        std::cout <<  "In option '--T2_FitnessEffects' Mode 'A', 'fit' value received is " << fit << " which is either lower than zero or greater than 1.\n";
+                        std::cout <<  "In option '--T2_FitnessEffects' Mode 'A', 'fit' value received is " << fit << " which is lower than zero.\n";
                         abort();
                     }
                     ForASingleHabitat.push_back(fit);
@@ -3691,7 +3710,7 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
                 {
                     double fit = 1 - dist(GP->rngw.getRNG());
                     if (fit < 0.0) fit = 0.0;
-                    if (fit > 1.0) fit = 1.0;
+                    //if (fit > 1.0) fit = 1.0;
                     ForASingleHabitat.push_back(fit);
                 }
             } else
@@ -3705,8 +3724,6 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
 
         assert(this->T2_FitnessEffects.size() == this->MaxEverHabitat + 1);
     }
-
-    
 }
 
 void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
@@ -5726,6 +5743,12 @@ void SpeciesSpecificParameters::readadditiveEffectAmongLoci(InputReader& input)
     } else
     {
         additiveEffectAmongLoci = input.GetNextElementBool();
+    }
+
+    if (additiveEffectAmongLoci)
+    {
+        std::cout << "For option --additiveEffectAmongLoci, received 'true' (or equivalent). In the current version effects among loci can only be multiplicative. Sorry!\n";
+        abort();
     }
 }
 
