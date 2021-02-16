@@ -451,3 +451,8 @@ SimBit_4.15.12
 SimBit_4.15.13
 	Add error message for risk of round off errors when fitness is too low when fec != -1 and fecundity is independent of fitness.
 
+SimBit_4.16.0
+	Fitnesses greater than 1 authorized. Changes practically more than it changes flexibility
+
+SimBit_4.16.1
+	Option to remove the input option file

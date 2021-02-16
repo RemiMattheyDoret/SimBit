@@ -191,7 +191,7 @@ typedef float T3type;
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.16.0");
+    std::string VERSION("version 4.16.1");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
                     {
                         //std::cout << "About to free parent population memory\n";
                         pop_Parent.freeMemory();
-                        pop_Offspring.shrink_to_fitT56();
+                        if (SSP->Gmap.T56_nbLoci) pop_Offspring.shrink_to_fitT56();
                         //std::cout << "Parent population memory has been freed\n";
                     }
 

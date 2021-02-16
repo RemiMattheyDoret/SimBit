@@ -6,7 +6,8 @@ public:
     {
         {{"seed", "random_seed"},                       {}, false},
         {{"printProgress"},                             {}, false},
-
+        {{"removeInputFileAfterReading"},               {}, false},
+        
     	// Basics simulations
         {{"nbGens","nbGenerations"},                    {}, false},
         {{"startAtGeneration"},                         {"nbGens"}, false},

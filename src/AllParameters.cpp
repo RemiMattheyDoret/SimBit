@@ -220,6 +220,7 @@ std::cout << "Enters in 'SetParameters'\n";
     }
 
     std::string AllInputInLongString;
+    std::string optionFilePath(""); // set here so that we can remove it if wished
 
     std::string FileOrNot(argv[1]);
     if (
@@ -242,7 +243,7 @@ std::cout << "Enters in 'SetParameters'\n";
         }
 
         // Get optionFilePath
-        std::string optionFilePath(argv[2]);
+        optionFilePath = std::string(argv[2]);
 
         // Get Line Number from which parameters must be read
         std::string s_LineNumber(argv[3]);
@@ -632,6 +633,11 @@ std::cout << "Enters in 'SetParameters'\n";
         }
     }
 
+    if (GP->removeInputFileAfterReading && optionFilePath != "")
+    {
+        std::remove(optionFilePath.c_str());
+    }
+
     // random SSP security
     assert(SSP == nullptr);
 
@@ -862,6 +868,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
         {
             SSPs[speciesIndex].nbSubGenerationsPerGeneration = 1;
         }
+    } else if (flag == "removeInputFileAfterReading")
+    {
+        GP->removeInputFileAfterReading = false;
     }
     /*else if (flag == "T")
     {
@@ -1931,6 +1940,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readnbSubGenerations);
 
+    } else if (flag == "removeInputFileAfterReading")
+    {
+        GP->removeInputFileAfterReading = input.GetNextElementBool();
     } else if (flag == "InitialpatchSize")
     {
         // just a security
