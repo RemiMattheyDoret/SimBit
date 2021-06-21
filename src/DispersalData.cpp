@@ -158,7 +158,7 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
     return nbOffs;
 }
 
-void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
+void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<fitnesstype>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch)
 {
 #ifdef DEBUG
     std::cout << "Enters in DispersalData::getMigrationEventsForEachDestinationPatch\n";
@@ -253,7 +253,7 @@ void DispersalData::getMigrationEventsForEachDestinationPatch(std::vector<std::v
         } else
         {
             nbOffs = totalFitness;
-            assert(nbOffs == SSP->patchCapacity[patch_from]);
+            //assert(nbOffs == SSP->patchCapacity[patch_from]);
         }
             
 
@@ -318,7 +318,7 @@ void DispersalData::setOriginalBackwardMigrationIfNeeded()
 }
 
 
-const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<double>>>& CumSumFits)
+const std::vector<int>& DispersalData::setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<fitnesstype>>>& CumSumFits)
 {
 #ifdef DEBUG
     std::cout << "Enters in DispersalData::SetBackwardMigrationAndGetNextGenerationPatchSizes\n";
@@ -604,6 +604,8 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
             {
                 probsFromPatch[patch_to] = 0.0;
             }
+
+            //std::cout << "From " << patch_from << " to " << patch_to << ", m = " << probsFromPatch[patch_to] << "\n";
         }
 
         // Rescale
@@ -615,7 +617,7 @@ std::vector<std::vector<double>> DispersalData::FromProbaLineToFullFormForwardMi
         }
         if (currentSumProbs != 1.0)
         {
-            assert(currentSumProbs < 1.0);
+            assert(currentSumProbs < 1.000001); // For round-off errors
             assert(currentSumProbs > 0.0);
             for (uint32_t patch_to = 0 ; patch_to < CurrentPatchNumber ; ++patch_to)
             {
@@ -653,16 +655,16 @@ void DispersalData::readDispMat(InputReader& input)
 
     if (input.PeakNextElementString() == "backward")
     {
-        input.skipElement();
+        input = InputReader(input, 1, input.getSizeOfV()); // remove the backward keyword entirely. skipElement would not be enuogh because of GetNextGenerationMarker I think.
 
         if (SSP->fecundityForFitnessOfOne != -1 || SSP->DispWeightByFitness)
         {
             if (SSP->DispWeightByFitness)
             {
-                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. The fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is weighted by fitness\n";
+                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. From the inputs, it turns out that fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is weighted by fitness. Note that dispersal is weighted by fitness by default (as is by default). You probably just want '--DispWeightByFitness false'.\n";
             } else
             {
-                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. The fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is not weighted by fitness\n";
+                std::cout << "For option '--m (--DispMat)', received keyword 'backward'. This keyword can only be used when the fecundity is set to -1 and the dispersal is not weighted by fitness. From the inputs, it turns out that  fecundity has been set to " << SSP->fecundityForFitnessOfOne << " and the dispersal is not weighted by fitness\n";
             }
             abort();
         }    
@@ -816,7 +818,7 @@ void DispersalData::readDispMat(InputReader& input)
         } else if (Mode.compare("LSS") == 0) // Linear Stepping Stone (but with as many stones as we want and potential assymetry). 
         {
             // Gather values
-            int center = input.GetNextElementInt();
+            int center = input.GetNextElementInt(); // is zero-based counting
             std::vector<double> probs;
             double sum = 0.0;
 
@@ -994,7 +996,13 @@ void DispersalData::readDispMat(InputReader& input)
                 std::vector<double> v;
                 for (int patch_to = 0 ; patch_to < CurrentPatchNumber; patch_to++)
                 {
-                    v.push_back(input.GetNextElementDouble());
+                    auto mrate = input.GetNextElementDouble();
+                    if (mrate < 0.0 || mrate > 1.0)
+                    {
+                        std::cout << "For option --m (--DispMat), mode of entry 'A', received a migration rate that is either lower than zero or greater than 1. Rate received is '"<<mrate<<"'.\n";
+                        abort();
+                    }
+                    v.push_back(mrate);
                 }
                 FFFM.push_back(v);
             }

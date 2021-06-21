@@ -59,6 +59,7 @@ public:
 
     void freeT56Memory();
     void shrink_to_fitT56();
+    void shrink_to_fit_inds();
 };
 
 

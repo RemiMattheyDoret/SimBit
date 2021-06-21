@@ -41,6 +41,7 @@ Note of things to improve:
 // Libraries
 #include <iostream>
 #include <list>
+#include <stack>
 #include <fstream>
 #include <random>
 #include <vector>
@@ -71,6 +72,7 @@ Note of things to improve:
 //#include <moreRNG/xorshiro128.cpp>
 
 typedef float T3type;
+typedef double fitnesstype;
 
 // forward class declaration and global variables
 #include "ForwardClassDeclarations.h"
@@ -108,6 +110,10 @@ typedef float T3type;
 #include "SampleSequenceDataContainer/SampleSequenceData.h"
 #include "SampleSequenceDataContainer/SampleSequenceDataContainer.h"
 #include "T4TreeRec/T4TreeRec.h"
+#include "T8TreeRecording/MemoryPool.h"
+#include "T8TreeRecording/T8Segment.h"
+#include "T8TreeRecording/T8TreeRecording.h"
+
 #include "ForcedMigration.h"
 #include "T7stuff/T7Parameters.h"
 #include "T7stuff/T7Gene.h"
@@ -160,6 +166,10 @@ typedef float T3type;
 #include "ForcedMigration.cpp"
 #include "SpeciesSpecificParameters.cpp"
 
+#include "T8TreeRecording/MemoryPool.cpp"
+#include "T8TreeRecording/T8Segment.cpp"
+#include "T8TreeRecording/T8TreeRecording.cpp"
+
 #include "T4TreeRec/Segment.cpp"
 #include "T4TreeRec/ReversibleVector.cpp"
 #include "T4TreeRec/Edge.cpp"
@@ -191,7 +201,7 @@ typedef float T3type;
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.16.1");
+    std::string VERSION("version 4.16.24");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";
@@ -232,10 +242,10 @@ int NBT1MUTATIONS = 0;
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
  */
 
-std::vector<double> Individual::T3_IndPhenotype;
+std::vector<T3type> Individual::T3_IndPhenotype;
 std::vector<std::vector<double>> Individual::T7phenotypeOverTime;
 std::vector<double> Individual::T7_IndPhenotype;
-std::vector<double> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; // This is necessary for when there is no selection at all.
+std::vector<fitnesstype> Individual::fitnessComponents = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; // This is necessary for when there is no selection at all.
 std::string OutputFile::GeneralPath;
 std::vector<int> Pop::T2LociToCorrect;
 std::string OutputFile::sequencingErrorStringToAddToFilnames = "";
@@ -244,6 +254,12 @@ LifeCycle::ParentsData LifeCycle::PD;
 bool KillOnDemand::justAboutToKill = false;
 std::vector<int> T4TreeRec::generationsToKeepInTheTree;
 std::vector<double> T7Gene::K_values_map = {5, 36.94528, 272.99075, 2017.14397, std::numeric_limits<double>::max()};
+const long double Pop::limitMinimumSumOfFitnessAuthorized = 1e-300;//std::numeric_limits<long double>::min()*262144;
+std::vector<uint32_t> T8TreeRecording::staticGeneticData = {};
+
+//size_t T8Segment::static_mutate_position;
+//size_t T8Segment::static_mutate_newsize;
+//size_t T8Segment::static_mutate_mut;
 
 
 /*
@@ -391,14 +407,15 @@ int main(int argc, char *argv[])
             #endif
 
             GP->CurrentGeneration = GP->startAtGeneration; // Not needed for the moment but it is just in case I modify the ::initialize method
-            if (SSP->Gmap.T4_nbLoci) SSP->T4Tree.initialize(allSpecies[speciesIndex].second);            
+            if (SSP->Gmap.T4_nbLoci) SSP->T4Tree.initialize(allSpecies[speciesIndex].second);
+            if (SSP->Gmap.T8_nbLoci) SSP->T8Tree.initialize(allSpecies[speciesIndex].second);
 
             #ifdef DEBUG
                 std::cout << "-------- T4Tree initialized --------" << std::endl;
             #endif
 
             allSpecies[speciesIndex].second.PrintBinaryFile();    // Save population in binary file if you asked for it. It will also save the seed to binary if SSP points to the parameters for the last speciesIndex 
-            outputWriter.WriteOutputs(allSpecies[speciesIndex].second); // WriteOutputs if you asked for it
+            if (GP->burnInUntilT4Coal_check_every_N_generations == -1) outputWriter.WriteOutputs(allSpecies[speciesIndex].second); // WriteOutputs if you asked for it
 
             #ifdef DEBUG
             std::cout << "-------- Headers for output created --------" << std::endl;
@@ -475,7 +492,7 @@ int main(int argc, char *argv[])
                     // get Pops
                     isFirstPopOffspring[speciesIndex]     = !isFirstPopOffspring[speciesIndex];
                     Pop& pop_Offspring  = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].first : allSpecies[speciesIndex].second;
-                    Pop& pop_Parent     = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;
+                    Pop& pop_Parent     = isFirstPopOffspring[speciesIndex] ? allSpecies[speciesIndex].second : allSpecies[speciesIndex].first;                    
 
                     // Early Forced migration
                     SSP->forcedMigration.forceMigrationIfNeeded(pop_Parent, true);

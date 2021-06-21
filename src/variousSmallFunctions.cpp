@@ -97,7 +97,7 @@ void reorderNoAssertions(std::vector<T>& v, std::vector<uint32_t>& order)
 
 
 template <typename T>
-void reorder(std::vector<T>& v, std::vector<uint32_t>& order, unsigned char assertions = 0, int PatchNumber = -1)  
+void reorder(std::vector<T>& v, const std::vector<uint32_t>& order, const unsigned char assertions = 0, const int PatchNumber = -1)  
 {   
     auto v2 = v;
     T sum = 0;
@@ -525,4 +525,432 @@ bool isLocusConsideredNeutral(double w, double appro)
     if (w < threshold) return true; else return false;
   }
 }
+
+
+template<typename T>
+void mergeSortAppendOddNumber(std::vector<T>& a, std::vector<T>& b, std::vector<T>& c)
+{
+  /*
+    Appends to a, the sorted values from the sorted vectors b and c
+  */
+
+  // Assertions
+  if (a.size())
+  {
+    if (b.size())
+    {
+      assert(a.back() < b.front());
+    }
+
+    if (c.size())
+    {
+      assert(a.back() < c.front());
+    }   
+  }
+
+  // isThereAnythingToDo
+  if (a.size()==0 && b.size()==0 )
+    return;
+
+
+  // Handy variables
+  auto bit = b.begin();
+  auto cit = c.begin();
+  auto bend = b.end();
+  auto cend = c.end();
+
+  // Reserve memory in a
+  a.reserve(a.size() + b.size() + c.size());
+
+
+  // Copy stuff
+  while (bit != bend && cit != cend)
+  {
+    if (*bit < *cit)
+    {
+      if (a.back() == *bit)
+      {
+        a.pop_back();
+      } else
+      {
+        a.push_back(*bit);
+      }
+        
+      ++bit;
+    } else
+    {
+      if (a.back() == *cit)
+      {
+        a.pop_back();
+      } else
+      {
+        a.push_back(*cit);
+      }
+
+      ++cit;
+    }
+  }
+
+  // Copy remaining elements of b
+  if (bit != cend)
+  {
+    // first element remaining
+    if (a.back() == *bit)
+    {
+      a.pop_back();
+    } else
+    {
+      a.push_back(*bit);
+    }
+    ++bit;
+
+    // other elements
+    while (bit != cend)
+    {
+      a.push_back(*bit);
+      ++bit;
+    }
+  }
+
+  // Copy remaining elements of c
+  if (cit != cend)
+  {
+    // first element remaining
+    if (a.back() == *cit)
+    {
+      a.pop_back();
+    } else
+    {
+      a.push_back(*cit);
+    }
+    ++cit;
+
+    // other elements
+    while (cit != cend)
+    {
+      a.push_back(*cit);
+      ++cit;
+    }
+  }
+}
+
+
+template<typename T>
+void filter(std::vector<T>& v, const std::vector<bool>& b)
+{
+    assert(v.size() == b.size());
+    auto it = b.begin();
+    v.erase(
+      std::remove_if(
+        v.begin(),
+        v.end(),
+        [&](T) { return *it++; }
+      ),
+      v.end()
+    );
+}
+
+
+template<typename T>
+void dealWithOddAndEvenDuplicates(std::vector<T>& x)
+{
+  auto begin = x.begin();
+  auto end = x.end();
+
+  if (end - begin <= 1) return;
+
+  std::vector<bool> toErase(end - begin, false);
+
+  auto it = begin;
+
+  T elem = *it;
+  size_t nb = 1;
+  ++it;
+  while (it != end)
+  {
+    if (*it == elem)
+    {
+      ++nb;
+    }
+    else
+    {
+      if (nb != 1)
+      {
+        size_t eraseTo = it - begin;
+        size_t eraseFrom = it - begin - nb;
+        
+        if (nb % 2 == 0)
+        {
+          // even -> keep none
+          // nothing to do
+        } else
+        {
+          // odd -> keep one
+          ++eraseFrom;
+        }
+
+        for (size_t i = eraseFrom ; i < eraseTo ; ++i)
+          toErase[i] = true;
+
+        nb = 1;
+      }
+      elem = *it;
+    }
+    ++it;
+  }
+
+  filter(x, toErase);
+  if (x.capacity() > x.size() * 1.2)
+    x.shrink_to_fit();
+}
+
+//// Insert multiple elements in sorted vector
+template<typename T>
+void insertInSortedVector(std::vector<T>& x, std::vector<T>& values)
+{
+  if (values.size() == 0) return;
+  if (x.size() == 0) {values.swap(x); return;}
+  std::vector<size_t> positions;
+
+  for (auto& value : values)
+  {
+    positions.push_back(std::lower_bound(x.begin(), x.end(), value));
+  }
+
+  insertAtPositions(x, values, positions);
+}
+
+
+//// Insert multiple elements at specified positions into vector
+template<typename T>
+void insertAtPositions(std::vector<T>& x, std::vector<T>& values, std::vector<size_t>& positions)
+{
+  // assert values and positions are the same size
+  assert(values.size() == positions.size());
+
+  // Special case - values is empty
+  if (values.size() == 0) return;
+
+  // Special case - single value to insert
+  if (values.size() == 1)
+  {
+    x.insert(x.begin()+positions.front(), values.front());
+    return;
+  }
+
+  // sort the values and the positions where those values should be inserted
+  auto indices = sort_indexes(positions);
+  reorderNoAssertions(positions, indices);
+  reorderNoAssertions(values, indices);
+
+  // Special case - x is empty
+  if (x.size() == 0)
+  {
+      x.swap(values);
+      return;
+  }
+  
+  // Allocate memory to x
+  x.resize(x.size() + values.size());
+  
+  // Move things to make room for insertions and insert
+  int pos_index = positions.size()-1;
+  for (size_t i = x.size()-1 ; pos_index >= 0 ; --i)
+  {
+    if (i == positions[pos_index] + pos_index)
+    {
+      // A new value should go at index i
+      x[i] = std::move(values[pos_index]);
+      --pos_index;
+    } else
+    {
+      // The value from index 'i-pos_index-1' must go to index 'i'
+      x[i] = std::move(x[i-pos_index-1]);
+    }
+  }
+}
+
+// Insert multiple elements (non-sorted) in sorted vector.
+template<typename T>
+void insertMultipleElements(std::vector<T>& x, std::vector<T>& values)
+{
+  if (values.size() == 0 ) return;
+  if (values.size() == 1 )
+  {
+    x.insert(
+      std::lower_bound(x.begin(), x.end(), values.front()),
+      values.front()
+    );
+
+  } else
+  {
+    /*
+    // Technique 1
+    I think 'insertAtPositions' is not working properly
+    std::vector<size_t> positions;
+    positions.reserve(values.size());
+    for (auto& value : values)
+    {
+      positions.push_back(std::lower_bound(x.begin(), x.end(), value) - x.begin());
+    }
+    insertAtPositions(x, values, positions);
+    */
+
+    
+    // Technique 2
+
+    for (auto& value : values)
+    {
+      x.insert(std::lower_bound(x.begin(), x.end(), value), value);
+    }
+  }
+}
+
+
+//// Erase multiple elements at specified positions into vector
+template<typename T>
+void eraseAtPositions(std::vector<T>& x, std::vector<size_t>& positions)
+{
+  // Special case - values is empty
+  if (positions.size() == 0) return;
+
+  // Special case - a single value to remove
+  if (positions.size() == 1)
+  {
+    x.erase(positions.front());
+    return;
+  }
+
+  // sort the positions
+  std::sort(positions.begin(), positions.end());
+  
+  // Move and erase things
+  int pos_index = 0;
+  for (size_t i = positions.front() ; i < x.size() - positions.size() ; ++i)
+  {
+    if (pos_index < positions.size() && i == positions[pos_index])
+      ++pos_index;
+    x[i] = std::move(x[i + pos_index]);
+  }
+}
+
+
+template<typename T>
+void insertEraseAtPositions(
+    std::vector<T>& x,                      
+    std::vector<T>& valuesToInsert,        
+    std::vector<size_t>& positionsToInsert,
+    std::vector<size_t>& positionsToErase
+) {
+    std::sort(positionsToErase.begin(), positionsToErase.end());
+
+    static std::vector< std::pair< size_t, T > > toInsert;
+
+    toInsert.clear();
+    toInsert.reserve( positionsToInsert.size() );
+    for (long i = 0; i < positionsToInsert.size(); i++)
+        toInsert.emplace_back( positionsToInsert[i], valuesToInsert[i] );
+    std::sort(toInsert.begin(), toInsert.end());
+
+    static std::vector<T> y;
+
+    y.clear();
+    y.reserve( x.size() - positionsToErase.size() + toInsert.size() );
+
+    long j = 0, k = 0;
+    for (long i = 0; i < x.size(); i++)
+    {
+        if (i == toInsert[k].first)
+            y.push_back( toInsert[k++].second );
+
+        if (( j < positionsToErase.size() ) && ( i == positionsToErase[j] ))
+            j++;
+        else
+            y.push_back( x[i] );
+    }
+
+    for ( ; k < toInsert.size(); k++)
+        y.push_back( toInsert[k].second );
+
+    std::swap(x, y);
+}
+
+
+template<typename T, typename INT>
+void insertionSort(std::vector<T>& v, INT firstUnsortedElement = 1)
+{
+  assert(firstUnsortedElement > 0);
+  int i, key, j;
+  for (i = firstUnsortedElement; i < v.size(); i++)
+  {
+    key = v[i];
+    j = i - 1;
+
+    /* Move elements of v[0..i-1], that are
+    greater than key, to one position ahead
+    of their current position */
+    while (j >= 0 && v[j] > key)
+    {
+      v[j + 1] = v[j];
+      j = j - 1;
+    }
+    v[j + 1] = key;
+  }
+}
+
+
+
+/*
+//// Insert multiple elements at specified positions into vector
+template<typename T>
+void insertEraseAtPositions(std::vector<T>& x, std::vector<T>& insertValues, std::vector<size_t>& insertPositions, std::vector<size_t>& erasePositions)
+{
+  // assert values and positions are the same size
+  assert(erasePositions.size() == insertPositions.size());
+
+  // return if nothing to do
+  if (insertPositions.size() == 0 && erasePositions.size() == 0) return;
+
+  // If only need to erase
+  if (insertPositions.size() == 0)
+  {
+    eraseAtPositions(x, erasePositions);
+    return;
+  }
+
+  // If only need to insert
+  if (erasePositions.size() == 0)
+  {
+    insertAtPositions(x, insertValues, insertPositions);
+    return;
+  }  
+
+  // sort the values and the positions where those values should be inserted
+  {
+    auto indices = sort_indexes(insertPositions);
+    reorderNoAssertions(insertPositions, indices);
+    reorderNoAssertions(insertValues, indices);
+  }
+  
+  // Allocate memory to x
+  x.resize(x.size() + insertPositions.size());
+  
+  // Move things to make room for insertions and insert
+  int pos_index = positions.size()-1;
+  for (size_t i = x.size()-1 ; pos_index >= 0 ; --i)
+  {
+    if (i == positions[pos_index] + pos_index)
+    {
+      // A new value should go at index i
+      x[i] = std::move(values[pos_index]);
+      --pos_index;
+    } else
+    {
+      // The value from index 'i-pos_index-1' must go to index 'i'
+      x[i] = std::move(x[i-pos_index-1]);
+    }
+  }
+}
+*/
+
 

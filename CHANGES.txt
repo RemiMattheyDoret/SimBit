@@ -456,3 +456,30 @@ SimBit_4.16.0
 
 SimBit_4.16.1
 	Option to remove the input option file
+
+SimBit_4.16.2
+	Allow for multiple entry of --removeInputFileAfterReading so that the wrapper can add en entry without having to check whether the user has already used this option. Only the last entry is considered
+
+SimBit_4.16.3
+	New output type 'T4_paintedHaploSegmentsOrigin_file'
+
+SimBit_4.16.4
+	Fix bug with T4 coalescent tree that was throwing error messages
+
+SimBit_4.16.7
+	First implementation of selection on coalescent trees (T8 loci)
+
+SimBit_4.16.11
+	Bug fixes on these early T8 loci
+
+SimBit_4.16.11
+	Performance improvement for T8 loci
+
+SimBit_4.16.13
+	Fix description from user of T8 map (option --T8_mapInfo)
+
+SimBit_4.16.16
+	Attempt to improve demography when fec==-1.
+
+SimBit_4.16.18
+	memory pools separated ffor big and smalll T8 segments

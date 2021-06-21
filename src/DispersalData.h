@@ -84,7 +84,7 @@ public:
 class DispersalData
 {
 private:
-    void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<double>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
+    void getMigrationEventsForEachDestinationPatch(std::vector<std::vector<std::vector<fitnesstype>>>* CumSumFits_p, std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
     double computeNbOffspringsProducedInPatch(const unsigned patch_from, const double n_t, const double rn_t, const double r);
     void computeBackwardMigrationRates_from_migrationEventsForEachDestinationPatch(std::vector<ListMigrationEvents>& migrationEventsForEachDestinationPatch);
 
@@ -108,7 +108,7 @@ public:
     bool                                            DispWeightByFitness;
 
     
-    const std::vector<int>& setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<double>>>& CumSumFits);
+    const std::vector<int>& setBackwardMigrationIfNeededAndGetNextGenerationPatchSizes(std::vector<std::vector<std::vector<fitnesstype>>>& CumSumFits);
     void setOriginalBackwardMigrationIfNeeded();
 
     //void FromFullFormForwardSetReducedFormForward(std::vector<std::vector<double>> FullFormForwardMigration);

@@ -6,7 +6,7 @@ public:
     {
         {{"seed", "random_seed"},                       {}, false},
         {{"printProgress"},                             {}, false},
-        {{"removeInputFileAfterReading"},               {}, false},
+        {{"removeInputFileAfterReading"},               {}, true},
         
     	// Basics simulations
         {{"nbGens","nbGenerations"},                    {}, false},
@@ -31,8 +31,8 @@ public:
         {{"fecundityDependentOfFitness"},               {"S"}, false},
 
         // Dispersal
-        {{"m", "DispMat"},                              {"PN","S"}, false},
         {{"DispWeightByFitness"},                       {"S","fec"}, false},
+        {{"m", "DispMat"},                              {"PN","S"}, false},
         {{"gameteDispersal"},                           {"S"}, false},
         {{"forcedMigration"},                           {"PN", "N", "S"}, false},
         {{"stochasticMigration"},                       {"S"}, false},        
@@ -94,6 +94,14 @@ public:
         //{{"resetTrackedT1Muts"},               {"S","L","T1_mu","T1_fit","N","PN"}, false},
 
 
+        // T8
+        {{"T8_mu","T8_MutationRate"},                    {"S", "L"}, false},
+        {{"T8_fit","T8_FitnessEffects"},                 {"S", "L"}, false},
+        {{"T8_mutDirection"},                            {"L","S"}, false},
+        {{"T8_simplifyEveryNGenerations"},               {"S", "L", "N", "r"}, false},
+        {{"T8_mapInfo"},                                 {"S", "H", "L","T8_mu","r","T8_fit"}, false},
+        {{"T8_propagationMethod"},                       {"S", "H", "L","T8_mapInfo"}, false},
+
         {{"T4_simplifyEveryNGenerations"},               {"S", "L", "N", "r"}, false},
 
         // Initializer
@@ -141,6 +149,9 @@ public:
         {{"T1_SFS_file"},                           {"GP", "S", "startAtGeneration", "L"}, true},
         {{"T1_haplotypeFreqs_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
         {{"burnInLength_file"},                     {"GP", "S", "startAtGeneration", "L"}, true},
+        //{{"T8_vcf_file", "T8_VCF_file"},            {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T8_LargeOutput_file"},                   {"GP", "S", "startAtGeneration", "L"}, true},
+        {{"T8_SNPfreq_file"},                       {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_printTree"},                          {"GP", "S", "startAtGeneration", "L"}, true},
         //{{"T4_coalescenceFst_file"},                {"GP", "S", "startAtGeneration", "L"}, true},
 
@@ -154,11 +165,12 @@ public:
 
         {{"T4_paintedHaplo_ignorePatchSizeSecurityChecks"},                  {}, true},
         {{"T4_paintedHaplo_file"},                  {"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
-        {{"T4_paintedHaploSegmentsDiversity_file"},{"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
+        {{"T4_paintedHaploSegmentsDiversity_file"}, {"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
+        {{"T4_paintedHaploSegmentsOrigin_file"}, {"GP", "S", "startAtGeneration", "L", "T4_vcf_file", "T4_SFS_file", "sampleSeq_file", "T4_paintedHaplo_ignorePatchSizeSecurityChecks"}, true},
 
         
         {{"T4_nbMutationPlacingsPerOutput"},                        {"S", "L"}, true},
-        {{"T4_respectPreviousMutationsOutputs"},                    {"S", "L", "T4_nbMutationPlacingsPerOutput", "T4_paintedHaplo_file","T4_paintedHaploSegmentsDiversity_file"}, true},
+        {{"T4_respectPreviousMutationsOutputs"},                    {"S", "L", "T4_nbMutationPlacingsPerOutput", "T4_paintedHaplo_file","T4_paintedHaploSegmentsDiversity_file", "T4_paintedHaploSegmentsOrigin_file"}, true},
         
 
         // Species interaction

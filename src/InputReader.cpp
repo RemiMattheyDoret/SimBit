@@ -83,6 +83,7 @@ std::string InputReader::print()
         s += elem + " ";
     }
     s += "(current index is " + std::to_string(VIndex) + ")";
+    std::cout << s << "\n";
     return this->toString();
 }
 
@@ -224,7 +225,7 @@ void InputReader::workDone()
                 std::cout << "Nothing has been read from this string. This may suggest an internal bug but please check your input parameters, it is possible that in some circumstance, no input was expected." << std::endl;
             } else
             {
-                std::cout << "The last token (or word) to have been read from this string was '"<< V[VIndex-1] << "'' and the following token that has not been read yet is '" << V[VIndex] << "'" << std::endl;
+                std::cout << "The last token (or word) to have been read from this string was '"<< V[VIndex-1] << "' and the following token that has not been read yet is '" << V[VIndex] << "'" << std::endl;
             }
             abort();
         }
@@ -785,6 +786,7 @@ double InputReader::readDouble(const std::string& s)
         std::cout << "Message from 'InputReader method.readDouble': " << ErrorMessage << " Expected a 'double' value but received a time of habitat specific marker (received '" << s << "')" << std::endl;
             abort();
     }
+    /*
     if (
             std::count(s.begin(), s.end(), '.') > 1
         || 
@@ -796,6 +798,7 @@ double InputReader::readDouble(const std::string& s)
         std::cout << "Message from 'InputReader method.readDouble': " << ErrorMessage << " Expected a 'double' value but received '" << s << "'' (error caught at the first security gate) " << std::endl;
         abort();
     }
+    */
     double r;
     try
     {
@@ -803,7 +806,7 @@ double InputReader::readDouble(const std::string& s)
     }
     catch (...)
     {
-        std::cout << "Message from 'InputReader method.readDouble': " << ErrorMessage << " Expected a 'double' value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
+        std::cout << "Message from 'InputReader method.readDouble': " << ErrorMessage << " Expected a 'double' value but received '" << s << "' (error caught at the second security gate) " << std::endl;
         abort();
     }
     return r;
@@ -865,7 +868,7 @@ long long int InputReader::readInt(const std::string& s, bool ComingFromMarker)
             std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value after a species, generation or habitat specific marker (@S, @H or @G) but received '" << s << "'' (error caught at the third security gate) " << std::endl;
         } else
         {
-            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value but received '" << s << "'' (error caught at the second security gate) " << std::endl;
+            std::cout << "Message from 'InputReader::readInt': "<< ErrorMessage << " Expected an integer value but received '" << s << "' (error caught at the second security gate) " << std::endl;
         }
         abort();
     }

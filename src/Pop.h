@@ -35,6 +35,7 @@ private:
     static std::vector<int>  T2LociToCorrect;
     std::vector<int>         indexFirstMale;
     std::vector<std::vector<Walker>>      walkers; // Walkers[patch_index][sex]
+    const static long double limitMinimumSumOfFitnessAuthorized;
 
 
     std::vector<int> findWhatMustBeToggledAndUpdateFlipped(const std::vector<unsigned>& popFreqs, std::vector<uint32_t>& flipped, const int& nbLoci,  const double freqThreshold);
@@ -43,7 +44,7 @@ private:
 
     
 public:
-    std::vector<std::vector<std::vector<double>>> CumSumFits; // each patch, each gender, each individual fitness (cumulated)
+    std::vector<std::vector<std::vector<fitnesstype>>> CumSumFits; // each patch, each gender, each individual fitness (cumulated)
 
     Patch& getPatch(const int& patch_index);
     int getNbPatches();
@@ -55,7 +56,7 @@ public:
     //double CalculateFitnessForNextGeneration(Individual& Offspring, int patch_index, int ind_index);
     //void prepareNextGenerationAndIndexFirstMale(const int patch_index, const std::vector<int>& patchSizeNextGeneration);
     
-    int SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic = -1.0);
+    static int SelectionOriginPatch(uint32_t patch_to, fitnesstype rndIfNotStochastic = -1.0);
     int patchSizeNextGeneration(int patch_index);
     void toggleT56MutationsIfNeeded();
     void toggleT56LociFromEveryone(std::vector<int>& T5ntrlLociToToggle, std::vector<int>& T5selLociToToggle);

@@ -2,13 +2,14 @@
 class Walker
 {
 private:
-  std::vector<std::pair<double, uint32_t>> alias;
+  std::vector<std::pair<long double, uint32_t>> alias;
   uint32_t N_m_one;
  
 public:
   Walker();
 
-  Walker(const std::vector<double>& cumSumProbs);
+  template<typename T>
+  Walker(const std::vector<T>& cumSumProbs);
 
   Walker& operator=(const Walker&& other);
   Walker& operator=(const Walker& other);

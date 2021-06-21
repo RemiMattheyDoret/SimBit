@@ -41,12 +41,16 @@ public:
 		}
 	};
 
+
+
+	/*
 	struct PaintedSegmentFrequency
 	{
 		uint32_t left;
 		uint32_t right;
 		double freq;
 	};
+	*/
 
 	struct PaintedSegmentDiversity
 	{
@@ -54,15 +58,41 @@ public:
 		uint32_t right;
 		size_t nbColors;
 		int colorHighestFrequency;
+		size_t freqOfColorHighestFrequency;
 		double heterozygosity;
 
-		PaintedSegmentDiversity(uint32_t l, uint32_t r, size_t c, int mainColor, double h)
-		:left(l), right(r), nbColors(c), colorHighestFrequency(mainColor), heterozygosity(h)
+		PaintedSegmentDiversity(){};
+		PaintedSegmentDiversity(uint32_t l, uint32_t r, size_t c, int mainColor, size_t freqMainColor, double h);
+
+		std::string toString() const;
+	};
+
+	struct PaintedSegmentOrigin
+	{
+		size_t color;
+		double contribution; 
+		int originPatch;
+
+		PaintedSegmentOrigin(){};
+		PaintedSegmentOrigin(size_t a, double b, int c)
+		:color(a), contribution(b), originPatch(c)
 		{
-			assert(left < right);
-			assert(nbColors > 0);
-			if (nbColors == 1) assert(heterozygosity == 0.0);
-		}
+			assert(contribution > 0.0);
+		};
+
+		std::string toString() const;
+	};
+
+	struct PaintedSegmentSummary
+	{
+		PaintedSegmentDiversity paintedSegmentDiversity;
+		PaintedSegmentOrigin paintedSegmentOrigin;
+
+		PaintedSegmentSummary(PaintedSegmentDiversity a, PaintedSegmentOrigin b)
+		:paintedSegmentDiversity(a), paintedSegmentOrigin(b)
+		{}
+
+		std::string toString(unsigned char outputType) const;
 	};
 
 
@@ -128,6 +158,7 @@ public:
 			int getID() const;
 			int getGeneration() const;
 			void setGeneration(const int g);
+			void print();
 
 			void push_backMutations(std::vector<uint32_t>& m);
 			void push_backMutations(std::vector<uint32_t>&& m);
@@ -372,8 +403,8 @@ private:
 	//void printInfoForDebug(Pop& pop)  ;
 
 	std::vector<std::vector<std::vector<T4TreeRec::PaintedSegment>>> computePaintedHaplotypes(const int paintedGeneration, const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches) const; // computePaintedHaplotypes()[patch_index][T4ID_index][segment_index]
-	std::vector<T4TreeRec::PaintedSegmentDiversity> computeSmallSegmentsDiversityFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments) const;
-	std::vector<T4TreeRec::PaintedSegmentFrequency> computeLargeSegmentsFrequenciesFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments) const;
+	std::vector<T4TreeRec::PaintedSegmentSummary> computeSmallSegmentsSummaryFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments, const unsigned char outputType) const;
+	/*std::vector<T4TreeRec::PaintedSegmentFrequency> computeLargeSegmentsFrequenciesFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments) const;*/
 
 	void computePaintedHaplotypes_exploreTree(HaplotypesContainer<HaplotypeOfSegments>& allSegments, const int paintedGeneration) const;
 
@@ -404,7 +435,7 @@ public:
 	//template<typename INT> const std::vector<uint32_t>& getMutationsOfID(std::vector<std::vector<std::vector<uint32_t>>>& mutations, Pop& pop, INT ID);
 	std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<PatchCountData> > placeMutations(Pop& pop, bool shouldDeleteTree, bool shouldCompleteDeleteAllTree, unsigned char outputType);
 	void writePaintedHaplotypes(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const;
-	void writePaintedHaplotypesDiversity(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const;
+	void writePaintedHaplotypesSummary(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file, const unsigned char outputType ) const;
 	void shift_generations_after_burn_in();
 
 	void setLocusForWhichFixationMustBeComputedAtTheNextSimplify(int locus);

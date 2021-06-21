@@ -71,12 +71,16 @@ void SpeciesSpecificParameters::setRandomDistributions()
     geneticSampler.set_T3_nbMuts(T3_Total_Mutation_rate);
     geneticSampler.set_T4_nbMuts(T4_Total_Mutation_rate);
     geneticSampler.set_T56_nbMuts(T56_Total_Mutation_rate);
+    geneticSampler.set_T8_mutationStuff(T8_Total_Mutation_rate, T8_MutationRate, T8_map);
+
     geneticSampler.set_recombinationPosition(RecombinationRate);
+
     geneticSampler.set_T1_mutationPosition(T1_MutationRate);
     geneticSampler.set_T2_mutationPosition(T2_MutationRate);
     geneticSampler.set_T3_mutationPosition(T3_MutationRate);
     geneticSampler.set_T4_mutationPosition(T4_MutationRate);
     geneticSampler.set_T56_mutationPosition(T56_MutationRate);
+    
     SSP = nullptr;
 
 #ifdef DEBUG
@@ -621,7 +625,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                 std::remove_if(
                     fits.begin(),
                     fits.end(),
-                    [&fits, this](double& elem)
+                    [&fits, this](fitnesstype& elem)
                     {
                         uint32_t locus = &elem - fits.data();
                         return Gmap.isT56neutral(locus);
@@ -644,7 +648,7 @@ void SpeciesSpecificParameters::readLoci(InputReader& input)
                 std::remove_if(
                     fits.begin(),
                     fits.end(),
-                    [&fits, this](double& elem)
+                    [&fits, this](fitnesstype& elem)
                     {
                         uint32_t locus = (&elem - fits.data())/2;
                         return Gmap.isT56neutral(locus);
@@ -895,8 +899,26 @@ void SpeciesSpecificParameters::readDispWeightByFitness(InputReader& input)
 #ifdef DEBUG
     std::cout << "For option '--DispWeightByFitness', the std::string that is read is: " << input.print() << std::endl;
 #endif
+
+    // Note that --fec has already been received but not --m
+
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        if (this->fecundityForFitnessOfOne == -1)
+        {
+            this->DispWeightByFitness = false;
+        } else
+        {
+            this->DispWeightByFitness = true;
+        }
+
+    } else
+    {
+        this->DispWeightByFitness = input.GetNextElementBool();
+    }
     
-    this->DispWeightByFitness = input.GetNextElementBool();
+        
     
     if (fecundityForFitnessOfOne != -1 && !DispWeightByFitness)
     {
@@ -1377,6 +1399,129 @@ void SpeciesSpecificParameters::readfecundityForFitnessOfOne(InputReader& input)
     
     //std::cout << "recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations = "<< recomputeLociOverWhichFitnessMustBeComputedEveryHowManyGenerations << "\n";
 }*/
+
+
+
+template<typename INT>
+double SpeciesSpecificParameters::getRecombinationRatePositionOfLocus(INT locus)
+{
+    assert(locus < Gmap.TotalNbLoci-1);
+
+
+    if (locus == 0) return 0.0;
+
+    assert(RecombinationRate.size());
+    
+    if (RecombinationRate.size() == 1)
+    {
+        return RecombinationRate.front() * locus;
+    } else
+    {
+        assert(RecombinationRate.size() == Gmap.TotalNbLoci-1);
+        return RecombinationRate[locus];
+    }
+}
+
+
+void SpeciesSpecificParameters::readT8_mapInfo(InputReader& input)
+{
+    std::string mode = input.GetNextElementString();
+
+    if (mode == "default" || mode == "prob")
+    {
+        double prob;
+        if (mode == "default")
+            prob = 0.05;
+        else
+            prob = input.GetNextElementDouble();
+
+        if (prob <= 0.0)
+        {
+            std::cout << "For option --T8_mapInfo, mode 'prob' (or 'default', but 'default' should not cause any trouble), received value '" << prob << "'. The value received must be greater than 0.\n";
+            abort();
+        }
+
+        if (Gmap.T8_nbLoci)
+        {
+            auto totalProb = (double)getRecombinationRatePositionOfLocus(Gmap.FromT8LocusToLocus(Gmap.T8_nbLoci-2));
+
+            double lastPosition = 0.0;
+            for (long T8locus = 0 ; T8locus < Gmap.T8_nbLoci - 1 ; ++T8locus)
+            {
+                //std::cout << "Gmap.FromT8LocusToLocus(T8locus) = " << Gmap.FromT8LocusToLocus(T8locus) << "\n";
+                auto position = getRecombinationRatePositionOfLocus(Gmap.FromT8LocusToLocus(T8locus));
+                //std::cout << "position = " << position << "\n";
+
+                if (position > totalProb - prob / 2) break;
+
+                auto sizeOfBlock = position - lastPosition;
+                if (sizeOfBlock > prob)
+                {
+                    T8_map.push_back(T8locus);
+                    lastPosition = position;
+                }
+            }
+            if (T8_map.size() == 0 ) T8_map.push_back(Gmap.T8_nbLoci-1); 
+            else if (T8_map.back() != Gmap.T8_nbLoci-1) T8_map.push_back(Gmap.T8_nbLoci-1);
+
+            //T8_map = {20000000, 40000000, 60000000, 80000000, 99999999};
+
+            std::cout << "nbBlocks = " << T8_map.size() << "\n";
+            std::cout << "prob = " << prob << "\n";
+        }
+
+    } else if (mode == "descr")
+    {
+        uint32_t sum = 0;
+        while (input.IsThereMoreToRead())
+        {
+            auto x = input.GetNextElementInt();
+            if (x <= 0)
+            {
+                std::cout << "For option --T8_mapInfo, mode 'descr', received valule '" << x << "'. Values must be greater than 0 (no blocks of T8 loci can contain less than a singe T8 locus).\n";
+                abort();
+            }
+            sum += x;
+            if (sum > Gmap.T8_nbLoci)
+            {
+                std::cout << "For option --T8_mapInfo, mode 'descr', the sum of values is greater than the total number of T8 loci. There are " << Gmap.T8_nbLoci << " T8 loci. The last value read is  '" << x << "' and it caused the sum of values read so far to be equal " << sum << ".\n";
+                abort();
+            }
+            T8_map.push_back(sum-1);
+        }
+            
+    } else
+    {
+        std::cout << "For option --T8_mapInfo, received mode '" << mode << "'. Only modes 'default', 'prob' and 'descr' are accepted.\n";
+        abort();
+    }
+
+    // Test
+    if (Gmap.T8_nbLoci)
+    {
+        if (T8_map.back() != Gmap.T8_nbLoci-1)
+        {
+            std::cout << "Problem when creating the T8 map (--T8_mapInfo). The last value is " << T8_map.back() << " and it does not equal the total number of T8 loci minus 1 (which is "<< Gmap.T8_nbLoci-1<< ").\n";
+            abort();
+        }
+
+        for (size_t i = 1 ; i < T8_map.size() ; ++i)
+        {
+            if (T8_map[i] <= T8_map[i-1])
+            {
+                std::cout << "Problem when creating the T8 map (--T8_mapInfo). One of the value (the "<< i << "th value which equals "<<T8_map[i]<<") is not strictly greater than the previous (the "<< i-1 << "th value which equals "<<T8_map[i-1]<<"). Note by the way that there are "<< Gmap.T8_nbLoci<< " T8 loci in total.\n";
+                abort();
+            }
+        }
+
+    }
+    
+    std::cout << "T8_map: ";
+    for (size_t i = 0 ; i < T8_map.size() ; ++i) std::cout << T8_map[i] << " ";
+    std::cout <<  "\n";
+    
+}
+
 
 void SpeciesSpecificParameters::readFitnessMapInfo(InputReader& input)
 {
@@ -2816,14 +2961,14 @@ void SpeciesSpecificParameters::readT1_EpistaticFitnessEffects(InputReader& inpu
 
             // Get info for this habitat
             std::vector<std::vector<T1_locusDescription>> LociIndices_ForASingleHabitat;
-            std::vector<std::vector<double>>              FitnessEffects_ForASingleHabitat;
+            std::vector<std::vector<fitnesstype>>              FitnessEffects_ForASingleHabitat;
 
 
             while (input.IsThereMoreToRead() && input.PeakNextElementString().at(0) != '@')
             {
                 // Initialize vector to fill
                 std::vector<T1_locusDescription> LociIndices_ForASingleGroupOfLoci;
-                std::vector<double>              FitnessEffects_ForASingleGroupOfLoci;
+                std::vector<fitnesstype>         FitnessEffects_ForASingleGroupOfLoci;
 
 
                 // 'loci' keyword
@@ -2945,7 +3090,7 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
                 }
             }
        
-            std::vector<double> ForASingleHabitat;
+            std::vector<fitnesstype> ForASingleHabitat;
                    
             if (Mode.compare("A")==0)
             {
@@ -3261,6 +3406,109 @@ void SpeciesSpecificParameters::readT56_FitnessEffects(InputReader& input)
     return false;
 }*/
 
+
+void SpeciesSpecificParameters::readT8_FitnessEffects(InputReader& input)
+{
+   #ifdef DEBUG
+    std::cout << "For option '--T8_FitnessEffects', the std::string that is read is: " << input.print() << std::endl;
+    #endif
+    assert(SSP != nullptr);
+    if (input.PeakNextElementString() == "NA")
+    {
+        if (this->Gmap.T8_nbLoci != 0)
+        {
+            std::cout << "In option '--T8_FitnessEffects', for species "<<this->speciesName<<", received 'NA' but there are T8 loci as indiciated in --L (--Loci) (this->Gmap.T8_nbLoci = "<<this->Gmap.T8_nbLoci<<").\n";
+            abort();   
+        }
+        input.skipElement();
+    } else
+    {       
+        std::string Mode = input.GetNextElementString();
+           
+        if (Mode.compare("MultiplicityA")==0 || Mode.compare("multfitA")==0 || Mode.compare("A")==0)
+        {
+            for (int entry_index = 0 ; entry_index < this->Gmap.T8_nbLoci ; )    
+            {
+                if (input.isNextRKeyword())
+                {
+                    double fit01 = input.GetNextElementDouble();
+                    int nbRepeats = input.GetNextElementInt();
+                    if (fit01 < 0 )
+                    {
+                        std::cout << "In option '--T8_FitnessEffects', Mode 'multfitA', one 'fit01' value (coming after keyword 'R') is lower than 0 ( is " << fit01 << " ).\n";
+                        abort();
+                    }
+                    for (int i = 0 ; i < nbRepeats; i++)
+                    {
+                        this->T8_FitnessEffects.push_back(fit01);
+                        entry_index++;
+                        if (entry_index > this->Gmap.T8_nbLoci)
+                        {
+                            std::cout << "In 'T8_FitnessEffects', mode 'multfitA', when reading after keyword 'R', you asked to repeat the value " << fit01 << " for " << nbRepeats << " times. This (on top with previous entries) results of a number of entry greater than " << this->Gmap.T8_nbLoci << " as requested given the mode here (multfitA) and the arguments given to the option '--Loci'\n";
+                            abort();
+                        }
+                    }
+                } else
+                {
+                    double fit01 = input.GetNextElementDouble();
+                    if (fit01 < 0 )
+                    {
+                        std::cout << "In option '--T8_FitnessEffects', Mode 'MultiplicityA', one 'fit01' value is lower than 0 ( is " << fit01 << " ).\n";
+                        abort();
+                    }
+                    this->T8_FitnessEffects.push_back(fit01);
+                    entry_index++;
+                }
+            }
+            if (this->T8_FitnessEffects.size() != this->Gmap.T8_nbLoci)
+            {
+                std::cout << "In option '--T8_FitnessEffects', Mode 'multfitA' " << this->T8_FitnessEffects.size() << " have been received while " << this->Gmap.T8_nbLoci << " were expected\n";
+                abort();
+            }
+        } else if (Mode.compare("MultiplicityUnif")==0 || Mode.compare("multfitUnif")==0 || Mode.compare("unif")==0)
+        {
+            double fit01 = input.GetNextElementDouble();
+            if (fit01<0)
+            {
+                std::cout << "In option '--T8_FitnessEffects' Mode 'multfitUnif', value for 'fit01' is negative (is " << fit01 << ")\n";
+                abort();
+            }
+            for (int locus = 0 ; locus < this->Gmap.T8_nbLoci ; locus++)
+            {
+                this->T8_FitnessEffects.push_back(fit01);
+            }
+            if (this->T8_FitnessEffects.size() != this->Gmap.T8_nbLoci)
+            {
+                std::cout << "In option '--T8_FitnessEffects', Mode 'multfitUnif' " << this->T8_FitnessEffects.size() << " have been received while " << this->Gmap.T8_nbLoci << " were expected\n";
+                abort();
+            }
+        } else if (Mode.compare("MultiplicityGamma")==0 || Mode.compare("multfitGamma")==0 || Mode.compare("gamma")==0)
+        {
+            double alpha = input.GetNextElementDouble();
+            double beta = input.GetNextElementDouble();
+            if (alpha <= 0 || beta <= 0)
+            {
+                std::cout << "Either alpha ("<<alpha<<") or beta ("<<beta<<") have non-positive values.\n";
+                abort();
+            }
+            std::gamma_distribution<double> dist(alpha, beta);
+            for (int locus = 0 ; locus < this->Gmap.T8_nbLoci ; locus++)
+            {
+                double fit = 1 - dist(GP->rngw.getRNG());
+                if (fit < 0.0) fit = 0.0;
+                //if (fit > 1.0) fit = 1.0;
+                this->T8_FitnessEffects.push_back(fit);
+            }
+        } else
+        {
+            std::cout << "Sorry, for option '--T8_fit (--T8_fitnessEffects)', only Modes 'A' (or 'multfitA' or 'MultiplicityA'), 'unif' (or 'multfitUnif' or 'MultiplicityUnif'). Mode received is '" << Mode << "'\n";
+            abort();
+        } // end of ifelse Mode
+    }
+}
+
+
+
 void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
 {
 #ifdef DEBUG
@@ -3296,7 +3544,7 @@ void SpeciesSpecificParameters::readT1_FitnessEffects(InputReader& input)
                 }
             }
        
-            std::vector<double> ForASingleHabitat;
+            std::vector<fitnesstype> ForASingleHabitat;
             if (Mode.compare("DomA")==0 || Mode.compare("domA")==0)
             {
             
@@ -3664,7 +3912,7 @@ void SpeciesSpecificParameters::readT2_FitnessEffects(InputReader& input)
         {
             (void) input.GetNextHabitatMarker(habitat);
 
-            std::vector<double> ForASingleHabitat;
+            std::vector<fitnesstype> ForASingleHabitat;
             
             std::string Mode = input.GetNextElementString();
             if (Mode.compare("unif") == 0)
@@ -3733,6 +3981,8 @@ void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
 #endif
     //std::cout << "T5_nbLoci = " << T5_nbLoci << "\n";
 
+    this->T56_Total_Mutation_rate = 0.0; // just for safety but it is not necessary
+
     if (input.PeakNextElementString() == "NA" || input.PeakNextElementString() == "default")
     {
         this->T56_Total_Mutation_rate = 0.0;
@@ -3747,34 +3997,51 @@ void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
         std::string Mode = input.GetNextElementString();
         if (Mode.compare("A")==0)
         {
-            int T5Locus = 0;
-            double currentSum = 0;
+            double currentSum = 0.0;
             while (input.IsThereMoreToRead())
             {
-                double inputValue = input.GetNextElementDouble();
-                currentSum += inputValue;
-                this->T56_MutationRate.push_back(currentSum);
-                T5Locus++;
-
-                // security
-                if (inputValue < 0)
+                if (input.isNextRKeyword())
                 {
-                    std::cout << "In 'T56_MutationRate' of Mode 'A' the value received (" << inputValue << ") is negative." << std::endl;
-                    abort();
+                    double inputValue = input.GetNextElementDouble();
+                    int nbRepeats     = input.GetNextElementInt();
+
+                    if (inputValue < 0.0)
+                    {
+                        std::cout << "For option 'T5_MutationRate', received a negative rate (received " << inputValue << ").\n";
+                        abort();
+                    }
+
+                    if (inputValue > 0.5)
+                    {
+                        std::cout << "For option 'T5_MutationRate', received a value greater than 0.5 (received " << inputValue << ").\n";
+                        abort();
+                    }
+
+                    for (uint32_t repeat = 0 ; repeat < nbRepeats ; ++repeat)
+                    {
+                        currentSum += inputValue;
+                        T56_MutationRate.push_back(currentSum);
+                    }
+                } else
+                {
+                    double inputValue = input.GetNextElementDouble();
+                    if (inputValue < 0.0)
+                    {
+                        std::cout << "For option 'T5_MutationRate', received a negative rate (received " << inputValue << ").\n";
+                        abort();
+                    }
+                    currentSum += inputValue;
+                    T56_MutationRate.push_back(currentSum);
                 }
-                if (inputValue >= 0.1)
-                {
-                    std::cout << "In 'T56_MutationRate' of Mode 'A' the value received (" << inputValue << ") is greater than 0.1. Is it really what you want to do?" << std::endl;
-                    abort();
-                }          
             }
 
-            // Did I get the info I expected?
-            if (this->T56_MutationRate.size() != Gmap.T56_nbLoci)
+            if (T56_MutationRate.size() != Gmap.T56_nbLoci)
             {
-                std::cout << "In '--T56_MutationRate', expected " << this->Gmap.T56_nbLoci << " elements. But " << this->T56_MutationRate.size() << " elements were received (note, the treatment of T5 loci is a little complex with the internal separation of what is ntrl and what is not. If you can't find your error, then this is maybe a bug).\n";
-                abort();
-            }
+                std::cout << "For option 'T5_MutationRate', received " << T56_MutationRate.size() << " values but it was expected "<< Gmap.T56_nbLoci <<" values.\n";
+                        abort();
+            } 
+
+            T56_Total_Mutation_rate = T56_MutationRate.back();
 
         } else if (Mode.compare("unif")==0)
         {
@@ -3786,10 +4053,18 @@ void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
                 abort();
             }
 
+            if (perLocusRate > 0.5)
+            {
+                std::cout << "For option 'T5_MutationRate', received a value greater than 0.5 (received " << perLocusRate << ").\n";
+                abort();
+            }
+
             if (Gmap.T56_nbLoci > 0)
             {
                 this->T56_MutationRate.push_back(perLocusRate * this->Gmap.T56_nbLoci);
             }
+
+            T56_Total_Mutation_rate = T56_MutationRate.back();
                 
         } else
         {
@@ -3798,15 +4073,6 @@ void SpeciesSpecificParameters::readT56_MutationRate(InputReader& input)
         }
         
         assert(this->T56_MutationRate.size() == this->Gmap.T56_nbLoci || this->T56_MutationRate.size() == 1);
-
-        if (this->Gmap.T56_nbLoci)
-        {
-            this->T56_Total_Mutation_rate = this->T56_MutationRate.back();
-        } else
-        {
-            this->T56_Total_Mutation_rate = 0.0;
-        }
-
     }    
 
     //std::cout << "T5ntrl_Total_Mutation_rate = "<< T5ntrl_Total_Mutation_rate << "\n";
@@ -3864,7 +4130,7 @@ void SpeciesSpecificParameters::readT4_respectPreviousMutationsOutputs(InputRead
     if (input.PeakNextElementString() == "default")
     {
         input.skipElement();
-        if (T4_nbMutationPlacingsPerOutput == 1 && !outputWriter.isFile(T4_paintedHaplo_file) && !outputWriter.isFile(T4_paintedHaploSegmentsDiversity_file))
+        if (T4_nbMutationPlacingsPerOutput == 1 && !outputWriter.isFile(T4_paintedHaplo_file) && !outputWriter.isFile(T4_paintedHaploSegmentsDiversity_file) && !outputWriter.isFile(T4_paintedHaploSegmentsOrigin_file))
         {
             T4_respectPreviousMutationsOutputs = true;
         }
@@ -3883,7 +4149,7 @@ void SpeciesSpecificParameters::readT4_respectPreviousMutationsOutputs(InputRead
                 abort();
             }
 
-            if (outputWriter.isFile(T4_paintedHaplo_file) || outputWriter.isFile(T4_paintedHaploSegmentsDiversity_file))
+            if (outputWriter.isFile(T4_paintedHaplo_file) || outputWriter.isFile(T4_paintedHaploSegmentsDiversity_file) || outputWriter.isFile(T4_paintedHaploSegmentsOrigin_file))
             {
                 std::cout << "For options --T4_respectPreviousMutationsOutputs, received 'true' (or equivalent).  T4_respectPreviousMutationsOutputs can only be set to true if you do not use haplotype painted (but you seem to use haploytpe painting). Sorry, that's a little bit of a silly limitation of SimBit.\n";
                 abort();
@@ -3921,6 +4187,35 @@ void SpeciesSpecificParameters::readT4_mutDirection(InputReader& input)
     }
     assert(T4_mutDirection >= 0 && T4_mutDirection <= 2);
 }
+
+
+void SpeciesSpecificParameters::readT8_mutDirection(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        T8_mutDirection = 2;
+        input.skipElement();
+    } else
+    {
+        std::string s = input.GetNextElementString();
+        if (s == "0to1")
+        {
+            T8_mutDirection = 1;
+        } else if (s == "1to0")
+        {
+            T8_mutDirection = 0;
+        } else if (s == "both")
+        {
+            T8_mutDirection = 2;
+        } else
+        {
+            std::cout << "For option --T8_mutDirection, only values '1to0', '0to1' and 'both' (or 'default') are accepted. Redeived " << s << "\n";
+            abort();
+        }
+    }
+    assert(T8_mutDirection >= 0 && T8_mutDirection <= 2);
+}
+
 
 void SpeciesSpecificParameters::readT56_mutDirection(InputReader& input)
 {
@@ -4591,12 +4886,50 @@ void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
         T4_Total_Mutation_rate = constantRate * Gmap.T4_nbLoci;
     } else if (mode == "A")
     {
-        if (Gmap.T4_nbLoci > 0)
-            T4_MutationRate.push_back(input.GetNextElementDouble());
-        for (uint32_t locus = 1 ; locus < Gmap.T4_nbLoci ; locus++)
+        double currentSum = 0.0;
+        while (input.IsThereMoreToRead())
         {
-            T4_MutationRate.push_back(T4_MutationRate.back() + input.GetNextElementDouble());
+            if (input.isNextRKeyword())
+            {
+                double inputValue = input.GetNextElementDouble();
+                int nbRepeats     = input.GetNextElementInt();
+
+                if (inputValue < 0.0)
+                {
+                    std::cout << "For option 'T4_MutationRate', received a negative rate (received " << inputValue << ").\n";
+                    abort();
+                }
+
+                if (inputValue > 0.5)
+                {
+                    std::cout << "For option 'T4_MutationRate', received a value greater than 0.5 (received " << inputValue << ").\n";
+                    abort();
+                }
+
+                for (uint32_t repeat = 0 ; repeat < nbRepeats ; ++repeat)
+                {
+                    currentSum += inputValue;
+                    T4_MutationRate.push_back(currentSum);
+                }
+            } else
+            {
+                double inputValue = input.GetNextElementDouble();
+                if (inputValue < 0.0)
+                {
+                    std::cout << "For option 'T4_MutationRate', received a negative rate (received " << inputValue << ").\n";
+                    abort();
+                }
+                currentSum += inputValue;
+                T4_MutationRate.push_back(currentSum);
+            }
         }
+
+        if (T4_MutationRate.size() != Gmap.T4_nbLoci)
+        {
+            std::cout << "For option 'T4_MutationRate', received " << T4_MutationRate.size() << " values but it was expected "<< Gmap.T4_nbLoci <<" values.\n";
+                    abort();
+        } 
+
         T4_Total_Mutation_rate = T4_MutationRate.back();
     } else
     {
@@ -4606,6 +4939,76 @@ void SpeciesSpecificParameters::readT4_MutationRate(InputReader& input)
 
     //std::cout << "T4_Total_Mutation_rate = " << T4_Total_Mutation_rate << "\n";
 }
+
+
+void SpeciesSpecificParameters::readT8_MutationRate(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option 'T8_MutationRate', the std::string that is read is: " << input.print() << std::endl;
+#endif
+    std::string mode = input.GetNextElementString();
+    if (mode == "unif")
+    {
+        double constantRate = input.GetNextElementDouble();
+        T8_MutationRate.push_back(constantRate); // yes, just one value. It will be taken care of. Not very clean though as a design
+        T8_Total_Mutation_rate = constantRate * Gmap.T8_nbLoci;
+    } else if (mode == "A")
+    {
+        double currentSum = 0.0;
+        while (input.IsThereMoreToRead())
+        {
+            if (input.isNextRKeyword())
+            {
+                double inputValue = input.GetNextElementDouble();
+                int nbRepeats     = input.GetNextElementInt();
+
+                if (inputValue < 0.0)
+                {
+                    std::cout << "For option --T8_mu, received a negative mutation rate (" << inputValue << ").\n";
+                    abort();
+                }
+
+                if (nbRepeats > Gmap.T8_nbLoci)
+                {
+                    std::cout << "For option --T8_mu, received more valules than expected. Expected " << Gmap.T8_nbLoci << " values but received at least " << nbRepeats << " values\n";
+                    abort();
+                }
+
+                for (uint32_t repeat = 0 ; repeat < nbRepeats ; ++repeat)
+                {
+                    currentSum += inputValue;
+                    T8_MutationRate.push_back(currentSum);
+                }
+            } else
+            {
+                double inputValue = input.GetNextElementDouble();
+                if (inputValue < 0.0)
+                {
+                    std::cout << "For option --T8_mu, received a negative mutation rate (" << inputValue << ").\n";
+                    abort();
+                }
+                currentSum += inputValue;
+                T8_MutationRate.push_back(currentSum);
+            }
+        }
+
+        if (T8_MutationRate.size() != Gmap.T8_nbLoci)
+        {
+            std::cout << "For option --T8_mu, received " << T8_MutationRate.size() << " values while it was expecting " << Gmap.T8_nbLoci << " values.\n";
+            abort();
+        }
+
+        T8_Total_Mutation_rate = T8_MutationRate.back();
+    } else
+    {
+        std::cout << "For option 'T8_MutationRate', received the mode of entry '"<<mode<<"'. Sorry, only modes 'unif' and 'A' are accepted.\n";
+        abort();
+    }
+
+
+    //std::cout << "T8_Total_Mutation_rate = " << T8_Total_Mutation_rate << "\n";
+}
+
 
 void SpeciesSpecificParameters::readT7fitnessParameters(InputReader& input)
 {
@@ -4839,6 +5242,35 @@ void SpeciesSpecificParameters::readT4_simplifyEveryNGenerations(InputReader& in
     }
 }
 
+void SpeciesSpecificParameters::readT8_simplifyEveryNGenerations(InputReader& input)
+{
+#ifdef DEBUG
+    std::cout << "For option 'T4_simplifyEveryNGenerations', the std::string that is read is: " << input.print() << std::endl;
+#endif 
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        //std::cout << "SSP->TotalpatchCapacity = " << SSP->TotalpatchCapacity << "\n";
+        //std::cout << "SSP->TotalRecombinationRate = " << SSP->TotalRecombinationRate << "\n";
+
+        size_t maxEverTotalpatchCapacity = 0;
+        for (auto& elem : maxEverpatchCapacity) maxEverTotalpatchCapacity += elem;
+        
+        T8_simplifyEveryNGenerations = 2*maxEverTotalpatchCapacity;
+
+        if (T8_simplifyEveryNGenerations < 30) T8_simplifyEveryNGenerations = 30;
+
+    } else
+    {
+        T8_simplifyEveryNGenerations = input.GetNextElementInt();
+    }
+    if (T8_simplifyEveryNGenerations <= 0)
+    {
+        std::cout << "T8_simplifyEveryNGenerations was set to " << T8_simplifyEveryNGenerations << ".\nIt makes no sense to have a value lower than 1.";
+        abort();
+    }
+}
+
 
 void SpeciesSpecificParameters::readRecRateOnMismatch(InputReader& input)
 {
@@ -4885,7 +5317,6 @@ void SpeciesSpecificParameters::readRecombinationRate(InputReader& input)
 #ifdef DEBUG
     std::cout << "For option 'RecombinationRate', the std::string that is read is: " << input.print() << std::endl;
 #endif
-
 
     std::string unit = input.GetNextElementString();
     if (unit != "M" && unit != "cM" && unit != "rate")
@@ -5192,6 +5623,7 @@ void SpeciesSpecificParameters::IsThereSelection()
     T1_FitnessEffects.shrink_to_fit();
     T2_FitnessEffects.shrink_to_fit();
     T56_FitnessEffects.shrink_to_fit();
+    T8_FitnessEffects.shrink_to_fit();
 
     
     if (Gmap.T1_nbLoci)
@@ -5270,8 +5702,8 @@ void SpeciesSpecificParameters::IsThereSelection()
 
     if (!this->T1_isSelection)
         this->T1_isMultiplicitySelection = false;
-    
-  
+
+
 
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' start of T1_isEpistasis\n";
@@ -5381,6 +5813,30 @@ void SpeciesSpecificParameters::IsThereSelection()
         this->T1_isLocalSelection = false;
     }
 
+#ifdef CALLENTRANCEFUNCTIONS
+    std::cout << "In 'IsThereSelection' start of T8_isSelection\n";
+#endif     
+
+    if (Gmap.T8_nbLoci)
+    {
+        T8_isSelection=false;
+        
+        for (int locus = 0 ; locus < this->Gmap.T8_nbLoci ; ++locus)
+        {    
+            assert(this->T8_FitnessEffects.size() > locus);
+            assert(this->T8_FitnessEffects[locus] > 0.0);
+            if (this->T8_FitnessEffects[locus] != 1.0)
+            {
+                this->T8_isSelection = true;
+                goto T8isSelectionDone;
+            }   
+        }  
+    } else
+    {
+        this->T8_isSelection = false;
+    }
+    T8isSelectionDone:
+  
 
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "In 'IsThereSelection' start of T2_isSelection\n";
@@ -5561,18 +6017,22 @@ void SpeciesSpecificParameters::IsThereSelection()
 #endif
 
 
+   
+
     // if fecundity is different from -1, then dispersal rate necessarily depends on fitness
     if (this->fecundityForFitnessOfOne != -1.0)
     {
-        this->DispWeightByFitness = true;   
+        assert(this->DispWeightByFitness);
     }
 
     // Dispersal probability cannot be a function of fitness if there is no selection
-    if (!this->T1_isSelection && !this->T1_isEpistasis && !this->T2_isSelection && !this->T3_isSelection  && !this->T56_isSelection )
+    if (!this->T1_isSelection && !this->T1_isEpistasis && !this->T2_isSelection && !this->T3_isSelection  && !this->T56_isSelection  && !this->T8_isSelection )
     {
         isAnySelection = false;
-        this->DispWeightByFitness = false;
         this->selectionOn = 0; // This is to avoid some bullshit in lifeCycle.pp
+
+        if (this->fecundityForFitnessOfOne == -1.0)
+            this->DispWeightByFitness = false;
     } else
     {
         isAnySelection = true;
@@ -5788,6 +6248,55 @@ void SpeciesSpecificParameters::readReadPopFromBinary(InputReader& input)
 }
 
 
+void SpeciesSpecificParameters::readT8_propagationMethod(InputReader& input)
+{
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        T8_propagationMethod = 1;
+        if (SSP->RecombinationRate.back() == 0)
+            T8_WhenToSortData = '0';
+        else
+            T8_WhenToSortData = 'P';
+    } else
+    {
+        T8_propagationMethod = input.GetNextElementInt();
+
+        if (T8_propagationMethod != 1 && T8_propagationMethod != 2)
+        {
+            std::cout << "For option --T8_propagationMethod, two elements are expected the method of propagation and how mutattions should be sorted. Received value '" << T8_propagationMethod << "'. Sorry, only '1' and '2' are valid methods of propagation.\n";
+            abort();
+        }
+
+        auto s = input.GetNextElementString();
+        if (s == "endOfPropagation" || s == "p")
+        {
+            T8_WhenToSortData = 'p';
+        } else if (s == "duringPropagation" || s == "P" )
+        {
+            T8_WhenToSortData = 'P';
+        } else if (s == "notSorted" || s == "0")
+        {
+            T8_WhenToSortData = '0';
+        } else
+        {
+            std::cout << "For option --T8_propagationMethod, two elements are expected the method of propagation and how mutations should be sorted. Received value '" << s << "'. Sorry, only 'endOfProbagation', 'duringProbagation' and 'notSorted' valid methods of sorting for T8 loci.\n";
+            abort();
+        }
+    }
+
+
+    /*
+    if (T8_propagationMethod == 2 && T8_WhenToSortData == 'P')
+    {
+        std::cout << "For option --T8_propagationMethod, two elements are expected the method of propagation and whether ohw values must be sorted. Sorry, with method of propagation 2, sorting cannot happen during propagation.\n";
+        abort();
+    }
+    */
+        
+    std::cout << "T8_propagationMethod = " << static_cast<unsigned>(T8_propagationMethod) << "\n";
+    std::cout << "T8_WhenToSortData = " << T8_WhenToSortData << "\n";
+}
 
 void SpeciesSpecificParameters::readSubsetLociForfitnessSubsetLoci_file(InputReader& input)
 {
@@ -6023,6 +6532,10 @@ void SpeciesSpecificParameters::readQuickScreenOfOptionL(InputReader& input)
                 type != 3
                 &&
                 type != 4
+                &&
+                type != 7
+                &&
+                type != 8
                 )
             {
                 std::cout << "While making a quick screen through the option --L (--Loci), SimBit has found a unexpected type of trait (type "<< type << ").\n";

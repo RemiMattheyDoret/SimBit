@@ -48,19 +48,32 @@ private:
 
     std::vector<T7Gene> T7_Alleles; // Type 7 use for ENTWINE type of development and produce a phenotype on the same space than T3
 
-    std::vector<double> W_T1;
-    std::vector<double> W_T2;
-    std::vector<double> W_T56;
+    std::vector<fitnesstype> W_T1;
+    std::vector<fitnesstype> W_T2;
+    std::vector<fitnesstype> W_T56;
+    fitnesstype W_T8=1.0; // This is a bad fix to a problem of construction I could not figure out. I am assuming that all T8 loci start out with wildtype
     // No W_T3 as the fitness makes sense for the individual only
 
     
     std::vector<uint32_t> getT56ntrlTrueHaplotype();
     std::vector<uint32_t> getT56selTrueHaplotype();
 
+    /*
+    template<typename T>
+    void insertEraseAtPositions(
+        std::vector<T>& x,                      
+        std::vector<size_t>& toInsert,
+        std::vector<size_t>& toErase
+    );
+    */
+
 public:
     // Used for T4Tree
-    // ID is a little bit of a weird attribute because Haplotype does not manage its value but T4Tree and LifeCycle do. It will remain uninitialized unless T4Tree wants to do something with it
+    // ID is a little bit of a weird attribute because Haplotype does not manage its value but T4Tree and T8Tree do. It will remain uninitialized here.
     uint32_t T4ID;
+    uint32_t T8ID;
+
+    void dealWithT8Info(std::pair<T8ID_type, fitnesstype> pair);
 
 
     ZipIterator<std::vector<uint32_t>, std::vector<uint32_t>::iterator> T5ntrl_AllelesBegin();
@@ -92,15 +105,17 @@ public:
     CompressedSortedDeque::iterator T56sel_AllelesIterator(CompressedSortedDeque::iterator& nothing, unsigned value);
 
 
-    double getW_T1(int fitnessMapIndex);
-    double getW_T2(int fitnessMapIndex);
-    double getW_T56(int fitnessMapIndex);
-    void setAllW_T1(double w);
-    void setAllW_T2(double w);
-    void setAllW_T56(double w);
-    void setW_T1(double w, int fitnessMapIndex);
-    void setW_T2(double w, int fitnessMapIndex);
-    void setW_T56(double w, int fitnessMapIndex);
+    fitnesstype getW_T1(int fitnessMapIndex);
+    fitnesstype getW_T2(int fitnessMapIndex);
+    fitnesstype getW_T56(int fitnessMapIndex);
+    fitnesstype getW_T8();
+    void setAllW_T1(fitnesstype w);
+    void setAllW_T2(fitnesstype w);
+    void setAllW_T56(fitnesstype w);
+    void setW_T1(fitnesstype w, int fitnessMapIndex);
+    void setW_T2(fitnesstype w, int fitnessMapIndex);
+    void setW_T56(fitnesstype w, int fitnessMapIndex);
+    void setW_T8(fitnesstype w);
     size_t getW_T56_size();
 
     template<typename INT = uint32_t> void removeT7Gene(INT index);
@@ -139,7 +154,7 @@ public:
     template<typename INT = uint32_t>
     void setT2_Allele(const INT char_index, const unsigned char value);
     template<typename INT = uint32_t>
-    void setT3_Allele(const INT index, const double value);
+    void setT3_Allele(const INT index, const T3type value);
     
     template<typename INT = uint32_t>
     void setEntireT5_Allele(std::vector<INT>& t5a);
@@ -196,10 +211,10 @@ public:
     template<typename INT = uint32_t>
     void mutateT3_Allele(INT index);
     
-    template<typename INT = uint32_t>
-    void mutateT56ntrl_Allele(INT MutPosition);
-    template<typename INT = uint32_t>
-    void mutateT56sel_Allele(INT MutPosition, int Habitat);
+    template<typename INTORINTVECTOR = uint32_t>
+    void mutateT56ntrl_Allele(INTORINTVECTOR MutPosition);
+    template<typename INTORINTVECTOR = uint32_t>
+    void mutateT56sel_Allele(INTORINTVECTOR MutPosition, int Habitat);
 
 
     template<typename INT = uint32_t>
@@ -305,19 +320,19 @@ public:
 
     // Multiplicity fitness calculator
     
-    double CalculateT1FitnessMultiplicity(const int& Habitat);
+    fitnesstype CalculateT1FitnessMultiplicity(const int& Habitat);
 
-    double CalculateT2Fitness(const int& Habitat);
+    fitnesstype CalculateT2Fitness(const int& Habitat);
     
-    double CalculateT56FitnessMultiplicity(const int& Habitat);
-    double CalculateT5FitnessMultiplicity(const int& Habitat);
-    double CalculateT6FitnessMultiplicity(const int& Habitat);
+    fitnesstype CalculateT56FitnessMultiplicity(const int& Habitat);
+    fitnesstype CalculateT5FitnessMultiplicity(const int& Habitat);
+    fitnesstype CalculateT6FitnessMultiplicity(const int& Habitat);
 
-    double CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-    double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    fitnesstype CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    fitnesstype CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     template<typename Iterator>
-    double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd);
-    double CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    fitnesstype CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd);
+    fitnesstype CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void freeT56Memory();
     void shrink_to_fitT56();
 

@@ -151,7 +151,7 @@ public:
     std::vector<std::pair<std::array<int, 3>, std::array<int, 3>>>   redefIndTypes_whereFromInfo;
 
     bool                                            isIndividualInitialization;
-    std::vector<std::vector<double>>                T1_FitnessEffects;
+    std::vector<std::vector<fitnesstype>>           T1_FitnessEffects;
     bool                                            T1_isSelection;
     bool                                            T1_isEpistasis;
     std::vector<double>                             T1_MutationRate;  // cumulative
@@ -159,13 +159,13 @@ public:
     double                                          T1_Total_Mutation_rate;
     
     std::vector<std::vector<std::vector<T1_locusDescription>>>   T1_Epistasis_LociIndices;
-    std::vector<std::vector<std::vector<double>>>                T1_Epistasis_FitnessEffects; //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex], where the fitnessValueIndex is function of the genotype
+    std::vector<std::vector<std::vector<fitnesstype>>>           T1_Epistasis_FitnessEffects; //get fitness value with this->FitnessEffects_ForASingleHabitat[habitat][groupOfLoci][fitnessValueIndex], where the fitnessValueIndex is function of the genotype
     
     
 
     
     // Genetics and selection T2
-    std::vector<std::vector<double>>                T2_FitnessEffects;
+    std::vector<std::vector<fitnesstype>>           T2_FitnessEffects;
     bool                                            T2_isSelection;
     std::vector<double>                             T2_MutationRate;  // cumulative
     double                                          T2_Total_Mutation_rate;
@@ -228,8 +228,20 @@ public:
     std::vector<double>                             T56_MutationRate;  // cumulative
     char                                            T56_mutDirection;
     double                                          T56_Total_Mutation_rate;
-    std::vector<std::vector<double>>                T56_FitnessEffects;
+    std::vector<std::vector<fitnesstype>>           T56_FitnessEffects;
     
+
+    // T8 (coalescent tree with selection)
+    std::vector<fitnesstype>                        T8_FitnessEffects; // is not habitat specific
+    std::vector<double>                             T8_MutationRate; // cumulative
+    char                                            T8_mutDirection;
+    double                                          T8_Total_Mutation_rate;
+    T8TreeRecording                                 T8Tree;
+    uint32_t                                        T8_simplifyEveryNGenerations;
+    std::vector<uint32_t>                           T8_map;
+    bool                                            T8_isSelection;
+    char                                            T8_propagationMethod;
+    char                                            T8_WhenToSortData;
 
 
     // Ecology
@@ -261,6 +273,8 @@ public:
     std::vector<std::vector<int>>                    subsetT1epistasisLociForfitnessSubsetLoci_file;
     
     // methods
+
+    void readT8_propagationMethod(InputReader& input);
     void readStochasticMigration(InputReader& input);
     void readLoci(InputReader& input);
     void readKillOnDemand(InputReader& input);
@@ -274,6 +288,7 @@ public:
     void readT2_MutationRate(InputReader& input);
     void readT3_MutationRate(InputReader& input);
     void readT4_MutationRate(InputReader& input);
+    void readT8_MutationRate(InputReader& input);
     void readT56_MutationRate(InputReader& input);
     void readT7_MutationRate(InputReader& input);
     void readT4_nbRunsToPlaceMutations(InputReader& input);
@@ -284,7 +299,9 @@ public:
     void readT2_FitnessEffects(InputReader& input);
     void readT3_FitnessLandscape(InputReader& input);
     void readT3_DevelopmentalNoise(InputReader& input);
+    void readT8_FitnessEffects(InputReader& input);
     void readT4_simplifyEveryNGenerations(InputReader& input);
+    void readT8_simplifyEveryNGenerations(InputReader& input);
     void readT56_FitnessEffects(InputReader& input);
     void readT56_compress(InputReader& input);
     void readT56_approximationForNtrl(InputReader& input);
@@ -323,6 +340,7 @@ public:
     void readStochasticGrowth(InputReader& input);
     void readDispWeightByFitness(InputReader& input);
     void readPloidy(InputReader& input);
+    void readT8_mapInfo(InputReader& input);
     void readFitnessMapInfo(InputReader& input);
     void readT56_toggleMutsEveryNGeneration(InputReader& input);
     void readfecundityForFitnessOfOne(InputReader& input);
@@ -334,6 +352,7 @@ public:
     void readSampleSeq_info(InputReader& input);
     void readT1_mutDirection(InputReader& input);
     void readT4_mutDirection(InputReader& input);
+    void readT8_mutDirection(InputReader& input);
     void readT56_mutDirection(InputReader& input);
     void readT4_paintedHaplo_ignorePatchSizeSecurityChecks(InputReader& input);
     void readkillIndividuals(InputReader& input);
@@ -342,6 +361,9 @@ public:
 
     void readT4_nbMutationPlacingsPerOutput(InputReader& input);
     void readT4_respectPreviousMutationsOutputs(InputReader& input);
+
+    template<typename INT>
+    double getRecombinationRatePositionOfLocus(INT locus);
     
 
     //void readT4_printTree(InputReader& input);

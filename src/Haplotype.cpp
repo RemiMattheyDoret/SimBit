@@ -61,12 +61,19 @@ bool Haplotype::isFreeFromMutations()
     return true;
 }
 
-double Haplotype::getW_T1(int fitnessMapIndex)
+fitnesstype Haplotype::getW_T8()
+{
+    return W_T8;
+}
+
+
+
+fitnesstype Haplotype::getW_T1(int fitnessMapIndex)
 {
     assert(fitnessMapIndex < W_T1.size());
     return W_T1[fitnessMapIndex];
 }
-double Haplotype::getW_T2(int fitnessMapIndex)
+fitnesstype Haplotype::getW_T2(int fitnessMapIndex)
 {
     assert(fitnessMapIndex < W_T2.size());
     return W_T2[fitnessMapIndex];
@@ -77,7 +84,7 @@ size_t Haplotype::getW_T56_size()
     return W_T56.size();
 }
 
-void Haplotype::setAllW_T1(double w)
+void Haplotype::setAllW_T1(fitnesstype w)
 {
     assert(W_T1.size() == SSP->NbElementsInFitnessMap);
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
@@ -85,7 +92,7 @@ void Haplotype::setAllW_T1(double w)
         this->setW_T1(w, fitnessMapIndex);
     }
 }
-void Haplotype::setAllW_T2(double w)
+void Haplotype::setAllW_T2(fitnesstype w)
 {
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
     {
@@ -93,13 +100,18 @@ void Haplotype::setAllW_T2(double w)
     }
 }
 
-void Haplotype::setW_T1(double w, int fitnessMapIndex)
+void Haplotype::setW_T8(fitnesstype w)
+{
+    W_T8 = w;
+}
+
+void Haplotype::setW_T1(fitnesstype w, int fitnessMapIndex)
 {
     assert(W_T1.size() > fitnessMapIndex && fitnessMapIndex >= 0);
     W_T1[fitnessMapIndex] = w;
 }
 
-void Haplotype::setW_T2(double w, int fitnessMapIndex)
+void Haplotype::setW_T2(fitnesstype w, int fitnessMapIndex)
 {
     assert(W_T2.size() > fitnessMapIndex && fitnessMapIndex >= 0);
     W_T2[fitnessMapIndex] = w;
@@ -268,7 +280,7 @@ void Haplotype::setT2_Allele(const INT char_index, const unsigned char value)
 }
 
 template<typename INT>
-void Haplotype::setT3_Allele(const INT index, const double value)
+void Haplotype::setT3_Allele(const INT index, const T3type value)
 {
     //assert(char_index >= 0);
     //assert(char_index < SSP->Gmap.T2_nbLoci);
@@ -315,7 +327,7 @@ void Haplotype::mutateT1_Allele(INT MutPosition, int& Habitat)
         if (SSP->T1_isMultiplicitySelection)
         {
             int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT1LocusToLocus(MutPosition)];
-            double w = this->getW_T1(fitnessMapIndex);
+            fitnesstype w = this->getW_T1(fitnessMapIndex);
             //if (GP->CurrentGeneration >=50) std::cout << "w=" << w << " ";
             if (w != -1.0)
             {
@@ -451,10 +463,10 @@ void Haplotype::mutateT3_Allele(INT index)
     {
         if (SSP->T3_mutationType == 'g')
         {
-            T3_Alleles[index] += GP->rngw.normal((double)0.0, SSP->T3_mutationType_effectSizeInfo);
+            T3_Alleles[index] += GP->rngw.normal((T3type)0.0, SSP->T3_mutationType_effectSizeInfo);
         } else if (SSP->T3_mutationType == 'G')
         {
-            T3_Alleles[index] = GP->rngw.normal((double)0.0, SSP->T3_mutationType_effectSizeInfo);
+            T3_Alleles[index] = GP->rngw.normal((T3type)0.0, SSP->T3_mutationType_effectSizeInfo);
         } else abort();
     }
 }
@@ -818,7 +830,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
 #endif   
     (void)Abiogenesis; // Does nothing but silence the warning that the char Abiogenesis is not used.
     assert(SSP!=nullptr);
-    assert(SSP->Gmap.T1_nbChars + SSP->Gmap.T2_nbLoci + SSP->Gmap.T3_nbLoci + SSP->Gmap.T4_nbLoci + SSP->Gmap.T56_nbLoci > 0);
+    assert(SSP->Gmap.T1_nbChars + SSP->Gmap.T2_nbLoci + SSP->Gmap.T3_nbLoci + SSP->Gmap.T4_nbLoci + SSP->Gmap.T56_nbLoci + SSP->Gmap.T8_nbLoci > 0);
     assert(indHaplo_index < 2 * SSP->patchSize[patch_index]);
 
     // Initiate W_T1 and W_T2
@@ -939,7 +951,7 @@ Haplotype::Haplotype(const int patch_index, char Abiogenesis, int indHaplo_index
     {
         for (int i=0 ; i < SSP->Gmap.T3_nbLoci ; i++)
         {
-            double d = 0.0;
+            T3type d = 0.0;
             this->setT3_Allele(i,d);
         }
         assert(T3_Alleles.size() == SSP->Gmap.T3_nbLoci);
@@ -1182,6 +1194,13 @@ Haplotype::Haplotype(const Haplotype& other)
     {
         T4ID = other.T4ID;
     }
+
+    if (SSP->Gmap.T8_nbLoci)
+    {
+        //std::cout << "Copying T8ID " << other.T8ID << "\n";
+        T8ID = other.T8ID;
+        W_T8 = other.W_T8;
+    }
 }
 
 /*
@@ -1209,6 +1228,7 @@ Haplotype::Haplotype( Haplotype&& other)
     W_T2.swap(other.W_T2);
     W_T56.swap(other.W_T56);
     T4ID = other.T4ID;
+    T8ID = other.T8ID;
 }*/
 
 Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment operator
@@ -1266,6 +1286,12 @@ Haplotype& Haplotype::operator=(const Haplotype& other) // copy assignment opera
         T4ID = other.T4ID;
     }
 
+    if (SSP->Gmap.T8_nbLoci)
+    {
+        T8ID = other.T8ID;
+        W_T8 = other.W_T8;
+    }
+
     return *this;
 }
 /*
@@ -1293,29 +1319,55 @@ Haplotype& Haplotype::operator=(Haplotype&& other) // move assignment operator
     W_T2.swap(other.W_T2);
     W_T56.swap(other.W_T56);
     T4ID = other.T4ID;
+    T8ID = other.T8ID;
     //assert(W_T1.size() == other.W_T1.size());
     return *this;
 }*/
 
 void Haplotype::swap(Haplotype& other)
 {
-    T1_Alleles.swap(other.T1_Alleles);
-    T2_Alleles.swap(other.T2_Alleles);
-    T3_Alleles.swap(other.T3_Alleles);
-    T5ntrl_Alleles.swap(other.T5ntrl_Alleles);
-    T5sel_Alleles.swap(other.T5sel_Alleles);
-    T6ntrl_Alleles.swap(other.T6ntrl_Alleles);
-    T6sel_Alleles.swap(other.T6sel_Alleles);
-    W_T1.swap(other.W_T1);
-    W_T2.swap(other.W_T2);
-    W_T56.swap(other.W_T56);
-    //std::cout << "\t\thaplo: Before swap: " << T4ID << " - " << other.T4ID << "\n";
-    std::swap(T4ID, other.T4ID);
-    //std::cout << "\t\thaplo: After swap: " << T4ID << " - " << other.T4ID << "\n";
+    if (SSP->Gmap.T1_nbLoci)
+    {
+        T1_Alleles.swap(other.T1_Alleles);
+        W_T1.swap(other.W_T1);
+    }
+
+    if (SSP->Gmap.T2_nbLoci)
+    {
+        T2_Alleles.swap(other.T2_Alleles);
+        W_T2.swap(other.W_T2);
+    }
+
+    if (SSP->Gmap.T3_nbLoci)
+        T3_Alleles.swap(other.T3_Alleles);
+
+    if (SSP->Gmap.T56sel_nbLoci)    
+        W_T56.swap(other.W_T56);
+
+    if (SSP->Gmap.T5ntrl_nbLoci)
+        T5ntrl_Alleles.swap(other.T5ntrl_Alleles);
+
+    if (SSP->Gmap.T5sel_nbLoci)
+        T5sel_Alleles.swap(other.T5sel_Alleles);
+
+    if (SSP->Gmap.T6ntrl_nbLoci)
+        T6ntrl_Alleles.swap(other.T6ntrl_Alleles);
+    
+    if (SSP->Gmap.T6sel_nbLoci)
+        T6sel_Alleles.swap(other.T6sel_Alleles);
+
+    if (SSP->Gmap.T4_nbLoci)    
+        std::swap(T4ID, other.T4ID);
+    
+    if (SSP->Gmap.T8_nbLoci)
+    {
+       std::swap(T8ID, other.T8ID);
+       std::swap(W_T8, other.W_T8);
+    }
 }
 
 
-void Haplotype::setW_T56(double w, int fitnessMapIndex)
+void Haplotype::setW_T56(fitnesstype w, int fitnessMapIndex)
 {
     if (!(W_T56.size() > fitnessMapIndex && fitnessMapIndex >= 0))
     {
@@ -1330,7 +1382,7 @@ void Haplotype::setW_T56(double w, int fitnessMapIndex)
 }
 
 
-void Haplotype::setAllW_T56(double w)
+void Haplotype::setAllW_T56(fitnesstype w)
 {
     assert(W_T56.size() == SSP->NbElementsInFitnessMap);
     for (int fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; fitnessMapIndex++)
@@ -1546,7 +1598,7 @@ void Haplotype::setT6ntrl_AlleleToZero(INT locus)
 
 
 
-double Haplotype::getW_T56(int fitnessMapIndex)
+fitnesstype Haplotype::getW_T56(int fitnessMapIndex)
 {
     //std::cout << "fitnessMapIndex = " << fitnessMapIndex << "\n";
     //std::cout << "W_T56.size() = " << W_T56.size() << "\n";
@@ -1744,8 +1796,8 @@ void Haplotype::mutateT6sel_Allele(INT MutPosition, int Habitat)
 }
 
 
-template<typename INT>
-void Haplotype::mutateT56ntrl_Allele(INT MutPosition)
+template<typename INTORINTVECTOR>
+void Haplotype::mutateT56ntrl_Allele(INTORINTVECTOR MutPosition)
 {
     if (SSP->Gmap.isT56ntrlCompress)
     {
@@ -1757,8 +1809,8 @@ void Haplotype::mutateT56ntrl_Allele(INT MutPosition)
 }
 
 
-template<typename INT>
-void Haplotype::mutateT56sel_Allele(INT MutPosition, int Habitat)
+template<typename INTORINTVECTOR>
+void Haplotype::mutateT56sel_Allele(INTORINTVECTOR MutPosition, int Habitat)
 {
     if (SSP->Gmap.isT56selCompress)
     {
@@ -1797,10 +1849,22 @@ template<typename INT>
 void Haplotype::mutateT5ntrl_Allele(std::vector<INT>& MutPositions)
 {    
     // MutPositions is already sorted and without duplicates
+    std::cout << "Function void Haplotype::mutateT5ntrl_Allele(std::vector<INT>& MutPositions) should not be usedd at the moment. Internal bug!\n";
+    abort();
+    /*
+    std::vector<size_t> its;
+    for (auto& mut : MutPositions)
+    {
+        its.push_back(std::lower_bound(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end(), mut));
+    }
+
+    insertAtPositions(x, values, positions);
+
     uint32_t prevSize = T5ntrl_Alleles.size();
     T5ntrl_Alleles.insert(T5ntrl_Alleles.end(), MutPositions.begin(), MutPositions.end());
     std::inplace_merge(T5ntrl_Alleles.begin(), T5ntrl_Alleles.begin() + prevSize, T5ntrl_Alleles.end());
     T5ntrl_Alleles.erase(std::unique(T5ntrl_Alleles.begin(), T5ntrl_Alleles.end()), T5ntrl_Alleles.end());
+    */
 }
 
 template<typename INT>
@@ -2530,7 +2594,7 @@ void Haplotype::updateFitnessAfterT56Mutation(INT MutPosition, bool isNowFoundIn
 {
     int fitnessMapIndex = SSP->FromLocusToFitnessMapIndex[SSP->Gmap.FromT56selLocusToLocus(MutPosition)];
 
-    double w = this->getW_T56(fitnessMapIndex);
+    fitnesstype w = this->getW_T56(fitnessMapIndex);
     
     if (w != -1.0)
     {
@@ -2670,7 +2734,7 @@ uint32_t Haplotype::nbT56muts(int fitnessMapIndex)
 
 
 
-double Haplotype::CalculateT1FitnessMultiplicity(const int& Habitat)
+fitnesstype Haplotype::CalculateT1FitnessMultiplicity(const int& Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
@@ -2681,13 +2745,13 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
     auto& fits = SSP->T1_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T1_nbLoci);
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T1(fitnessMapIndex) == -1.0)
         {
             //std::cout << "must recompute fitnessMapIndex " << fitnessMapIndex << "\n";
-            double w = 1.0;
+            fitnesstype w = 1.0;
 
             auto to = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T1;
             //std::cout << "to " << to << "\n";
@@ -2813,7 +2877,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicity'\n";
 }
 
 
-double Haplotype::CalculateT2Fitness(const int& Habitat)
+fitnesstype Haplotype::CalculateT2Fitness(const int& Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT2Fitness'\n";
@@ -2823,14 +2887,14 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
     assert(fits.size() == SSP->Gmap.T2_nbLoci);
 
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     int T2_locus = 0;
     for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         int T2_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T2;
         if (getW_T2(fitnessMapIndex) == -1.0)
         {
-            double w = 1.0;
+            fitnesstype w = 1.0;
             for ( ; T2_locus <= T2_locusTo ; ++T2_locus )
             {
                 //assert(SSP->T2_FitnessEffects.size() > Habitat);
@@ -2854,7 +2918,7 @@ std::cout << "Enters in 'CalculateT2Fitness'\n";
 }
 
 
-double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
+fitnesstype Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
 {
 
     auto& fits = SSP->T56_FitnessEffects[Habitat];
@@ -2865,7 +2929,7 @@ double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
 
     bool needToRecomputeIt = false;
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T56(fitnessMapIndex) != -1.0)
@@ -2881,7 +2945,7 @@ double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
             }
 
             unsigned T56_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T56sel;
-            double w = 1.0;
+            fitnesstype w = 1.0;
 
             for (; it != itEnd && *it < T56_locusTo ; ++it)
             {                
@@ -2897,7 +2961,7 @@ double Haplotype::CalculateT5FitnessMultiplicity(const int& Habitat)
     return r;
 }
 
-double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
+fitnesstype Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
 {
 
     auto& fits = SSP->T56_FitnessEffects[Habitat];
@@ -2908,7 +2972,7 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
 
     bool needToRecomputeIt = false;
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     for (uint32_t fitnessMapIndex = 0 ; fitnessMapIndex < SSP->NbElementsInFitnessMap ; ++fitnessMapIndex)
     {
         if (getW_T56(fitnessMapIndex) != -1.0)
@@ -2924,7 +2988,7 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
             }
 
             unsigned T56_locusTo = SSP->FromFitnessMapIndexToTXLocus[fitnessMapIndex].T56sel;
-            double w = 1.0;
+            fitnesstype w = 1.0;
 
             for (; it != itEnd && *it < T56_locusTo ; ++it)
             {                
@@ -2942,14 +3006,14 @@ double Haplotype::CalculateT6FitnessMultiplicity(const int& Habitat)
 
 
 
-double Haplotype::CalculateT56FitnessMultiplicity(const int& Habitat)
+fitnesstype Haplotype::CalculateT56FitnessMultiplicity(const int& Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT56FitnessMultiplicity'\n";
 #endif   
 
 
-    double r;
+    fitnesstype r;
     if (SSP->Gmap.T5sel_nbLoci)
     {
         r = CalculateT5FitnessMultiplicity(Habitat);
@@ -2971,7 +3035,7 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicity'\n";
 
 
 
-double Haplotype::CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+fitnesstype Haplotype::CalculateT1FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
@@ -2984,7 +3048,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
     assert(fits.size() == SSP->Gmap.T1_nbLoci);
 
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     for (const int& locus : LociSet)
     {
         int byte_index = locus / 8;
@@ -3002,7 +3066,7 @@ std::cout << "Enters in 'CalculateT1FitnessMultiplicityOnSubsetOfLoci'\n";
     return r;
 }
 
-double Haplotype::CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+fitnesstype Haplotype::CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
@@ -3011,7 +3075,7 @@ std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
     auto& fits = SSP->T2_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T2_nbLoci);
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
     for (const int locus : LociSet)
     {
         r *= pow(fits[locus], getT2_Allele(locus));
@@ -3024,7 +3088,7 @@ std::cout << "Enters in 'CalculateT2FitnessOnSubsetOfLoci'\n";
 
 
 template<typename Iterator>
-double Haplotype::CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd)
+fitnesstype Haplotype::CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator it, Iterator itEnd)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
@@ -3036,7 +3100,7 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
     auto& fits = SSP->T56_FitnessEffects[Habitat];
     assert(fits.size() == SSP->Gmap.T5sel_nbLoci);
 
-    double r = 1.0;
+    fitnesstype r = 1.0;
 
     assert(LociSet.size() > 0);
     uint32_t locusIndex = 0;
@@ -3057,13 +3121,13 @@ std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 
 
 
-double Haplotype::CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+fitnesstype Haplotype::CalculateT56FitnessMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT56FitnessMultiplicityOnSubsetOfLoci'\n";
 #endif   
 
-    double r;
+    fitnesstype r;
     if (SSP->Gmap.T5sel_nbLoci)
     {
         r = CalculateT56FitnessMultiplicityOnSubsetOfLoci(Habitat, LociSet, T5sel_Alleles.begin(), T5sel_Alleles.end());
@@ -3175,3 +3239,25 @@ void Haplotype::freeT56Memory()
         W_T56.shrink_to_fit();
     }
 }
+
+void Haplotype::dealWithT8Info(std::pair<T8ID_type, fitnesstype> pair)
+{
+    /*
+    std::cout << "Dealing with T8 info\n";
+    std::cout << "pair.second = " << pair.second <<"\n";
+    */
+    this->T8ID = pair.first;
+    this->setW_T8(pair.second);
+}
+
+/*
+template<typename T>
+void Haplotype::insertEraseAtPositions(
+    std::vector<T>& x,                      
+    std::vector<size_t>& toInsert,
+    std::vector<size_t>& toErase
+)
+{
+    
+}
+*/

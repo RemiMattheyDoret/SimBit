@@ -32,6 +32,78 @@ void GeneticSampler::set_T4_nbMuts(const double& rate)
 	T4_mut_totalRate = rate;
 }
 
+void GeneticSampler::set_T8_mutationStuff(const double& rate, const std::vector<double>& cumSumRates, std::vector<uint32_t>& T8_map)
+{
+	if (SSP->Gmap.T8_nbLoci == 0) return;
+
+
+	// assertions
+	assert(rate >= 0.0);
+	assert(T8_map.back() == SSP->Gmap.T8_nbLoci-1);
+	assert((cumSumRates.size() == 1) || (cumSumRates.size() == SSP->Gmap.T8_nbLoci));
+	if (cumSumRates.size() == SSP->Gmap.T8_nbLoci) assert(rate == cumSumRates.back());
+	assert(T8_mut_totalRate.size() == 0);
+	assert(cumSumProbs_T8_mutationPosition.size() == 0);
+
+	// is constant
+	isCstRate_T8_mutationPosition = cumSumRates.size() == 1;
+	
+
+	T8_mut_totalRate.reserve(T8_map.size());
+	cumSumProbs_T8_mutationPosition.reserve(T8_map.size());
+
+
+	//std::cout << "T8_map: "; printVector(T8_map);
+	//std::cout << "cumSumRates.size() = " << cumSumRates.size() << "\n";
+
+	uint32_t from = 0;
+	for (size_t segmentIndex = 0 ; segmentIndex < T8_map.size() ; ++segmentIndex)
+	{
+		// from and to
+		uint32_t to = T8_map[segmentIndex];
+		assert(from <= to);
+
+		if (!isCstRate_T8_mutationPosition)
+		{
+			assert(to < cumSumRates.size());
+		}
+		
+
+		// Total rate
+		double totRate;
+		if (segmentIndex == 0)
+		{
+			assert(from == 0);
+			if (isCstRate_T8_mutationPosition)
+				totRate = cumSumRates.front() * to;
+			else
+				totRate = cumSumRates[to];
+		} else
+		{
+			assert(from != 0);
+			if (isCstRate_T8_mutationPosition)
+				totRate = cumSumRates.front() * (to - from);
+			else
+				totRate = cumSumRates[to] - cumSumRates[from] ;
+				
+		}
+		assert(totRate >= 0.0);
+		T8_mut_totalRate.push_back(totRate);
+
+	
+		// cum Sum rates
+		if (!isCstRate_T8_mutationPosition)
+			cumSumProbs_T8_mutationPosition.push_back({cumSumRates.begin() + from, cumSumRates.begin() + to});
+
+		// from and to
+		from = to;
+	}
+	//printVector(T8_mut_totalRate);
+	//std::cout << "rate = " << rate << "\n";
+	//std::cout << "sum = " << std::accumulate(T8_mut_totalRate.begin(), T8_mut_totalRate.end(), 0.0) << "\n";
+	//assert(std::accumulate(T8_mut_totalRate.begin(), T8_mut_totalRate.end(), 0.0) == rate);
+}
+
 void GeneticSampler::set_T56_nbMuts(const double& rate)
 {
 	T56_mut_totalRate = rate;
@@ -49,7 +121,10 @@ void GeneticSampler::set_recombinationPosition(const std::vector<double>& cumSum
 		std::cout << "cumSumRates.size() = " << cumSumRates.size() << "\n";
 		std::cout << "cumSumRates.back() = " << cumSumRates.back() << "\n";
 		*/
+
+		
 		isCstRate_recombinationPosition = false;
+		
 		if (SSP->Gmap.TotalNbLoci <= 2)
 		{
 			// nothing to do
@@ -91,6 +166,8 @@ void GeneticSampler::set_T1_mutationPosition(const std::vector<double>& cumSumRa
 		cumSumProbs_T1_mutationPosition = cumSumRates;
 	}
 }
+
+
 
 void GeneticSampler::set_T2_mutationPosition(const std::vector<double>& cumSumRates)
 {
@@ -269,7 +346,8 @@ uint32_t GeneticSampler::get_T4_nbMuts(const uint32_t nbGenerationsInBetween, co
 				//std::cout << "right = " << right << "\n";
 				//std::cout << "cumSumProbs_T4_mutationPosition.size() = " << cumSumProbs_T4_mutationPosition.size() << "\n";
 				//assert(right <= cumSumProbs_T4_mutationPosition.size());
-				T4_lastComputedTotalRate = std::accumulate(cumSumProbs_T4_mutationPosition.begin()+left, cumSumProbs_T4_mutationPosition.begin()+right, 0.0);
+				//T4_lastComputedTotalRate = std::accumulate(cumSumProbs_T4_mutationPosition.begin()+left, cumSumProbs_T4_mutationPosition.begin()+right, 0.0);
+				T4_lastComputedTotalRate = cumSumProbs_T4_mutationPosition[right] - cumSumProbs_T4_mutationPosition[left];
 			}
 		}
 
@@ -279,6 +357,28 @@ uint32_t GeneticSampler::get_T4_nbMuts(const uint32_t nbGenerationsInBetween, co
 		//std::cout << "T4_lastComputedTotalRate = " << T4_lastComputedTotalRate << "\n";
 		//std::cout << "nbMuts for segment = " << r << "\n";
 		return r;	
+	} else
+	{
+		return 0;
+	}		
+}
+
+
+template<typename INT>
+uint32_t GeneticSampler::get_T8_nbMuts(const INT segmentIndex)
+{
+	//std::cout << "segmentIndex = " << segmentIndex << "\n";
+	//std::cout << "T8_mut_totalRate.size() = " << T8_mut_totalRate.size() << "\n";
+	assert(segmentIndex < T8_mut_totalRate.size());
+	auto& rate = T8_mut_totalRate[segmentIndex];
+
+	//std::cout << "T8_mut_totalRate["<<segmentIndex<<"] = " << T8_mut_totalRate[segmentIndex] << "\n";
+
+	if (rate > 0.0)
+	{
+		
+		std::poisson_distribution<uint32_t> d(rate);
+		return d(GP->rngw.getRNG());;
 	} else
 	{
 		return 0;
@@ -307,7 +407,7 @@ uint32_t GeneticSampler::get_recombinationPosition()
 		return 0;
 	}
 	if (isCstRate_recombinationPosition)
-	{
+	{		
 		return GP->rngw.uniform_int_distribution(SSP->Gmap.TotalNbLoci - 1);
 	} else
 	{
@@ -423,6 +523,48 @@ uint32_t GeneticSampler::get_T4_mutationPosition(const uint32_t left, const uint
 			assert(index >= left && index < right);
 			return index;
 		}
+	}
+}
+
+template<typename INT>
+uint32_t GeneticSampler::get_T8_mutationPosition(const INT segmentIndex)
+{
+	if (isCstRate_T8_mutationPosition)
+	{
+		if (segmentIndex == 0)
+		{
+			/*
+			std::cout << "segmentIndex = " << segmentIndex << "\n";
+			std::cout << "from = " << 0 << "\n";
+			std::cout << "to (excluded) = " << SSP->T8_map[segmentIndex] << "\n";
+			*/
+			return GP->rngw.uniform_int_distribution(0, SSP->T8_map[segmentIndex]);
+		}
+		else
+		{
+			/*
+			std::cout << "segmentIndex = " << segmentIndex << "\n";
+			std::cout << "from = " << SSP->T8_map[segmentIndex-1] << "\n";
+			std::cout << "to (excluded) = " << SSP->T8_map[segmentIndex] << "\n";
+			*/
+			return GP->rngw.uniform_int_distribution(SSP->T8_map[segmentIndex-1], SSP->T8_map[segmentIndex]);
+		}
+	} else
+	{
+		double rnd = GP->rngw.uniform_real_distribution(cumSumProbs_T8_mutationPosition[segmentIndex].front(), cumSumProbs_T8_mutationPosition[segmentIndex].back());
+
+		auto index = 
+			std::upper_bound(
+				cumSumProbs_T8_mutationPosition[segmentIndex].begin(),
+				cumSumProbs_T8_mutationPosition[segmentIndex].end(),
+				rnd
+			) 
+			- cumSumProbs_T8_mutationPosition[segmentIndex].begin();
+
+		if (segmentIndex == 0)
+			return index;
+		else
+			return index + SSP->T8_map[segmentIndex-1];
 	}
 }
 

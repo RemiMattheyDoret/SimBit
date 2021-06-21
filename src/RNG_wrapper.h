@@ -48,14 +48,14 @@ public:
 
 	template<class int_type>
 	int_type uniform_int_distribution(int_type diff);
-	double uniform_real_distribution(double diff);
+	long double uniform_real_distribution(double diff);
 
-	template<class int_type>
-	int_type uniform_int_distribution(int_type from, int_type to);
-	double uniform_real_distribution(double from, double to);
+	template<class int1_type, class int2_type>
+	int1_type uniform_int_distribution(int1_type from, int2_type to);
+	long double uniform_real_distribution(double from, double to);
 
-	template<class T>
-	double normal(T mean, T sd);
+	template<class T1, class T2>
+	double normal(T1 mean, T2 sd);
 
 	template<class T>
 	size_t poisson(T mean);

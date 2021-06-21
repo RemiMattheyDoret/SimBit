@@ -60,5 +60,8 @@ class SmallOrderingSortingFunctions;
 class T4TreeRec;
 class GeneticMap;
 class T56_memoryManager;
+class T8Segment;
+template<typename T> class MemoryPool;
+class T8Tree;
 
 #endif

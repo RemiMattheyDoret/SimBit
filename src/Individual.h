@@ -32,44 +32,44 @@ private:
     // Individuals are necessarily diploid for the moment
     Haplotype haplo0;
     Haplotype haplo1;
-    static std::vector<double> fitnessComponents;
+    static std::vector<fitnesstype> fitnessComponents;
     
 public:
     // stat phenotype objects
-    static std::vector<double> T3_IndPhenotype; 
+    static std::vector<T3type> T3_IndPhenotype; 
     static std::vector<std::vector<double>> T7phenotypeOverTime;
     static std::vector<double> T7_IndPhenotype;
 
     Haplotype& getHaplo(const int& haplo_index);
 
-    const std::vector<double>& CalculateFitnessComponents(const int& Habitat);
+    const std::vector<fitnesstype>& CalculateFitnessComponents(const int& Habitat);
     
-    double CalculateFitness(const int& patch_index);
-    double CalculateT1FitnessNoMultiplicity(const int& Habitat);
-    double CalculateT1EpistaticFitness(const int& Habitat);
-    double CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
+    fitnesstype CalculateFitness(const int& patch_index);
+    fitnesstype CalculateT1FitnessNoMultiplicity(const int& Habitat);
+    fitnesstype CalculateT1EpistaticFitness(const int& Habitat);
+    fitnesstype CalculateT2Fitness(const int& Habitat, int fitnessMapIndex, int T2_locusFrom, int T2_locusTo);
     
     void CalculateT3Phenotype(const int& Habitat);
 
     static void resetT3phenotype();
     static void resetT7phenotype();
-    static double CalculateT3Fitness(const int& Habitat);
-    static double CalculateT7Fitness(const int& Habitat);
+    static fitnesstype CalculateT3Fitness(const int& Habitat);
+    static fitnesstype CalculateT7Fitness(const int& Habitat);
     
     
 
     template<typename Iterator>
-    double CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
+    fitnesstype CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
 
     template<typename Iterator>
-    double CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
+    fitnesstype CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End);
 
 
     static bool isLocusIsInSet(const int locus, const std::vector<int>& LociSet);
-    std::vector<double> CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex);
-    double CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-    double CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
-    double CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    std::vector<fitnesstype> CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex);
+    fitnesstype CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    fitnesstype CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
+    fitnesstype CalculateT2FitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
     void CalculateT3PhenotypeOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet);
 
     void SetHaplo(int haplo_index, Haplotype& chrom);

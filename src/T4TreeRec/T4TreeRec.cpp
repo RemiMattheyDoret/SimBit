@@ -223,23 +223,27 @@ void T4TreeRec::assertIsFullySimplified() const
 
 std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRec::PatchCountData> > T4TreeRec::placeMutations(Pop& pop, bool shouldDeleteTree, bool shouldCompleteDeleteAllTree, unsigned char outputType) // Pop is used to access haplotypes T4ID to do a good matching and to reset them
 {
-/*
-	It computes the current states and set all current individuals as ancestors (unless if there are clones, then they share the same T4ID)
-*/
 	/*
 	std::cout << "Entering place mutations " << nodes.size() << " nodes and " << edges.size() << " edges\nEntering tree:\n";
 	this->print();
 	std::cout << "###############################\n\n\n";
+
+	std::cout << "shouldDeleteTree = " << shouldDeleteTree << "\n";
+	std::cout << "shouldCompleteDeleteAllTree = " << shouldCompleteDeleteAllTree << "\n";
+	std::cout << "outputType = " << outputType << "\n";
 	*/
+	
 	if (shouldDeleteTree || shouldCompleteDeleteAllTree) assert(shouldDeleteTree != shouldCompleteDeleteAllTree);
 	assert(outputType == 'r' || outputType == 'f' || outputType == 'b'); // Raw data, Frequency data, or Both
 
 
 	std::vector<T4TreeRec::PatchCountData> ret_freqs;
-	if (outputType != 'r')
+	if (outputType == 'f' || outputType == 'b')
 	{
 		ret_freqs.resize(GP->PatchNumber, {SSP->T4SNPfreq_assumeMuchDiversity, SSP->Gmap.T4_nbLoci});
+		assert(ret_freqs.size() == GP->PatchNumber);
 	}
+
 
 	//////////////////////////////////////////////////////////////////////////////
 	//// If I don't need to place mutations but just return the current state ////
@@ -255,14 +259,12 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 	assert(nodes.size());
 	assert(SSP->T4_MutationRate.size() == 1 || SSP->T4_MutationRate.size() == SSP->Gmap.T4_nbLoci);
 
-
 	///////////////////////////////
 	//// New ancestor genetics ////
 	///////////////////////////////
 
 	std::vector<NodeGenetics> newAncestorsGenetics;
 	newAncestorsGenetics.resize( SSP->TotalpatchSize * 2 );
-
 
 	/////////////////////////////////////////////////////////////////////////
 	//// Loop over fractions of genome to consider to minimize RAM usage ////
@@ -291,6 +293,13 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 		//////////////////////////////////////////////////////////////////////////////////
 
 		std::vector<bool> isLastReproduction;
+		if (edges.size() == 0 )
+		{
+			std::cout << "In function T4TreeRec::placeMutations, it appears as the tree is inexistent. This sound like an internal bug.\n";
+			abort();
+		}
+
+
 		isLastReproduction.resize(edges.size());
 		{
 			std::vector<bool> hasBeenFoundYet(nodes.size(), false);
@@ -318,7 +327,6 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 		}
 		assert(isLastReproduction.size() == edges.size());
 
-
 		//////////////////////////////////
 		//// initialize Tree genetics ////
 		//////////////////////////////////
@@ -327,22 +335,20 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 		allNodes.resize(nodes.size()); 
 
 
-
-
 		//////////////////////////////////////
 		//// Take the ancestral variation ////
 		//////////////////////////////////////
 
 		//std::cout << "About to take ancestral variation\n";
+		//std::cout << "ancestors in allNodes\n";
 		for (uint32_t ancestor_index = 0 ; ancestor_index < ancestorsGenetics.size() ; ++ancestor_index)
 		{
 			assert(ancestorsGenetics[ancestor_index].getID() < allNodes.size() && ancestorsGenetics[ancestor_index].getID() >= 0);
 			allNodes[ancestorsGenetics[ancestor_index].getID()] = ancestorsGenetics[ancestor_index].getSubsetMutations(fractionGenomeFrom, fractionGenomeTo);
+			//allNodes[ancestorsGenetics[ancestor_index].getID()].print();
 			//std::cout << "ancestor: allNodes[" << ancestorsGenetics[ancestor_index].getID()<<"].getGeneration() = " << allNodes[ancestorsGenetics[ancestor_index].getID()].getGeneration() << "\n";
 		}
 		
-
-
 
 		///////////////////////////////////////////
 		//// Propagate mutations down the tree ////
@@ -350,6 +356,7 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 
 		for (uint32_t edge_index = 0 ; edge_index < edges.size() ; ++edge_index)
 		{
+			//std::cout << "edge_index = " << edge_index << "\n";
 			auto& edge = edges[edge_index];
 			if ( edges[edge_index].left < fractionGenomeTo && edges[edge_index].right > fractionGenomeFrom) 
 			{
@@ -358,13 +365,20 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 				if (allNodes[edge.child].getID() == -1)
 				{
 					allNodes[edge.child] = NodeGenetics({}, nodes[edge.child].generation, edge.child);
+					//std::cout << "New node in allNodes\n";
+					//allNodes[edge.child].print();
 				}
 
+				/*
+				std::cout << "edge.child = " << edge.child << "\n";
+				std::cout << "edge.parent = " << edge.parent << "\n";
+				std::cout << "allNodes.size() = " << allNodes.size() << "\n";
+				*/
 				
 				auto left  = edge.left > fractionGenomeFrom ? edge.left : fractionGenomeFrom;
 				auto right = edge.right < fractionGenomeTo ? edge.right : fractionGenomeTo;
 				assert (right > left);
-					
+
 
 				propagateMutationsForSegment(allNodes[edge.child], parent, left, right);
 
@@ -376,33 +390,38 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 			}
 		}
 
+
 		/////////////////////////////////////////////////////////
 		//// Compute frequencies if needed and set ancestors ////
 		/////////////////////////////////////////////////////////
-
-		if (outputType != 'r') // if not raw output only
+		
+		
+		for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
 		{
-			assert(ret_freqs.size() == GP->PatchNumber);
-			for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+			auto& patch = pop.getPatch(patch_index);
+			for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
 			{
-				auto& patch = pop.getPatch(patch_index);
-				for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+				auto& ind = patch.getInd(ind_index);
+				for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
 				{
-					auto& ind = patch.getInd(ind_index);
-					for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+					auto oldID = ind.getHaplo(haplo_index).T4ID;
+
+					if (outputType == 'f' || outputType == 'b') // if not raw output only
 					{
-						auto oldID = ind.getHaplo(haplo_index).T4ID;
 						for (auto& mutatedLocus : allNodes[oldID].getMutations())
 						{
 							++ret_freqs[patch_index][mutatedLocus];
-						}						
-
-						if (outputType != 'f' || shouldDeleteTree)
-						{
-							auto newID = allNodes.size() - oldID - 1;
-							newAncestorsGenetics[newID].push_backMutations(allNodes[oldID].moveMutations());
-						}						
+						}
 					}
+
+					if (shouldDeleteTree)
+					{
+						assert(!shouldCompleteDeleteAllTree);
+						auto newID = allNodes.size() - oldID - 1;
+						assert(newID < newAncestorsGenetics.size());
+						assert(oldID < allNodes.size());
+						newAncestorsGenetics[newID].push_backMutations(allNodes[oldID].moveMutations());
+					}				
 				}
 			}
 		}
@@ -410,24 +429,25 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 
 
 
-		
 	////////////////////////////////////////////////////////////
 	//// Gather data in convenient format and reset pop IDs ////
 	////////////////////////////////////////////////////////////
+
+	std::map<uint32_t, int> mapIDtoPatch;
 	
 	assert(newAncestorsGenetics.size() == 2 * SSP->TotalpatchSize);
-	std::vector<std::vector<std::vector<uint32_t>>> ret;
-	if (outputType != 'f') ret.resize(GP->PatchNumber);
+	std::vector<std::vector<std::vector<uint32_t>>> ret; 
+	if (outputType == 'r' || outputType == 'b') ret.resize(GP->PatchNumber);
 		
-	for (uint32_t patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
+	for (int patch_index = 0 ; patch_index < GP->PatchNumber ; ++patch_index)
 	{
 		auto& patch = pop.getPatch(patch_index);
-		if (outputType != 'f') ret[patch_index].reserve(2*SSP->patchSize[patch_index]);
+		if (outputType == 'r' || outputType == 'b') ret[patch_index].reserve(2*SSP->patchSize[patch_index]);
 
-		for (uint32_t ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
+		for (int ind_index = 0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index)
 		{
 			auto& ind = patch.getInd(ind_index);
-			for (uint32_t haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
+			for (int haplo_index = 0 ; haplo_index < 2 ; ++haplo_index)
 			{
 				// Get haplotype
 				auto& haplo = ind.getHaplo(haplo_index);
@@ -438,14 +458,23 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 				auto newID = nodes.size() - oldID - 1;
 				assert(newID >= 0 && newID < SSP->TotalpatchSize * 2);
 				if (shouldDeleteTree || shouldCompleteDeleteAllTree)
+				{
 					haplo.T4ID = newID;
-				//std::cout << "Set node ID " << newID << ". oldID = " << oldID << "\n";
-				newAncestorsGenetics[newID].resetID(newID);
-				newAncestorsGenetics[newID].setGeneration(GP->CurrentGeneration);
+					//std::cout << "Set node ID " << newID << ". oldID = " << oldID << "\n";
+					assert(newAncestorsGenetics.size() > newID);
+					newAncestorsGenetics[newID].resetID(newID);
+					newAncestorsGenetics[newID].setGeneration(GP->CurrentGeneration);
+
+					if (shouldDeleteTree)
+					{
+						mapIDtoPatch[newID] = patch_index;
+					}
+				}
+					
 				
 
 				// return object
-				if (outputType != 'f') 
+				if (outputType == 'r' || outputType == 'b') 
 				{
 					if (shouldCompleteDeleteAllTree)
 					{
@@ -458,7 +487,9 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 			}
 		}	
 	}
-	if (outputType != 'f') assert(ret.size() == GP->PatchNumber);
+	if (outputType == 'r' || outputType == 'b') assert(ret.size() == GP->PatchNumber);
+
+	
 
 	/////////////////////////
 	//// reset ancestors ////
@@ -468,6 +499,25 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 		ancestorsGenetics.swap(newAncestorsGenetics);
 		ancestorsGenetics.shrink_to_fit();
 		std::vector<NodeGenetics>().swap(newAncestorsGenetics);
+
+		edges.deleteAll();
+		nodes.deleteAll();
+
+		for (size_t newID = 0 ; newID < ancestorsGenetics.size() ; ++newID)
+		{
+			auto& ancestor = ancestorsGenetics[newID];
+			auto it = mapIDtoPatch.find(newID);
+			assert (it != mapIDtoPatch.end());
+			
+			assert(ancestor.getID() == newID);
+			assert(ancestor.getGeneration() == GP->CurrentGeneration);
+			assert(it->second >= 0 && it->second < GP->PatchNumber);
+
+			auto newIDcheck = nodes.addNode({GP->CurrentGeneration, it->second});
+			assert(newID == newIDcheck );
+		}
+		ancestralGeneration = GP->CurrentGeneration;
+
 	} else if (shouldCompleteDeleteAllTree)
 	{
 		std::vector<NodeGenetics>().swap(ancestorsGenetics);
@@ -475,7 +525,7 @@ std::pair< std::vector<std::vector<std::vector<uint32_t>>>, std::vector<T4TreeRe
 		this->deleteAll();
 	} else
 	{
-		std::vector<NodeGenetics>().swap(newAncestorsGenetics);
+		// nothing to do
 	}
 
 	//std::cout << "Finish gathering data\n";
@@ -593,7 +643,11 @@ void T4TreeRec::simplify_ifNeeded(Pop& pop)
 	}
 }
 
-std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsDiversityFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments) const
+
+
+
+
+std::vector<T4TreeRec::PaintedSegmentSummary> T4TreeRec::computeSmallSegmentsSummaryFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments, const unsigned char outputType) const
 {
 	/*
 	[0 10 0][10 20 1]
@@ -621,14 +675,17 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 	*/
 
 
+	assert(outputType == 'D' || outputType == 'O');
 
 	// double for faster calculation below but it should be uint32_t
-	double nbHaplotypesSampled = allGatheredSegments.size();
-	assert(nbHaplotypesSampled > 0.0);
+	uint32_t nbHaplotypesSampled = allGatheredSegments.size();
+	assert(nbHaplotypesSampled > 0);
 
 	// Object to return
-	std::vector<T4TreeRec::PaintedSegmentDiversity> r;
+	std::vector<T4TreeRec::PaintedSegmentSummary> r;
 
+	// Contributions (used only if outputType == 'O')
+	std::map<size_t, unsigned long long> contributions;
 
 	// generate all transition points
     std::vector<T4TreeRec::PointForFindingOverlap> points;
@@ -660,41 +717,46 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
         // if there is a jump in between transition points
 		if (a.location < b.location)
 		{
+			size_t nbLoci = b.location - a.location;
+
 			// Assertions
 			assert(overs.size() == nbHaplotypesSampled);
 			
-			if (r.size())
+			if (outputType == 'D')
 			{
-				assert(r.back().right == a.location);
-			} else
-			{
-				assert(0 == a.location);
+				if (r.size())
+				{
+					assert(r.back().paintedSegmentDiversity.right == a.location);
+				} else
+				{
+					assert(0 == a.location);
+				}
 			}
 
 
 			// Add segment ends and diversity (heterozygosity of segments) in returned object
 			assert(overs.size());
 
-			/*
-			if (GP->CurrentGeneration == 8)
-			{
-				std::cout << "Between points " << a.location << "-" << b.location << ", overs = [ ";
-				for (auto& elem : overs) {std::cout << elem << " ";}
-				std::cout << "]\n";
-			}
-			*/
-
 			if (overs.size() == 1)
 			{
-				//r.push_back({a.location, b.location, 0.0});
-				//r.push_back({a.location, b.location, 1.0, *overs.begin()});
-				if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().heterozygosity == 0.0)
+				if (outputType == 'D')
 				{
-					assert(r.back().right < b.location);
-					r.back().right = b.location;
+					if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().paintedSegmentDiversity.heterozygosity == 0.0)
+					{
+						assert(r.back().paintedSegmentDiversity.right < b.location);
+						r.back().paintedSegmentDiversity.right = b.location;
+					} else
+					{
+						r.push_back(
+							{
+								{a.location, b.location, 1, *(overs.begin()), nbHaplotypesSampled,  0.0},
+								{}
+							}
+						);
+					}
 				} else
 				{
-					r.push_back({a.location, b.location, 1, *(overs.begin()),  0.0});
+					contributions[*(overs.begin())] += nbLoci * nbHaplotypesSampled;
 				}
 			} else
 			{
@@ -712,72 +774,55 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
 					++(counts.back().first);
 				}
 
-				/*
-				if (GP->CurrentGeneration == 8)
+
+				// Origin entries
+				if (outputType == 'O')
 				{
 					for (auto& count : counts)
 					{
-						std::cout << count.first << ": " << count.second << "\n";
+						contributions[count.second] += nbLoci * count.first;
 					}
 				}
-				*/
-					
-
-				// Make entries
-				/*
-				size_t allCounts = 0; // for assertions
-				for (auto& count : counts )
-				{
-					double freq = (double)count.first / (double)nbHaplotypesSampled;
-					assert(freq > 0.0 && freq <= 1.0);
-					r.push_back({a.location, b.location, freq, count.second});
-					allCounts += count.first;
-					//std::cout << "count.first = " << count.first << "\n";
-					assert(count.first > 0);
-				}
-				//std::cout << "nbHaplotypesSampled = " << nbHaplotypesSampled << "\n";
-				//std::cout << "allCounts = " << allCounts << "\n";
-				assert(allCounts == nbHaplotypesSampled);
-				*/
-
 
 				
-				// Compute diversity
-				size_t sumOfCounts = 0; // For assertion
-				double J = 0.0; // J as in Nei's paper (H = 1 - j)
-				size_t maxCount = 0; // used only if SSP->SegDiversityFile_includeMainColor
-				int mainColor = std::numeric_limits<int>::min();  // used only if SSP->SegDiversityFile_includeMainColor
-				for (auto& count : counts)
+
+				// Diversity entries
+				if (outputType == 'D')
 				{
-					sumOfCounts += count.first;
-					J += pow(count.first / nbHaplotypesSampled, 2);
-					if (maxCount < count.first)
+					// Compute diversity
+					size_t sumOfCounts = 0; // For assertion
+					double J = 0.0; // J as in Nei's paper (H = 1 - j)
+					size_t maxCount = 0; // used only if SSP->SegDiversityFile_includeMainColor
+					int mainColor = std::numeric_limits<int>::min();  // used only if SSP->SegDiversityFile_includeMainColor
+					for (auto& count : counts)
 					{
-						maxCount = count.first;
-						mainColor = count.second;
+						sumOfCounts += count.first;
+						J += pow((double)count.first / (double)nbHaplotypesSampled, 2);
+						if (maxCount < count.first)
+						{
+							maxCount = count.first;
+							mainColor = count.second;
+						}
 					}
-				}
-				assert(maxCount);
-				assert(sumOfCounts == nbHaplotypesSampled);
-				assert(J >= 0.0 && J <= 1.0);
-				auto H = 1-J;
-				
-				/*
-				if (GP->CurrentGeneration == 8)
-				{
-					std::cout << "H = " << H << "\n";
-				}
-				*/
+					assert(maxCount);
+					assert(sumOfCounts == nbHaplotypesSampled);
+					assert(J >= 0.0 && J <= 1.0);
+					auto H = 1-J;
 
-				// Add entry in the returned object
-				if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().heterozygosity == H && r.back().nbColors == counts.size())
-				{
-					assert(r.back().right < b.location);
-					r.back().right = b.location;
-				} else
-				{
+					if (!SSP->SegDiversityFile_includeMainColor && r.size() && r.back().paintedSegmentDiversity.heterozygosity == H && r.back().paintedSegmentDiversity.nbColors == counts.size())
+					{
+						assert(r.back().paintedSegmentDiversity.right < b.location);
+						r.back().paintedSegmentDiversity.right = b.location;
+					} else
+					{
 
-					r.push_back({a.location, b.location, counts.size(), mainColor, H});
+						r.push_back(
+							{
+								{a.location, b.location, counts.size(), mainColor, maxCount, H},
+								{}
+							}
+						);
+					}
 				}
 			}
 		}
@@ -789,10 +834,38 @@ std::vector<T4TreeRec::PaintedSegmentDiversity> T4TreeRec::computeSmallSegmentsD
            overs.erase(overs.find(b.ID));  
     }
 
-    assert(r.back().right == SSP->Gmap.T4_nbLoci);
+    if (outputType == 'D')
+    	assert(r.back().paintedSegmentDiversity.right == SSP->Gmap.T4_nbLoci);
+
+    if (outputType == 'O')
+    {
+    	assert(r.size() == 0);
+    	unsigned long long totalNbLoci = 0;
+    	for (auto& contribution : contributions)
+    		totalNbLoci += contribution.second;
+    	assert(totalNbLoci % SSP->Gmap.T4_nbLoci == 0);
+
+    	for (auto& contribution : contributions)
+    	{
+    		// contribution.first  is  ancestral haplotype ID
+    		// contribution.second is  Nb of loci contributed
+
+    		assert(contribution.second);
+    		assert(contribution.second <= totalNbLoci);
+    		assert(this->nodes.size() > contribution.first);
+    		r.push_back(
+	    		{
+					{},
+					{contribution.first, ((double)contribution.second) / ((double)totalNbLoci), this->nodes[contribution.first].patch}
+	    		}
+    		);
+    	}
+    }
+
     return r;
 }
 
+/*
 std::vector<T4TreeRec::PaintedSegmentFrequency> T4TreeRec::computeLargeSegmentsFrequenciesFromPaintedHaplotypes(const std::vector<std::vector<T4TreeRec::PaintedSegment>>& allGatheredSegments) const
 {
 	// That's a little slow but easy.
@@ -840,10 +913,54 @@ std::vector<T4TreeRec::PaintedSegmentFrequency> T4TreeRec::computeLargeSegmentsF
 
 	return data;
 }
+*/
+
+
+T4TreeRec::PaintedSegmentDiversity::PaintedSegmentDiversity(uint32_t l, uint32_t r, size_t c, int mainColor, size_t freqMainColor, double h)
+:left(l), right(r), nbColors(c), colorHighestFrequency(mainColor), freqOfColorHighestFrequency(freqMainColor), heterozygosity(h)
+{
+	assert(left < right);
+	assert(nbColors > 0);
+	if (nbColors == 1) assert(heterozygosity == 0.0);
+}
+
+
+std::string T4TreeRec::PaintedSegmentDiversity::toString() const
+{
+	if (SSP->SegDiversityFile_includeMainColor)
+	{
+		return std::to_string(left) + "\t" + std::to_string(right) + "\t" + std::to_string(nbColors) + "\t" + std::to_string(colorHighestFrequency) + "\t" + std::to_string(freqOfColorHighestFrequency) + "\t" + std::to_string(heterozygosity) + "\n";
+	} else
+	{
+		return std::to_string(left) + "\t" + std::to_string(right) + "\t" + std::to_string(nbColors) + "\t" + std::to_string(heterozygosity) + "\n";
+	}
+}
+
+std::string T4TreeRec::PaintedSegmentOrigin::toString() const
+{
+	return std::to_string(originPatch) + "\t" + std::to_string(color) + "\t" + std::to_string(contribution) + "\n";
+}
+
+
+std::string T4TreeRec::PaintedSegmentSummary::toString(unsigned char outputType) const
+{
+	if (outputType == 'D')
+	{
+		return paintedSegmentDiversity.toString();
+	} else if (outputType == 'O')
+	{
+		return paintedSegmentOrigin.toString();
+	} else
+	{
+		std::cout << "Internal error in PaintedSegmentDiversity::toString, unknown outputType (outputType = "<<outputType<<").\n";
+		abort();
+	}
+}
 
 
 
-void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const
+
+void T4TreeRec::writePaintedHaplotypesSummary(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file, const unsigned char outputType ) const
 {
 	//std::cout << "enters in T4TreeRec::writePaintedHaplotypesDiversity\n";
 	assert(paintedGeneration < observedGeneration);
@@ -857,14 +974,6 @@ void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& foc
 	
 	//for (const auto& focalT4ID : focalT4IDs)
 	//	allGatheredSegments.push_back(computePaintedHaplotypes(paintedGeneration, focalT4ID));
-
-	///////////////////////////////////////////////////////////
-	// Compute frequencies and format into string for return //
-	///////////////////////////////////////////////////////////
-	/*
-		Format: [left right freq][left right freq][left right freq]
-		ID is T4ID -> Watch out, one can compare T4IDs of different observedGeneration!
-	*/
 
 	assert(focalT4IDs_patches.size());
 	int focalT4IDs_patches_index = -1;
@@ -896,53 +1005,23 @@ void T4TreeRec::writePaintedHaplotypesDiversity(const std::vector<uint32_t>& foc
 			assert(gotANewPatch);
 		}	
 		auto patch = focalT4IDs_patches[focalT4IDs_patches_index];
-
+					
 
 		// Compute stuff
-		auto data = computeSmallSegmentsDiversityFromPaintedHaplotypes(allGatheredSegments[index_for_patch]);
+		auto data = computeSmallSegmentsSummaryFromPaintedHaplotypes(allGatheredSegments[index_for_patch], outputType);
 		auto nbHaplotypesSampled = allGatheredSegments[index_for_patch].size();
 
-		std::string generations_s = std::to_string(paintedGeneration == std::numeric_limits<int>::lowest() ? -GP->memory_nbGenerationsInBurnIn : paintedGeneration) + "\t" + std::to_string(observedGeneration) + "\t";
+		std::string generations_s = std::to_string(paintedGeneration == std::numeric_limits<int>::lowest() ? -GP->memory_nbGenerationsInBurnIn : paintedGeneration) + "\t" + std::to_string(observedGeneration) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(patch) + "\t";
 		//std::cout << "data.size() = " << data.size() << "\n";
 		for (const auto& segment : data)
 		{
-			std::string s;
-			if (SSP->SegDiversityFile_includeMainColor)
-			{
-				s = generations_s + std::to_string(segment.left) + "\t" + std::to_string(segment.right) + "\t" + std::to_string(patch) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(segment.nbColors) + "\t" + std::to_string(segment.colorHighestFrequency) + "\t" + std::to_string(segment.heterozygosity) + "\n";
-			} else
-			{
-				s = generations_s + std::to_string(segment.left) + "\t" + std::to_string(segment.right) + "\t" + std::to_string(patch) + "\t" + std::to_string(nbHaplotypesSampled) + "\t" + std::to_string(segment.nbColors) + "\t" + std::to_string(segment.heterozygosity) + "\n";
-			}
+			std::string s = generations_s;
+			s += segment.toString(outputType);
 			file.write(s);
 		}
 	}
 
 	file.close();
-
-
-	/*
-	std::pair<std::string, std::string> ss;
-	{
-		const auto data = computeSmallSegmentsFrequenciesFromPaintedHaplotypes(allGatheredSegments);
-
-		ss.first.reserve(data.size() * (2 + 16 + 10));
-		for (const auto& segment : data)
-		{
-			ss.first += "[" + std::to_string(segment.left) + " " + std::to_string(segment.right) + " " + std::to_string(segment.freq) + "]";
-		}
-	}
-
-	{
-		const auto data = computeLargeSegmentsFrequenciesFromPaintedHaplotypes(allGatheredSegments);
-		
-		ss.second.reserve(data.size() * (2 + 16 + 10));
-		for (const auto& segment : data)
-		{
-			ss.second += "[" + std::to_string(segment.left) + " " + std::to_string(segment.right) + " " + std::to_string(segment.freq) + "]";
-		}
-	}
-	*/
 }
 
 void T4TreeRec::writePaintedHaplotypes(const std::vector<uint32_t>& focalT4IDs, const std::vector<uint32_t>& focalT4IDs_patches, const int paintedGeneration, const int observedGeneration, OutputFile& file) const
@@ -1189,7 +1268,7 @@ std::vector<std::vector<std::vector<T4TreeRec::PaintedSegment>>> T4TreeRec::comp
 			std::cout << "nodes["<<info.oldID<<"] is associated here to segment = [" << segment.left << "-" << segment.right << "]" << std::endl;
 			*/
 			assert(nodes.size() > info.oldID);
-			assert(nodes[info.oldID].generation == 0);
+			//assert(nodes[info.oldID].generation == 0);
 
 			
 			auto& dest = map[segment.child];
@@ -1326,6 +1405,8 @@ void T4TreeRec::simplify(Pop& pop)
 	std::cout << "entering tree \n";
 	this->print();
 	#endif
+
+	if (SSP->whenDidExtinctionOccur != -1) return;
 	
 
 	if (isAlreadyAsSimplifiedAsPossible) return;
@@ -1788,8 +1869,12 @@ template<typename INT> const std::vector<uint32_t>& T4TreeRec::getMutationsOfID(
 void T4TreeRec::propagateMutationsForSegment(NodeGenetics& child, const NodeGenetics& parent, const uint32_t left, const uint32_t right)
 {
 	assert(left < right);
-	//std::cout << "child.getGeneration() = " << child.getGeneration() << "\n";
-	//std::cout << "parent.getGeneration() = " << parent.getGeneration() << "\n";
+	
+	if (child.getGeneration() <= parent.getGeneration())
+	{
+		std::cout << "child.getGeneration() = " << child.getGeneration() << "\n";
+		std::cout << "parent.getGeneration() = " << parent.getGeneration() << "\n";
+	}
 
 	assert(child.getGeneration() > parent.getGeneration());
 	auto nbGenerationsInBetween = child.getGeneration() - parent.getGeneration();

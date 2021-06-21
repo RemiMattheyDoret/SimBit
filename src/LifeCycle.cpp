@@ -35,12 +35,28 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
     #ifdef DEBUG
     std::cout << "Enters in 'BREEDING_SELECTION_DISPERSAL'\n";
     #endif
+
+    /*
+    std::cout << "Parent_pop...";
+    SSP->T8Tree.printT8IDs(Parent_pop);
+    std::cout << "Offspring_pop...";
+    SSP->T8Tree.printT8IDs(Offspring_pop);
+    SSP->T8Tree.printT8IDs();
+    */
+
+    //std::cout << "\nParent_pop.getPatch(0).getInd(2).getHaplo(0).T8ID = " << Parent_pop.getPatch(0).getInd(2).getHaplo(0).T8ID <<  "\n";
+
     /*
     std::cout << "patchSize when entering LifeCycle::BREEDING_SELECTION_DISPERSAL: ";
     for (auto& e : SSP->patchSize) std::cout << e << " ";
     std::cout << "\n";   
     */
     SSP->T56_memManager.setGenerationInfo();
+
+    if (SSP->whenDidExtinctionOccur == -1 && SSP->Gmap.T8_nbLoci > 0)
+    {
+        SSP->T8Tree.announceStartOfGeneration();
+    }
 
     //uint32_t nbSwaps = 0;
 
@@ -112,8 +128,22 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
             auto& mother = Parent_pop.getPatch(CD.mother.patch).getInd(CD.mother.ind);
             auto& father = Parent_pop.getPatch(CD.father.patch).getInd(CD.father.ind);
 
+            /*
+            std::cout << "Sample mother " << CD.mother.patch << ":" << CD.mother.ind << ":" << CD.mother.segregationIndex << "\n";
+            std::cout << "Sample father " << CD.father.patch << ":" << CD.father.ind << ":" << CD.father.segregationIndex << "\n";
+            */
+
+
             //std::cout << "mother.getHaplo0(0).T4ID = " << mother.getHaplo(0).T4ID << "\n";
             //std::cout << "mother.getHaplo0(1).T4ID = " << mother.getHaplo(1).T4ID << "\n";
+
+            /*
+            std::cout << "mother.getHaplo0(0).T8ID = " << mother.getHaplo(0).T8ID << "\n";
+            std::cout << "mother.getHaplo0(1).T8ID = " << mother.getHaplo(1).T8ID << "\n";
+            std::cout << "father.getHaplo0(0).T8ID = " << father.getHaplo(0).T8ID << "\n";
+            std::cout << "father.getHaplo0(1).T8ID = " << father.getHaplo(1).T8ID << "\n";
+            std::cout << "Generation = " << GP->CurrentGeneration << "\n";
+            */
 
             //std::cout << "Begin mother.getHaplo(CD.mother.segregationIndex).nbT56muts() = "<< mother.getHaplo(CD.mother.segregationIndex).nbT56muts() << "\n";
             //std::cout << "Begin father.getHaplo(CD.father.segregationIndex).nbT56muts() = "<< father.getHaplo(CD.father.segregationIndex).nbT56muts() << "\n";
@@ -142,12 +172,15 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 if (SSP->SwapInLifeCycle && CD.mother.nbRecs == 0 && PD.isLastOffspring(CD.mother, patch_index, offspring_index,0))
                 {
                     //nbSwaps+=2;
-                    //std::cout << "swaps while cloning\n";
+                    //std::cout << "swap both\n";
                     assert(PD.isLastOffspring(CD.father, patch_index, offspring_index,1));
                     reproduceThroughSwap(mother, Offspring_mHaplo, CD.mother, patch_index);
                     reproduceThroughSwap(father, Offspring_fHaplo, CD.father, patch_index);
+
                 } else
                 {
+                    //std::cout << "Copy both mother and father\n";
+
                     reproduceThroughCopy(
                        mother,
                        Offspring_mHaplo,
@@ -162,6 +195,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                        patch_index
                     );
                 }
+
             } else
             {
                 // Mother
@@ -174,6 +208,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 } else
                 {
                     //std::cout << "copies mother\n";
+                   
                     reproduceThroughCopy(
                        mother,
                        Offspring_mHaplo,
@@ -193,6 +228,7 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
                 } else
                 {
                     //std::cout << "copies father\n";
+                    
                     reproduceThroughCopy(
                        father,
                        Offspring_fHaplo,
@@ -318,6 +354,11 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
         SSP->T4Tree.simplify_ifNeeded(Offspring_pop);
     }
 
+    if (SSP->whenDidExtinctionOccur == -1 && SSP->Gmap.T8_nbLoci > 0)
+    {
+        SSP->T8Tree.announceEndOfGeneration();
+    }
+
     if (SSP->whenDidExtinctionOccur == -1 && SSP->Gmap.T56_nbLoci)
     {
         Offspring_pop.toggleT56MutationsIfNeeded();
@@ -335,9 +376,11 @@ void LifeCycle::BREEDING_SELECTION_DISPERSAL(Pop& Offspring_pop, Pop& Parent_pop
 
 void LifeCycle::reproduceThroughSwap(Individual& parent, Haplotype& offspringHaplotype, HaplotypeData& parentHaploData, int& patch_index)
 {
+    //std::cout << "swap\n";
     auto& parentalHaplo = parent.getHaplo(parentHaploData.segregationIndex);
 
     auto parentalT4ID = parentalHaplo.T4ID; // only used for T4
+    auto parentalT8ID = parentalHaplo.T8ID; // only used for T8
     parentalHaplo.swap(offspringHaplotype);
 
     if (SSP->Gmap.T4_nbLoci > 0)
@@ -345,6 +388,12 @@ void LifeCycle::reproduceThroughSwap(Individual& parent, Haplotype& offspringHap
         //std::cout <<"\tLIFECYCLE - CLONING!!! b = NA: SSP->Gmap.T4_nbLoci = "<<SSP->Gmap.T4_nbLoci<<"\n";
         std::vector<uint32_t> RecPos = {std::numeric_limits<uint32_t>::max()};
         offspringHaplotype.T4ID = SSP->T4Tree.addHaplotype(RecPos, {parentalT4ID, std::numeric_limits<std::uint32_t>::max()}, patch_index);
+    }
+
+    if (SSP->Gmap.T8_nbLoci > 0)
+    {
+        std::vector<uint32_t> RecPos = {std::numeric_limits<uint32_t>::max()};
+        offspringHaplotype.dealWithT8Info(SSP->T8Tree.addOffspring(parentalT8ID, parentalT8ID, RecPos));
     }
 }
 
@@ -507,7 +556,7 @@ std::cout << "Enters in 'copyOver'\n";
     {
         
         //if (GP->CurrentGeneration >= 50) std::cout << "parent.getHaplo(segregationIndex).getW_T1(0) = " << parent.getHaplo(segregationIndex).getW_T1(0) << "\n";
-        TransmittedChrom = parent.getHaplo(segregationIndex); // ID should be correctly incremented here
+        TransmittedChrom = parent.getHaplo(segregationIndex);
         //if (GP->CurrentGeneration >= 50) std::cout << "TransmittedChrom.getW_T1(0) = " << TransmittedChrom.getW_T1(0) << "\n";
         
     } else if (recombination_breakpoints.size()>1)
@@ -890,6 +939,7 @@ void LifeCycle::reproduceThroughCopy(Individual& parent, Haplotype& TransmittedC
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'reproduceThroughCopy'\n";
 #endif     
+    //std::cout << "copy\n";
 
     //std::cout << "TransmittedChrom.T4ID = " << TransmittedChrom.T4ID << "\n";
     //std::cout << "parent.getHaplo(parentData.segregationIndex).T4ID = " << parent.getHaplo(parentData.segregationIndex).T4ID<< "\n";
@@ -898,11 +948,22 @@ std::cout << "Enters in 'reproduceThroughCopy'\n";
     recombination_RecPositions(parentData.nbRecs, parent); // parent is used if recRateOnMismatch_bool
 
     // copy from parents chromosomes to TransmittedChrom. The function also set the new values for W_T1 and W_T2
-    copyOver(parent, TransmittedChrom, parentData.segregationIndex); // This will copy data from parents to offspring so it must always run
+    if (SSP->Gmap.nbNonPedigreeLoci) copyOver(parent, TransmittedChrom, parentData.segregationIndex); // This will copy data from parents to offspring so it must always run
 
     if (SSP->Gmap.T4_nbLoci > 0)
     {
         TransmittedChrom.T4ID = SSP->T4Tree.addHaplotype(recombination_breakpoints, {parent.getHaplo(parentData.segregationIndex).T4ID, parent.getHaplo(!parentData.segregationIndex).T4ID}, patch_index);
+    }
+
+    if (SSP->Gmap.T8_nbLoci > 0)
+    {
+        TransmittedChrom.dealWithT8Info(
+            SSP->T8Tree.addOffspring(
+                parent.getHaplo(parentData.segregationIndex).T8ID,
+                parent.getHaplo(!parentData.segregationIndex).T8ID,
+                recombination_breakpoints
+            )
+        );
     }
 }
 
@@ -1086,16 +1147,31 @@ std::cout << "Enters in 'Mutate_T56'\n";
 #endif     
     int nbMuts = SSP->geneticSampler.get_T56_nbMuts();;
     //std::cout << "nbMuts = " << nbMuts << "\n";
-    
+
     for (int i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = SSP->geneticSampler.get_T56_mutationPosition();
+            
+            // Make the mutation - toggle bit
+            //std::cout << "MutPosition = " << MutPosition << "\n";
+
+            auto locusGender = SSP->Gmap.FromT56LocusToT56genderLocus(MutPosition);
+            //std::cout << "locusGender.second = " << locusGender.second << "\n";
+            if (locusGender.isNtrl)
+            {
+                TransmittedChrom.mutateT56ntrl_Allele(locusGender.locusInGender);
+            } else
+            {
+                TransmittedChrom.mutateT56sel_Allele(locusGender.locusInGender, Habitat);
+            }
+        }
+
+    /*
+    if (nbMuts == 0) return;
+    if (nbMuts == 1)
     {
         auto MutPosition = SSP->geneticSampler.get_T56_mutationPosition();
-        
-        // Make the mutation - toggle bit
-        //std::cout << "MutPosition = " << MutPosition << "\n";
-
         auto locusGender = SSP->Gmap.FromT56LocusToT56genderLocus(MutPosition);
-        //std::cout << "locusGender.second = " << locusGender.second << "\n";
         if (locusGender.isNtrl)
         {
             TransmittedChrom.mutateT56ntrl_Allele(locusGender.locusInGender);
@@ -1103,7 +1179,51 @@ std::cout << "Enters in 'Mutate_T56'\n";
         {
             TransmittedChrom.mutateT56sel_Allele(locusGender.locusInGender, Habitat);
         }
+    } else
+    {
+        std::vector<uint32_t> ntrlMuts;
+        std::vector<uint32_t> selMuts;
+        for (int i = 0 ; i < nbMuts ; i++)
+        {
+            auto MutPosition = SSP->geneticSampler.get_T56_mutationPosition();
+            
+            // Make the mutation - toggle bit
+            //std::cout << "MutPosition = " << MutPosition << "\n";
+
+            auto locusGender = SSP->Gmap.FromT56LocusToT56genderLocus(MutPosition);
+            //std::cout << "locusGender.second = " << locusGender.second << "\n";
+            if (locusGender.isNtrl)
+            {
+                ntrlMuts.push_back(locusGender.locusInGender);
+            } else
+            {
+                selMuts.push_back(locusGender.locusInGender);
+            }
+        }
+
+        if (ntrlMuts.size())
+        {
+            if (ntrlMuts.size() == 1)
+            {
+                TransmittedChrom.mutateT56ntrl_Allele(ntrlMuts.front());
+            } else
+            {
+                TransmittedChrom.mutateT56ntrl_Allele(ntrlMuts);
+            }
+        }
+
+        if (selMuts.size())
+        {
+            if (selMuts.size() == 1)
+            {
+                TransmittedChrom.mutateT56sel_Allele(selMuts.front());
+            } else
+            {
+                TransmittedChrom.mutateT56sel_Allele(selMuts);
+            }
+        }
     }
+    */
 }
 
 
@@ -1177,9 +1297,9 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
 {
     int mother_patch_from;
     if (SSP->isStochasticMigration)
-        mother_patch_from = pop.SelectionOriginPatch(patch_index);
+        mother_patch_from = Pop::SelectionOriginPatch(patch_index);
     else
-        mother_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
+        mother_patch_from = Pop::SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
 
     #ifdef DEBUG
     if (mother_patch_from != patch_index) NBMIGRANTS++;
@@ -1226,9 +1346,9 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
                     if (SSP->gameteDispersal)
                     {
                         if (SSP->isStochasticMigration)
-                            father_patch_from = pop.SelectionOriginPatch(patch_index);
+                            father_patch_from = Pop::SelectionOriginPatch(patch_index);
                         else
-                            father_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
+                            father_patch_from = Pop::SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
                     } else
                     {
                         father_patch_from = mother_patch_from;
@@ -1243,9 +1363,9 @@ LifeCycle::CoupleData LifeCycle::findCouple(Pop& pop, int& patch_index, int& off
                 if (SSP->gameteDispersal)
                 {
                     if (SSP->isStochasticMigration)
-                        father_patch_from = pop.SelectionOriginPatch(patch_index);
+                        father_patch_from = Pop::SelectionOriginPatch(patch_index);
                     else
-                        father_patch_from = pop.SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
+                        father_patch_from = Pop::SelectionOriginPatch(patch_index, nextGenPatchSize==1 ? 0 : (double) offspring_index / (double) (nextGenPatchSize-1) );
                 } else
                 {
                     father_patch_from = mother_patch_from;

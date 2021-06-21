@@ -480,7 +480,7 @@ std::cout << "Enters in 'SetParameters'\n";
     for (auto& p : UserEntries)
         std::cout << "\t" << p.first << ":\t" << p.second << "\n";
     #endif
-
+   
     // random SSP security
     assert(SSP == nullptr);
 
@@ -581,7 +581,7 @@ std::cout << "Enters in 'SetParameters'\n";
 
         #ifdef DEBUG
         std::cout << "flag = " << flag << "\n";
-        std::cout << "NbMatchIOnUserEntry = " << UserInputIndexForFlags.size() << "\n";
+        std::cout << "NbMatchIOnUserEntry.size() = " << UserInputIndexForFlags.size() << "\n";
         #endif
         // if flag not found in UserEntries
         if (UserInputIndexForFlags.size() == 0) 
@@ -731,9 +731,6 @@ std::cout << "Enters in 'SetParameters'\n";
                     abort();
                 }
             }
-        } else
-        {
-            SSPi.DispWeightByFitness = true;
         }
     }
         
@@ -902,6 +899,13 @@ void AllParameters::setOptionToDefault(std::string& flag)
     else if (flag == "sampleSeq_file")
     {
         // nothing to do
+    } else if (flag == "T8_LargeOutput_file")
+    {
+        // nothing to do
+        
+    } else if (flag == "T8_SNPfreq_file")
+    {
+        // nothing to do   
     }
     else if (flag == "burnInLength_file")
     {
@@ -1055,6 +1059,9 @@ void AllParameters::setOptionToDefault(std::string& flag)
     } else if (flag == "T4_paintedHaploSegmentsDiversity_file")
     {
         // Nothing to do
+    } else if (flag == "T4_paintedHaploSegmentsOrigin_file")
+    {
+        // Nothing to do
     } else if (flag == "T4_SNPfreq_file")
     {
         // Nothing to do
@@ -1177,17 +1184,8 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "DispWeightByFitness")
     {
-        for (auto& SSPi : this->SSPs)
-        {
-            if (SSPi.fecundityForFitnessOfOne == -1)
-            {
-                SSPi.DispWeightByFitness = false;
-            } else
-            {
-                SSPi.DispWeightByFitness = true;
-            }
-                
-        }
+        InputReader input(std::string("@S0 default"), "In Default value for --DispWeightByFitness,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readDispWeightByFitness);
     }
     else if (flag == "L")
     {
@@ -1256,6 +1254,10 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input("default", "In default value for --T4_mutDirection,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_mutDirection);
+    } else if (flag == "T8_mutDirection")
+    {
+        InputReader input("default", "In default value for --T8_mutDirection,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_mutDirection);
     } else if (flag == "T4_nbRunsToPlaceMutations")
     {
         InputReader input("default", "In default value for --T4_nbRunsToPlaceMutations,");
@@ -1343,7 +1345,23 @@ void AllParameters::setOptionToDefault(std::string& flag)
     {
         InputReader input(std::string("@S0 @H0 unif 1 1 1"), "In Default value for --T1_FitnessEffects,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
-    } else if (flag == "shrinkT56EveryNGeneration")
+    } 
+    else if (flag == "T8_fit")
+    {
+        InputReader input(std::string("@S0 unif 1"), "In Default value for --T8_FitnessEffects,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_FitnessEffects);
+    } 
+    else if (flag == "T8_mapInfo")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --T8_mapInfo,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_mapInfo);
+    } 
+    else if (flag == "T8_propagationMethod")
+    {
+        InputReader input(std::string("@S0 default"), "In Default value for --T8_propagationMethod,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_propagationMethod);
+    }
+    else if (flag == "shrinkT56EveryNGeneration")
     {
         InputReader input(std::string("@S0 default"), "In Default value for --shrinkT56EveryNGeneration,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readShrinkT56EveryNGeneration);
@@ -1471,10 +1489,29 @@ void AllParameters::setOptionToDefault(std::string& flag)
             }
         }
 
+    } else if (flag == "T8_mu")
+    {
+        for (auto& SSPi : this->SSPs)
+        {
+            if (SSPi.Gmap.T8_nbLoci)
+            {
+                std::cout << "You asked for T8 loci for species "<<SSPi.speciesName<<"but option '--T8_MutationRate' is missing!\n";
+                abort();
+            } else
+            {
+                SSPi.T8_Total_Mutation_rate = 0.0;
+            }
+        }
+
     } else if (flag == "T4_simplifyEveryNGenerations")
     {
         InputReader input(std::string("default"), "In Default value for --T4_simplifyEveryNGenerations,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_simplifyEveryNGenerations);
+    }
+    else if (flag == "T8_simplifyEveryNGenerations")
+    {
+        InputReader input(std::string("default"), "In Default value for --T8_simplifyEveryNGenerations,");
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_simplifyEveryNGenerations);
     }
     else if (flag == "eco")
     { 
@@ -1562,6 +1599,17 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeAndSubsetInput(input);
         outputWriter.insertOutputFile(std::move(file));
 
+    } else if (flag == "T8_LargeOutput_file")
+    {
+        OutputFile file(input.GetNextElementString(), T8_largeOutput_file);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));
+        
+    } else if (flag == "T8_SNPfreq_file")
+    {
+        OutputFile file(input.GetNextElementString(), T8_SNPfreq_file);
+        file.interpretTimeAndSubsetInput(input);
+        outputWriter.insertOutputFile(std::move(file));  
     } else if (flag == "T1_haplotypeFreqs_file")
     {
         OutputFile file(input.GetNextElementString(), T1_haplotypeFreqs_file);
@@ -1798,11 +1846,6 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeForPaintedHaplo(input);
         outputWriter.insertOutputFile(std::move(file)); 
 
-        if (outputWriter.isFile(T4_vcfFile) || outputWriter.isFile(T4_SFS_file) || outputWriter.isFile(sampleSeq_file)) 
-        {
-            std::cout << "In the current version of SimBit, painting haplotypes (as asked with option --T4_paintedHaplo_file) cannot happen in parallel of other outputs for T4 loci (T4_vcf_file, T4_SFS_file, sampleSeq_file). It is for a silly reason. When asking for output from T4 loci, SimBit needs to propagate mutations from the ancestor(s) to the current generation. After that, SimBit just remove all the coalescent tree that precedes the current generation. However, when painting chromosome, SimBit needs to know the entire tree to know whether all loci coalesce at some point in the past. It would take some work to allow both types of outputs but it would be feasible. Sorry for the disagrement.\n";
-            abort();
-        }
     } else if (flag == "T4_paintedHaploSegmentsDiversity_file")
     {
         if (GP->nbSpecies > 1)
@@ -1813,11 +1856,16 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
         file.interpretTimeForPaintedHaplo(input);
         outputWriter.insertOutputFile(std::move(file)); 
 
-        if (outputWriter.isFile(T4_vcfFile) || outputWriter.isFile(T4_SFS_file) || outputWriter.isFile(sampleSeq_file)) 
+    } else if (flag == "T4_paintedHaploSegmentsOrigin_file")
+    {
+        if (GP->nbSpecies > 1)
         {
-            std::cout << "In the current version of SimBit, painting haplotypes (as asked with option --T4_paintedHaploSegmentsDiversity_file) cannot happen in parallel of other outputs for T4 loci (T4_vcf_file, T4_SFS_file, sampleSeq_file). It is for a silly reason. When asking for output from T4 loci, SimBit needs to propagate mutations from the ancestor(s) to the current generation. After that, SimBit just remove all the coalescent tree that precedes the current generation. However, when painting chromosome, SimBit needs to know the entire tree to know whether all loci coalesce at some point in the past. It would take some work to allow both types of outputs but it would be feasible. Sorry for the disagrement.\n";
-            abort();
+            std::cout << "Received option --T4_paintedHaploSegmentsOrigin_file. For a very bad reason, the painted haplotype technique is not available with several species (got " << GP->nbSpecies << "). Sorry\n";
         }
+        OutputFile file(input.GetNextElementString(), T4_paintedHaploSegmentsOrigin_file);
+        file.interpretTimeForPaintedHaplo(input);
+        outputWriter.insertOutputFile(std::move(file)); 
+
     } else if (flag == "T4_SNPfreq_file")
     {
         OutputFile file(input.GetNextElementString(), T4_SNPfreq_file);
@@ -2023,6 +2071,9 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     } else if (flag == "T4_mutDirection")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_mutDirection);
+    } else if (flag == "T8_mutDirection")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_mutDirection);
     } else if (flag == "T4_nbRunsToPlaceMutations")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_nbRunsToPlaceMutations);
@@ -2077,6 +2128,16 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT1_FitnessEffects);
         
+    } else if (flag == "T8_FitnessEffects" || flag == "T8_fit")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_FitnessEffects);
+        
+    } else if (flag == "T8_mapInfo")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_mapInfo);
+    } else if (flag == "T8_propagationMethod")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_propagationMethod);
     } else if (flag == "shrinkT56EveryNGeneration")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readShrinkT56EveryNGeneration);
@@ -2152,9 +2213,16 @@ void AllParameters::setOptionToUserInput(std::string& flag, InputReader input)
     {    
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_MutationRate);
         
+    } else if (flag == "T8_mu" || flag == "T8_MutationRate")
+    {    
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_MutationRate);
+        
     } else if (flag == "T4_simplifyEveryNGenerations")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readT4_simplifyEveryNGenerations);
+    } else if (flag == "T8_simplifyEveryNGenerations")
+    {
+        wrapperOverSpecies(input, &SpeciesSpecificParameters::readT8_simplifyEveryNGenerations);
     } else if (flag == "Habitats" || flag == "H")
     {
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readHabitats);

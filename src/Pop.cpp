@@ -299,12 +299,14 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
         assert(CumSumFits.size() > patch_index);
         assert(CumSumFits[patch_index].size() > 0);
         
+        //std::cout << std::setprecision(10) << "limitMinimumSumOfFitnessAuthorized = " << limitMinimumSumOfFitnessAuthorized << "\n";
+
         if (!SSP->malesAndFemales) 
         {
             assert(CumSumFits[patch_index][0].size() == SSP->patchSize[patch_index]);
             if (SSP->patchSize[patch_index] > 0)
             {
-                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
+                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < limitMinimumSumOfFitnessAuthorized)
                 {
                     std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates. As a reminder the fitness effect among loci is multiplicative. If the fecundity was not set to -1.0, this message would not have appeared and the patch size would have simply dropped to zero. One nice way to figure out what is wrong is to print fitness either for each individual ('--fitness_file') or only the mean and variance in fitness ('--fitnessStats_file'). You might also to specify the seed in order to know exactly for what generation(s) you need fitness information." << std::endl;
                     if (GP->CurrentGeneration == 1)
@@ -322,7 +324,7 @@ void Pop::checkIfCumSumFitsIsNotTooSmall(int patch_index)
             assert(CumSumFits[patch_index][0].size() == SSP->patchSize[patch_index]);
             if (SSP->patchSize[patch_index] > 0)
             {
-                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < 0.00000000000001)
+                if ((CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size()) < limitMinimumSumOfFitnessAuthorized)
                 {
                     std::cout << "The average fitness of the females (or of the hermaphrodites) in patch " << patch_index << " is " << CumSumFits[patch_index][0].back() / CumSumFits[patch_index][0].size() << ". Selection appears too strong and round off error could become non-negligible! You might want to check your fitness related parameters as well as the mutation rates." << std::endl;
                     if (GP->CurrentGeneration == 1)
@@ -412,7 +414,7 @@ void Pop::CalculateFitnesses()
         Patch& patch = this->getPatch(patch_index);
         for ( int ind_index=0 ; ind_index < SSP->patchSize[patch_index] ; ++ind_index )
         {
-            double w = patch.getInd(ind_index).CalculateFitness(patch_index);
+            fitnesstype w = patch.getInd(ind_index).CalculateFitness(patch_index);
             if (!SSP->isAnySelection) assert(w == 1.0);
             //std::cout << "SSP->malesAndFemales " << SSP->malesAndFemales << "\n";
             //std::cout << "ind_index " << ind_index << " indexFirstMale[patch_index] " << indexFirstMale[patch_index] << "\n";
@@ -481,11 +483,11 @@ int Pop::SelectionParent(int patch_from, int sex)
         } else
         {
             assert(this->CumSumFits[patch_from].size() > sex);
-            double rnd = GP->rngw.uniform_real_distribution(this->CumSumFits[patch_from][sex].back());
+            fitnesstype rnd = GP->rngw.uniform_real_distribution(this->CumSumFits[patch_from][sex].back());
             
             //std::cout << "this->CumSumFits["<<patch_from<<"]["<<sex<<"].back() = " << this->CumSumFits[patch_from][sex].back() << "\n";
             //std::cout << "rnd = " << rnd << "\n";
-            std::vector<double>::iterator high = std::upper_bound(CumSumFits[patch_from][sex].begin(), CumSumFits[patch_from][sex].end(), rnd);
+            std::vector<fitnesstype>::iterator high = std::upper_bound(CumSumFits[patch_from][sex].begin(), CumSumFits[patch_from][sex].end(), rnd);
             index = distance(CumSumFits[patch_from][sex].begin(), high);
         }
 
@@ -541,7 +543,7 @@ int Pop::SelectionParent(int patch_from, int sex)
     return parent_index;
 }
 
-int Pop::SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic)
+int Pop::SelectionOriginPatch(uint32_t patch_to, fitnesstype rndIfNotStochastic)
 {
 #ifdef CALLENTRANCEFUNCTIONS
     std::cout << "Enters in Pop::SelectionOriginPatch\n";
@@ -561,7 +563,7 @@ int Pop::SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic)
 
     int patch_from = -1;
 
-    double rnd;
+    long double rnd;
     if (SSP->isStochasticMigration)
     {
         rnd = GP->rngw.uniform_real_distribution(1.0); // random between 0 and 1
@@ -590,7 +592,7 @@ int Pop::SelectionOriginPatch(uint32_t patch_to, double rndIfNotStochastic)
     //std::cout << "-----\n";
     for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_to].size() ; ++fake_patch_from)
     {
-        double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
+        long double probability = SSP->dispersalData.BackwardMigration[patch_to][fake_patch_from];
         
         if (rnd <= probability)
         {
@@ -660,7 +662,6 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
     ////////////////////////////////////
     // Change patch carrying capacity //
     ////////////////////////////////////
-    
     assert(SSP->patchCapacity.size() == GP->PatchNumber);
     assert(SSP->patchSize.size() == GP->PatchNumber);
     assert(previousPatchSizes.size() == GP->PatchNumber); // Yes it is the size of the current number of patches
@@ -671,8 +672,9 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
         assert(pop1.getPatch(patch_index).getpatchCapacity() == pop2.getPatch(patch_index).getpatchCapacity());
             
         if (pop1.getPatch(patch_index).getpatchCapacity() < SSP->patchCapacity[patch_index]) // If the carrying capacity increased.
-        {   
+        {
        
+            /*
             // Figure which patch to copy individuals from (if needed to copy)
             int patchToSample = -1;
             if (SSP->fecundityForFitnessOfOne == -1)
@@ -711,6 +713,79 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
                     assert(probMigr_patchToSample > 0.0 && probMigr_patchToSample <= 1.0);
                 }
             }
+            */
+
+            /*
+            // Assert I can sample from somewhere
+            if (SSP->fecundityForFitnessOfOne == -1 && previousPatchSizes[patch_index] == 0)
+            {
+                bool isProblem = true;
+                for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_index].size() ; ++fake_patch_from)
+                {
+                    assert(probability);
+                    double probability = SSP->dispersalData.BackwardMigration[patch_index][fake_patch_from];
+                    
+                    auto patch_from = SSP->dispersalData.BackwardMigrationIndex[patch_index][fake_patch_from];
+                    if (previousPatchSizes[patch_from] != 0)
+                    {
+                        isProblem = false;
+                        break;
+                    }
+                }
+
+                if (isProblem)
+                {
+                    std::cout << "When the fecundity is set to -1, then the patch size is not authorize to differ from the carrying capacity. Hence, when a patch is created or when a patch sees it size increase, SimBit seeks for individuals to copy. At first it tries to copy individuals from the same patch. If the patch has just been created or was empty, then it samples individuals (irrespective of their fitness) from other patches weighted by the migration probabilities (which itself could be weigthed by mean patch fitness depending on your parameters) up until the patch is full. At generation "<< GP->CurrentGeneration << ", SimBit failed to find any patch that has is not empty that has a non-zero migration probability toward patch index " << patch_index << " (zero-based counting). If you wished this patch to remain empty, then please set a fecundity different from -1. If you wished this patch to fill up, please specify another non-empty patch with a non-zero "
+                }
+            }
+            */
+
+
+            // Figure if all individuals should be sampled from a single patch
+            int patchToSample_reference = -1;
+            bool shouldUseReferencePatchToSample = false;
+            if (SSP->fecundityForFitnessOfOne == -1)
+            {
+                size_t nbPossiblePatches = 0;
+                for (int fake_patch_from = 0 ; fake_patch_from < SSP->dispersalData.BackwardMigration[patch_index].size() ; ++fake_patch_from)
+                {
+                    long double probability = SSP->dispersalData.BackwardMigration[patch_index][fake_patch_from];
+                    assert(probability);
+                    
+                    auto patch_from = SSP->dispersalData.BackwardMigrationIndex[patch_index][fake_patch_from];
+                    if (previousPatchSizes[patch_from] != 0)
+                    {
+                        patchToSample_reference = patch_from;
+                        ++nbPossiblePatches;
+                        if (nbPossiblePatches > 1) break;
+                    }
+                }
+
+                if (nbPossiblePatches == 0)
+                {
+                    shouldUseReferencePatchToSample = true;
+                    assert(patchToSample_reference == -1);
+
+                    for (patchToSample_reference = 0 ; patchToSample_reference < previousPatchSizes.size() ; ++patchToSample_reference)
+                    {
+                        if (previousPatchSizes[patchToSample_reference])
+                            break;
+                    }
+
+                    if (patchToSample_reference == previousPatchSizes.size())
+                    {
+                        std::cout << "At generation " << GP->CurrentGeneration << ", it appears that all the carrying capacities are zeros. It is a bug as this error should have been detected when reading the parameters and not later during the run. Can you please report it? Nevertheless, you might want to check your input parameters.\n";
+                        abort();
+                    }
+                    assert(patchToSample_reference != -1);
+
+                } else if (nbPossiblePatches == 1)
+                {
+                    shouldUseReferencePatchToSample = true;
+                    assert(patchToSample_reference != -1);
+                }
+            }
+
 
             // add individuals
             int NbIndsToAdd = SSP->patchCapacity[patch_index] - pop1.getPatch(patch_index).getpatchCapacity();
@@ -719,14 +794,29 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
                 Individual newInd;
                 if (SSP->fecundityForFitnessOfOne == -1)
                 {
+                    int patchToSample;
+                    if (shouldUseReferencePatchToSample)
+                    {
+                        patchToSample = patchToSample_reference;
+                    } else
+                    {
+                        do 
+                        {
+                            patchToSample = Pop::SelectionOriginPatch(patch_index);
+                        } while (previousPatchSizes[patchToSample] == 0);
+                    }
+                    assert(patchToSample < previousPatchSizes.size());
+                    
                     assert(patchToSample != -1);
                     assert(pop1.getPatch(patchToSample).getpatchCapacity());
                     assert(previousPatchSizes[patchToSample]);
                     int indToSample = ind_index % previousPatchSizes[patchToSample];
+                    assert(indToSample < previousPatchSizes[patchToSample]);
                 
                     newInd = pop1.getPatch(patchToSample).getInd(indToSample);
                 }
                 
+                //std::cout << "Adding individual\n";
                 pop1.getPatch(patch_index).AddIndividual(newInd);
                 pop2.getPatch(patch_index).AddIndividual(newInd);
             }
@@ -743,6 +833,8 @@ void Pop::updatePops(Pop& pop1, Pop& pop2, int speciesIndex, int oldNbPatches, s
                 pop1.getPatch(patch_index).removeLastIndividual(); // call destructor of Individual
                 pop2.getPatch(patch_index).removeLastIndividual(); // call destructor of Individual
             }
+            pop1.getPatch(patch_index).shrink_to_fit_inds();
+            pop2.getPatch(patch_index).shrink_to_fit_inds();
         }
     }
         

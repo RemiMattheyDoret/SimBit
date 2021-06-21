@@ -15,16 +15,16 @@ c++11:
 	g++ -std=c++11 src/main.cpp -o bin/SimBit -O3	
 
 noOpt: 
-	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall
+	g++ -std=c++14 src/main.cpp -o bin/SimBit
 
 debug:
-	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall -DDEBUG
+	g++ -std=c++14 src/main.cpp -o bin/SimBit -DDEBUG
 
 debugSani:
-	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall -DDEBUG -fsanitize=address
+	g++ -std=c++14 src/main.cpp -o bin/SimBit -DDEBUG -fsanitize=address
 
 sani:
-	g++ -std=c++14 src/main.cpp -o bin/SimBit -Wall -fsanitize=address
+	g++ -std=c++14 src/main.cpp -o bin/SimBit -fsanitize=address
 
 clean:
 	rm bin/*

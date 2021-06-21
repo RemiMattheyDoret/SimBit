@@ -1,13 +1,14 @@
 
 Walker::Walker():N_m_one(0){}
 
-Walker::Walker(const std::vector<double>& cumSumProbs)
+template<typename T>
+Walker::Walker(const std::vector<T>& cumSumProbs)
 : N_m_one(cumSumProbs.size()-1)
 {
   const uint32_t N = cumSumProbs.size();
 
   // Compute probabilities
-  std::vector<double> probs;
+  std::vector<T> probs;
   probs.reserve(N);
   probs.push_back( cumSumProbs[0] / cumSumProbs.back() );
   for (uint32_t ind_index = 1 ; ind_index < N ; ++ind_index)
@@ -20,7 +21,7 @@ Walker::Walker(const std::vector<double>& cumSumProbs)
     
 
   // Prepare alias
-  alias = std::vector<std::pair<double, uint32_t>>(N, {0.0, std::numeric_limits<uint32_t>::max()});
+  alias = std::vector<std::pair<long double, uint32_t>>(N, {0.0, std::numeric_limits<uint32_t>::max()});
   std::queue<uint32_t>  small, large;
 
   for (uint32_t i = 0; i != N; ++i)

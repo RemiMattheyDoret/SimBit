@@ -8,6 +8,8 @@ public:
     uint32_t 			get_T2_nbMuts();
     uint32_t 			get_T3_nbMuts();
     uint32_t 			get_T4_nbMuts(const uint32_t nbGenerationsInBetween, const uint32_t left, const uint32_t right);
+    template<typename INT>
+    uint32_t 			get_T8_nbMuts(const INT segmentIndex);
     uint32_t 			get_T56_nbMuts();
     uint32_t 			get_recombinationPosition();
     uint32_t 			get_T1_mutationPosition();
@@ -15,6 +17,8 @@ public:
     uint32_t 			get_T3_mutationPosition();
     uint32_t 			get_T4_mutationPosition(const uint32_t left, const uint32_t right);
     uint32_t 			get_T56_mutationPosition();
+    template<typename INT>
+    uint32_t 			get_T8_mutationPosition(const INT segmentIndex);
 
 
     void 			set_nbRecombinations(const double& rate);
@@ -22,6 +26,8 @@ public:
     void 			set_T2_nbMuts(const double& rate);
     void 			set_T3_nbMuts(const double& rate);
     void 			set_T4_nbMuts(const double& rate);
+    void 			set_T8_mutationStuff(const double& rate, const std::vector<double>& cumSumRates, std::vector<uint32_t>& T8_map);
+
     void 			set_T56_nbMuts(const double& rate);
     void 			set_recombinationPosition(const std::vector<double>& cumSumRates);
     void 			set_T1_mutationPosition(const std::vector<double>& cumSumRates);
@@ -45,6 +51,7 @@ private:
 	double T2_mut_totalRate;
 	double T3_mut_totalRate;
 	double T4_mut_totalRate;
+	std::vector<double> T8_mut_totalRate;
 	double T56_mut_totalRate;
 
 	
@@ -61,6 +68,7 @@ private:
 	std::vector<double> cumSumProbs_T2_mutationPosition;
 	std::vector<double> cumSumProbs_T3_mutationPosition;
 	std::vector<double> cumSumProbs_T4_mutationPosition;
+	std::vector<std::vector<double>> cumSumProbs_T8_mutationPosition;
 	std::vector<double> cumSumProbs_T56_mutationPosition;
 
 	// Cst rate that does not need walker
@@ -69,9 +77,11 @@ private:
 	bool isCstRate_T2_mutationPosition = false;
 	bool isCstRate_T3_mutationPosition = false;
 	bool isCstRate_T4_mutationPosition = false;
+	bool isCstRate_T8_mutationPosition = false;
 	bool isCstRate_T56_mutationPosition = false;
 
 	// T4 special
 	double T4_lastComputedTotalRate = -1.0; // set to -1 to create an error if I mess things up
+	double T8_lastComputedTotalRate = -1.0; // set to -1 to create an error if I mess things up
 
 };

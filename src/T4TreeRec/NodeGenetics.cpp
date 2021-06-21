@@ -135,3 +135,7 @@ void T4TreeRec::NodeGenetics::readFromBinaryFile(BinaryFileToRead& binfile)
     binfile.read(ID);
 }
 
+void T4TreeRec::NodeGenetics::print()
+{
+    std::cout << ID << " born at " << birth << " with " << mutations.size() << " mutations\n";
+}

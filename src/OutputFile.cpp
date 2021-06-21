@@ -76,7 +76,10 @@ const std::vector<std::string> OutputFile::OutputFileTypesNames = {
     "T4CoalescenceFst",
     "T1_AverageHybridIndexFile",
     "T1_haplotypeFreqs_file",
-    "sampleSeq_file"
+    "sampleSeq_file",
+    "T4_paintedHaploSegmentsOrigin_file",
+    "T8_SNPfreq_file",
+    "T8_largeOutput_file"
 }; 
 
 const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
@@ -113,6 +116,9 @@ const std::vector<int> OutputFile::listOfOutputFileTypeThatCanTakeASubset = {
     T1_AverageHybridIndexFile,
     T1_haplotypeFreqs_file,
     // not sampleSeq_file
+    // not T4_paintedHaploSegmentsOrigin_file
+    // not T8_SNPfreq_file
+    // not T8_largeOutput_file
 };   
 
 void OutputFile::openAndReadLine(std::string& line, int generation)
@@ -358,7 +364,7 @@ void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
             auto keywordgenerations = input.GetNextElementString();
             if (keywordgenerations != "generations")
             {
-                std::cout << "For outputs concerning painted haplotypes, expected the keyword 'generations' but received " << keywordgenerations << " instead.\n";
+                std::cout << "For outputs concerning painted haplotypes, expected the keyword 'generations' but received '" << keywordgenerations << "' instead.\n";
                 abort();
             }
         }
@@ -368,7 +374,7 @@ void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
         auto sepPos = token.find("-");
         if (sepPos == std::string::npos)
         {
-            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration->observedGeneration' (e.g. '50-200'). Received token " << token << " that did not include any '-' (dash) sign. Note if you wrote something like '50 - 200' (note the spaces), then the tokens will be read as '50', '-' and '200' which does not work. So please, don't put spaces around '-'.";
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration->observedGeneration' (e.g. '50-200'). Received token " << token << "' that did not include any '-' (dash) sign. Note if you wrote something like '50 - 200' (note the spaces), then the tokens will be read as '50', '-' and '200' which does not work. So please, don't put spaces around '-'.";
             abort();
         }
         std::string paintedGeneration_s  = token.substr(0, sepPos);
@@ -401,13 +407,13 @@ void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
 
         if (observedGeneration > GP->nbGenerations)
         {
-            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is "<<paintedGeneration<<" and the observedGeneration received is "<<observedGeneration<<"'. observedGeneration must be lower or equal to the total nuumber of generations simulated (as indicated with option --nbGens (--nbGenerations), the total number of generations simulated is "<< GP->nbGenerations<<")\n";
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is '"<<paintedGeneration<<"' and the observedGeneration received is '"<<observedGeneration<<"'. observedGeneration must be lower or equal to the total nuumber of generations simulated (as indicated with option --nbGens (--nbGenerations), the total number of generations simulated is "<< GP->nbGenerations<<")\n";
             abort();
         }
    
         if (paintedGeneration >= observedGeneration)
         {
-            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is "<<paintedGeneration<<" and the observedGeneration received is "<<observedGeneration<<"'. observedGeneration must be strictly greater than paintedGeneration\n";
+            std::cout << "For outputs concerning painted haplotypes, expected times in format 'paintedGeneration-observedGeneration' (e.g. '50-200'). The paintedGeneration received is '"<<paintedGeneration<<"' and the observedGeneration received is '"<<observedGeneration<<"'. observedGeneration must be strictly greater than paintedGeneration\n";
             abort();
         }
 
@@ -461,8 +467,15 @@ void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
         std::vector<int> nbHaplotypes;
         while (input.IsThereMoreToRead() && input.PeakNextElementString() != "nbHaplos" && input.PeakNextElementString() != "generations" && input.PeakNextElementString() != "patch")
         {
-            auto nbH = input.GetNextElementInt();
-            nbHaplotypes.push_back(nbH);
+            if (input.PeakNextElementString() == "all")
+            {
+                input.skipElement();
+                nbHaplotypes.push_back(-1);
+            } else
+            {
+                nbHaplotypes.push_back(input.GetNextElementInt());
+            }
+            auto& nbH = nbHaplotypes.back();
 
             if (nbHaplotypes.size() > patch_indices.size())
             {
@@ -478,10 +491,21 @@ void OutputFile::interpretTimeForPaintedHaplo(InputReader& input)
                 {
                     auto patch_index = patch_indices[nbHaplotypes.size() - 1];
 
-                    if (nbH > 2 * allParameters.SSPs[0].__patchCapacity[generation_index][patch_index])
+                    auto maxNbHaplotypes = 2 * allParameters.SSPs[0].__patchCapacity[generation_index][patch_index];
+                    if (nbH > maxNbHaplotypes)
                     {
-                        std::cout << "For outputs concerning painted haplotypes, received the patch_index " << patch_index << " for observation at generation " << observedGeneration << " of haplotypes painted at generation " << paintedGeneration << ". You asked for sampling " << nbH << " haplotypes. The carrying capacity for the patch " << patch_index << " at generation " << observedGeneration << " is only " << allParameters.SSPs[0].__patchCapacity[generation_index][patch_index] << " individuals (or " << 2 * allParameters.SSPs[0].__patchCapacity[generation_index][patch_index]<< " haplotypes).\n";
+                        std::cout << "For outputs concerning painted haplotypes, received the patch_index " << patch_index << " for observation at generation " << observedGeneration << " of haplotypes painted at generation " << paintedGeneration << ". You asked for sampling " << nbH << " haplotypes. The carrying capacity for the patch " << patch_index << " at generation " << observedGeneration << " is only " << maxNbHaplotypes/2 << " individuals (or " << maxNbHaplotypes<< " haplotypes).\n";
                         abort();
+                    } else if (nbH < 0)
+                    {
+                        if (nbH == -1)
+                        {
+                            nbH = maxNbHaplotypes;
+                        } else
+                        {
+                            std::cout << "For outputs concerning painted haplotypes, received the patch_index " << patch_index << " for observation at generation " << observedGeneration << " of haplotypes painted at generation " << paintedGeneration << ". You asked for sampling " << nbH << " haplotypes. The carrying capacity for the patch " << patch_index << " at generation " << observedGeneration << " is only " << maxNbHaplotypes/2 << " individuals (or " << maxNbHaplotypes<< " haplotypes). You cannot ask for a negative number of haplotypes (exception of '-1' which is synonym 'all' meaning that all haploypes should be sampled)\n";
+                            abort();
+                        }
                     }
                 }
             }
@@ -588,11 +612,17 @@ void OutputFile::interpretTimeAndSubsetInput(InputReader& input)
             }                
             int by = input.GetNextElementInt();
 
+            /*
+            std::cout << "from = " << from << "\n";
+            std::cout << "to = " << to << "\n";
+            std::cout << "by = " << by << "\n";
+            */
 
             for (int t = from ; t <= to ; t+=by)
             {
                 v.push_back(t);
             }
+           
             if (v.back() < to) v.push_back(to);
         } else
         {
@@ -1167,6 +1197,34 @@ OutputFile::OutputFile(std::string f, OutputFileTypes t)
         isNbLinesEqualNbOutputTimes = false;
         doesTimeNeedsToBeSet = false;
         isT4MutationPlacementSpecific = false;
+
+    }  else if (t == T4_paintedHaploSegmentsOrigin_file)
+    {
+        this->extension = std::string(".paintedHaploOrigin");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    }  else if (t == T8_SNPfreq_file)
+    {
+        this->extension = std::string(".T8SNPfreq");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
+    }  else if (t == T8_largeOutput_file)
+    {
+        this->extension = std::string(".T8LO");
+        isGenerationSpecific = false;
+        isSpeciesSpecific = true;
+        isPatchSpecific = false;
+        isNbLinesEqualNbOutputTimes = false;
+        doesTimeNeedsToBeSet = true;
+        isT4MutationPlacementSpecific = false;
     } else 
     {
         std::cout << "Internal Error: In class 'OutputFile' in 'set_path', unknown fileType\n";
@@ -1516,7 +1574,7 @@ std::string OutputFile::getFileTypeName(int fileTypeIndex)
 {
     if (fileTypeIndex > OutputFileTypesNames.size() || fileTypeIndex == 0)
     {
-        return "Oops... failed to find file type name for file type index " + std::to_string(fileTypeIndex);
+        return "index " + std::to_string(fileTypeIndex);
     } else
     {
         return OutputFileTypesNames[fileTypeIndex];

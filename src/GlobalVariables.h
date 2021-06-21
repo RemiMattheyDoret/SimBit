@@ -62,8 +62,8 @@ extern SpeciesSpecificParameters* SSP;
 extern GeneralParameters* GP;   // Also contains patchSizes for all species (duplicate info than from SSP)
 
 //outputWriter
-
 extern OutputWriter outputWriter;
+
 
 // Thing
 const int EIGHT = 8;

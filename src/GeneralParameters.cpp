@@ -555,6 +555,7 @@ void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool
                         if (outputWriter.isFile(burnInLength_file)) outputWriter.writeOutputs_burnInLength(memory_nbGenerationsInBurnIn);
 
                         GP->CurrentGeneration = GP->startAtGeneration ;
+                        outputWriter.WriteOutputs(pop_Offspring);
                     }
                 }
             } else
@@ -567,6 +568,7 @@ void GeneralParameters::testIfEndOfT4BurnIn(Pop& pop_Offspring, std::vector<bool
                 if (outputWriter.isFile(burnInLength_file)) outputWriter.writeOutputs_burnInLength(memory_nbGenerationsInBurnIn);
                 
                 GP->CurrentGeneration = GP->startAtGeneration ;
+                outputWriter.WriteOutputs(pop_Offspring);
             }
         }
     }

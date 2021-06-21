@@ -135,6 +135,8 @@ public:
     void WriteOutputs_T4_paintedHaplo_file(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_paintedHaploSegmentsDiversity_file(Pop& pop, OutputFile& file);
     void WriteOutputs_T4_paintedHaploSegmentsDiversity_file_header(OutputFile& file);
+    void WriteOutputs_T4_paintedHaploSegmentsOrigin_file(Pop& pop, OutputFile& file);
+    void WriteOutputs_T4_paintedHaploSegmentsOrigin_file_header(OutputFile& file);
     void WriteOutputs_T4_SNPfreq_file(OutputFile& file, std::vector<T4TreeRec::PatchCountData>& T4freqs, size_t mutPlacingIndex);
     void WriteOutputs_T4_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
     void WriteOutputs_Tx_SNPfreq_file_header(OutputFile& file, size_t mutPlacingIndex);
@@ -179,6 +181,12 @@ public:
     template<typename ntrlit_t, typename selit_t>
     void WriteOutputs_sampleSequences_process(OutputFile& file, std::vector<uint32_t>& T4data, ntrlit_t it_ntrlBegin, selit_t it_selBegin, ntrlit_t it_ntrlEnd, selit_t it_selEnd, SampleSequenceData& SSD, Haplotype& haplo);
     void WriteOutputs_sampleSequences(std::vector<std::vector<std::vector<uint32_t>>>& T4data, Pop& pop, OutputFile& file, size_t mutPlacingIndex);
+
+    void WriteOutputs_T8_SNPfreq_file_header(OutputFile& file);
+    void WriteOutputs_T8_SNPfreq_file(Pop& pop, OutputFile& file, std::vector<std::map<uint32_t, double>>& freqs);
+    void WriteOutputs_T8_largeOutput_header(OutputFile& file);
+    void WriteOutputs_T8_largeOutput(Pop& pop, OutputFile& file, std::vector<std::vector<std::vector<uint32_t>>>& data);
+    void WriteOutputs_forDefinedPop_T8(Pop& pop);
 
     void WriteOutputs_forDefinedPop_general(Pop& pop);
     void WriteOutputs_forDefinedPop_T1(Pop& pop);

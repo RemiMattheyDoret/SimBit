@@ -62,6 +62,10 @@ void Patch::AddIndividual(Individual& newInd)
 void Patch::removeLastIndividual()
 {
     inds.pop_back(); // call destructor of Individual
+}
+
+void Patch::shrink_to_fit_inds()
+{
     inds.shrink_to_fit();
 }
 

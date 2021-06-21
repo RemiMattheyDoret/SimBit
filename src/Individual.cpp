@@ -51,7 +51,7 @@ bool Individual::isFreeFromMutations(int T1_locusFrom, int T1_locusTo)
 
 
 
-double Individual::CalculateT1FitnessNoMultiplicity(const int& Habitat)
+fitnesstype Individual::CalculateT1FitnessNoMultiplicity(const int& Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
@@ -62,7 +62,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
 
     if (SSP->additiveEffectAmongLoci)
     {
-        double W_T1_WholeIndividual = 0.0;
+        fitnesstype W_T1_WholeIndividual = 0.0;
 
         // All but the last byte
         int fitPosStart = 0;
@@ -97,7 +97,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
         return W_T1_WholeIndividual;
     } else
     {
-        double W_T1_WholeIndividual = 1.0;
+        fitnesstype W_T1_WholeIndividual = 1.0;
 
         // All but the last byte
         int fitPosStart = 0;
@@ -134,12 +134,12 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicity'\n";
     }
 }
 
-double Individual::CalculateT1EpistaticFitness(const int& Habitat)
+fitnesstype Individual::CalculateT1EpistaticFitness(const int& Habitat)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1EpistaticFitness'\n";
 #endif
-    double r = 1.0;
+    fitnesstype r = 1.0;
 
     assert(SSP->T1_Epistasis_FitnessEffects.size() > Habitat);
     for (int groupOfLociIndex = 0 ; groupOfLociIndex < SSP->T1_Epistasis_FitnessEffects[Habitat].size() ; groupOfLociIndex++)
@@ -219,7 +219,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
         {
             if (DNs[0] != 0.0)
             {
-                std::normal_distribution<double> dist(0.0,DNs[0]);
+                std::normal_distribution<T3type> dist(0.0,DNs[0]);
                 T3_IndPhenotype[0] += dist(GP->rngw.getRNG());
             }
         }
@@ -230,7 +230,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
             size_t phenoIndex = dim;
             for (int byte_index = 0 ; byte_index < SSP->Gmap.T3_nbLoci; byte_index++)
             {
-                T3_IndPhenotype[dim] += phenos[phenoIndex] * (double)(haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
+                T3_IndPhenotype[dim] += phenos[phenoIndex] * (T3type)(haplo0.getT3_Allele(byte_index) + haplo1.getT3_Allele(byte_index));
                 phenoIndex += SSP->T3_PhenoNbDimensions;
             }
         }
@@ -239,7 +239,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
         {
             if (DNs[dim] != 0.0)
             {
-                std::normal_distribution<double> dist(0.0,DNs[dim]);
+                std::normal_distribution<T3type> dist(0.0,DNs[dim]);
                 T3_IndPhenotype[dim] += dist(GP->rngw.getRNG());
             }
         }
@@ -256,7 +256,7 @@ std::cout << "Enters in 'CalculateT3Phenotype'\n";
     */
 }
 
-double Individual::CalculateT3Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
+fitnesstype Individual::CalculateT3Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT3Fitness'\n";
@@ -265,7 +265,7 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
     assert(Individual::T3_IndPhenotype.size() == SSP->T3_PhenoNbDimensions);
 
     // Calculate Fitness
-    double W = 1.0;
+    fitnesstype W = 1.0;
 
     if (SSP->T3_PhenoNbDimensions == 1)
     {
@@ -314,7 +314,7 @@ std::cout << "Enters in 'CalculateT3Fitness'\n";
 }
 
 
-double Individual::CalculateT7Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
+fitnesstype Individual::CalculateT7Fitness(const int& Habitat) // is a static function. The static specification must appear only in the class declaration
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT7Fitness'\n";
@@ -323,13 +323,13 @@ std::cout << "Enters in 'CalculateT7Fitness'\n";
     assert(Individual::T7_IndPhenotype.size() == SSP->T7phenpars.nbDimensions);
 
     // Calculate Fitness
-    double W = 1.0;
+    fitnesstype W = 1.0;
 
     for (size_t ageSampledIndex = 0 ; ageSampledIndex < SSP->T7phenpars.agesAtwhichPhenotypeIsSampled.size() ; ++ageSampledIndex)
     {
         for (int dim = 0 ; dim < SSP->T7phenpars.nbDimensions; dim++)
         {
-            double diffToOptimal = Individual::T7phenotypeOverTime[ageSampledIndex][dim] - SSP->T7phenpars.fitnessLandscapeOptimum[Habitat][ageSampledIndex][dim];
+            fitnesstype diffToOptimal = Individual::T7phenotypeOverTime[ageSampledIndex][dim] - SSP->T7phenpars.fitnessLandscapeOptimum[Habitat][ageSampledIndex][dim];
             if (SSP->T7phenpars.fitnessLandscapeType == 'L')
             {
                 W *= 1 - (std::abs(diffToOptimal) * SSP->T7phenpars.fitnessLandscapeLinearGradient[Habitat][dim]);
@@ -356,7 +356,7 @@ std::cout << "Enters in 'CalculateT7Fitness'\n";
 
 
 
-const std::vector<double>& Individual::CalculateFitnessComponents(const int& Habitat)
+const std::vector<fitnesstype>& Individual::CalculateFitnessComponents(const int& Habitat)
 {
     //std::cout << "Enters in Individual::CalculateFitnessComponents\n";
 
@@ -365,12 +365,13 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
         return fitnessComponents; // Should be {1,1,1,1} by default
     }
 
-    double& rT1 = fitnessComponents[0];
-    double& rT2 = fitnessComponents[1];
-    double& rT1epistasis = fitnessComponents[2];
-    double& rT3 = fitnessComponents[3];
-    double& rT56 = fitnessComponents[4];
-    double& rT7 = fitnessComponents[5];
+    fitnesstype& rT1 = fitnessComponents[0];
+    fitnesstype& rT2 = fitnessComponents[1];
+    fitnesstype& rT1epistasis = fitnessComponents[2];
+    fitnesstype& rT3 = fitnessComponents[3];
+    fitnesstype& rT56 = fitnessComponents[4];
+    fitnesstype& rT7 = fitnessComponents[5];
+    fitnesstype& rT8 = fitnessComponents[6];
 
     rT1 = 1.0;
     rT2 = 1.0;
@@ -378,6 +379,7 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
     rT3 = 1.0;
     rT56 = 1.0;
     rT7 = 1.0;
+    rT8 = 1.0;
       
     // Trait 1 (excludes epistasis)
     if (SSP->T1_isSelection)
@@ -417,7 +419,7 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
         rT3 = Individual::CalculateT3Fitness(Habitat); // calculate fitness associated to the phenotype saved in the static attribute 'T3_IndPhenotype'
     }
 
-    // Trait 7 // Yes out of order. And there is no good reason for that outside of the act that one day I might merge fitness calculation for T3 and T7
+    // Trait 7 // Yes out of order. And there is no good reason for that outside of the fact that one day I might merge fitness calculation for T3 and T7
     if (SSP->Gmap.T7_nbLoci)
     {
         Individual::resetT7phenotype();
@@ -426,8 +428,7 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
     }
 
 
-
-    // Trait 5 
+    // Trait 5 and 6
     if (SSP->T56_isSelection)
     {
         if (SSP->T56_isMultiplicitySelection)
@@ -456,13 +457,29 @@ const std::vector<double>& Individual::CalculateFitnessComponents(const int& Hab
         }
     }
 
+    // Trait 8
+    if (SSP->Gmap.T8_nbLoci)
+    {
+        /*
+        std::cout << "haplo0.getW_T8() = " << haplo0.getW_T8() << "\n";
+        std::cout << "haplo1.getW_T8() = " << haplo1.getW_T8() << "\n";
+        */
+        rT8 = haplo0.getW_T8() * haplo1.getW_T8();
+        if (rT8 == 0.0)
+        {
+            std::cout << "It appears as if the fitness component of T8 loci is so low, it cannot be differentiate from zero. Note that lethal mutations are not allowed on T8 loci, hence the fitness component of T8 loci should always be strictly positive.\n";
+            std::cout << "rT8 = " << rT8 << "("<<haplo0.getW_T8()<<"*"<<haplo1.getW_T8()<<")" << "\n";
+            abort();
+        }
+    }
+
     //std::cout << "has " << haplo0.T5_howManyMutations() + haplo1.T5_howManyMutations() << " mutations\n";
     //std::cout << "rT56 = " <<rT56 << "\n";
     //std::cout << "Exits in Individual::CalculateFitnessComponents\n";
     return fitnessComponents;
 }
 
-double Individual::CalculateFitness(const int& patch_index)
+fitnesstype Individual::CalculateFitness(const int& patch_index)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateFitness'\n";
@@ -475,14 +492,14 @@ std::cout << "Enters in 'CalculateFitness'\n";
     (void) CalculateFitnessComponents(Habitat); // will set the static fitnessComponents
 
     // Get total fitness
-    double r;
+    fitnesstype r;
     if (SSP->additiveEffectAmongLoci)
     {
-        r = 1 - fitnessComponents[0] - fitnessComponents[1] - fitnessComponents[2] - fitnessComponents[3] - fitnessComponents[4] - fitnessComponents[5];
+        r = 1 - fitnessComponents[0] - fitnessComponents[1] - fitnessComponents[2] - fitnessComponents[3] - fitnessComponents[4] - fitnessComponents[5] - fitnessComponents[6];
         if (r < 0) r = 0; 
     } else
     {
-        r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4] * fitnessComponents[5];
+        r = fitnessComponents[0] * fitnessComponents[1] * fitnessComponents[2] * fitnessComponents[3] * fitnessComponents[4] * fitnessComponents[5] * fitnessComponents[6];
     }
         
     
@@ -613,7 +630,7 @@ bool Individual::isLocusIsInSet(const int locus, const std::vector<int>& LociSet
 
 
 
-double Individual::CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+fitnesstype Individual::CalculateT1FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
@@ -623,7 +640,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
 
     if (SSP->additiveEffectAmongLoci)
     {
-        double W_T1_WholeIndividual = 0.0;
+        fitnesstype W_T1_WholeIndividual = 0.0;
 
         for (const int locus : LociSet)
         {
@@ -642,7 +659,7 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
         return W_T1_WholeIndividual;
     } else
     {
-        double W_T1_WholeIndividual = 1.0;
+        fitnesstype W_T1_WholeIndividual = 1.0;
 
         for (const int locus : LociSet)
         {
@@ -663,12 +680,12 @@ std::cout << "Enters in 'CalculateT1FitnessNoMultiplicityOnSubsetOfLoci'\n";
     }
 }
 
-double Individual::CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
+fitnesstype Individual::CalculateT1EpistaticFitnessOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
 #endif
-    double r = 1.0;
+    fitnesstype r = 1.0;
 
     assert(SSP->T1_Epistasis_FitnessEffects.size() > Habitat);
     for (int groupOfLociIndex = 0 ; groupOfLociIndex < SSP->T1_Epistasis_FitnessEffects[Habitat].size() ; groupOfLociIndex++)
@@ -730,7 +747,7 @@ std::cout << "Enters in 'CalculateT1EpistaticFitnessOnSubsetOfLoci'\n";
         } else if (intersection.size() > 0)
         {
             // Then some but not all loci of 'LociSet' are in 'loci'
-            return std::numeric_limits<double>::quiet_NaN();
+            return std::numeric_limits<fitnesstype>::quiet_NaN();
         } else if (intersection.size() == 0 && LociSet.size() > 0)
         {
             // Then no elements of 'LociSet' are in 'loci'
@@ -780,7 +797,7 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
         T3type allele = haplo0.getT3_Allele(locus);
         for (int dim = 0 ; dim < SSP->T3_PhenoNbDimensions; dim++)
         {
-            std::normal_distribution<double> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
+            std::normal_distribution<T3type> dist(0.0,SSP->T3_DevelopmentalNoiseStandardDeviation[Habitat][dim]);
             T3_IndPhenotype[dim] += SSP->T3_PhenotypicEffects[Habitat][locus * SSP->T3_PhenoNbDimensions + dim] * allele + dist(GP->rngw.getRNG());
         }
     }
@@ -788,7 +805,7 @@ std::cout << "Enters in 'CalculateT3PhenotypeOnSubsetOfLoci'\n";
 
 
 template<typename Iterator>
-double Individual::CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End)
+fitnesstype Individual::CalculateT56FitnessNoMultiplicity(const int& Habitat, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
@@ -798,7 +815,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
 
     if (SSP->additiveEffectAmongLoci)
     {
-        double w = 0.0;
+        fitnesstype w = 0.0;
 
         while (itHaplo0 != itHaplo0End || itHaplo1 != itHaplo1End)
         {
@@ -833,7 +850,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicity'\n";
         return w;
     } else
     {
-        double w = 1.0;
+        fitnesstype w = 1.0;
 
         while (itHaplo0 != itHaplo0End || itHaplo1 != itHaplo1End)
         {
@@ -889,18 +906,20 @@ void Individual::toggleT56LociFromHaplotypes(std::vector<int>& T5ntrlLociToToggl
 
 
 
-std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex)
+std::vector<fitnesstype> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const int& Habitat, const int lociSetIndex)
 {
     if (!SSP->isAnySelection)
     {
-        return {1.0, 1.0, 1.0, 1.0, 1.0};
+        return {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     }
 
-    double rT1 = 1.0;
-    double rT2 = 1.0;
-    double rT1epistasis = 1.0;
-    double rT3 = 1.0;
-    double rT56 = 1.0;
+    fitnesstype rT1 = 1.0;
+    fitnesstype rT2 = 1.0;
+    fitnesstype rT1epistasis = 1.0;
+    fitnesstype rT3 = 1.0;
+    fitnesstype rT56 = 1.0;
+    fitnesstype rT7 = 1.0;
+    fitnesstype rT8 = 1.0;
     
 
     auto& lociSet = SSP->subsetT5LociForfitnessSubsetLoci_file[lociSetIndex];
@@ -968,15 +987,30 @@ std::vector<double> Individual::CalculateFitnessComponentsOnSubsetOfLoci(const i
         }
     }
 
+
+    // Trait 7
+    if (SSP->Gmap.T7_nbLoci)
+    {
+        std::cout << "Asked to compute fitness components for a subset of loci. This cannot be done for T7 loci\n";
+        abort();
+    }
+
+    // Trait 8
+    if (SSP->Gmap.T8_nbLoci)
+    {
+        std::cout << "Asked to compute fitness components for a subset of loci. This cannot be done for T8 loci\n";
+        abort();
+    }
+
     //std::cout << "has " << haplo0.T5_howManyMutations() + haplo1.T5_howManyMutations() << " mutations\n";
     //std::cout << "rT56 = " <<rT56 << "\n";
     //std::cout << "Exits in Individual::CalculateFitnessComponents\n";
-    return {rT1, rT2, rT1epistasis, rT3, rT56};
+    return {rT1, rT2, rT1epistasis, rT3, rT56, rT7, rT8};
 }
 
 
 template<typename Iterator>
-double Individual::CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End)
+fitnesstype Individual::CalculateT56FitnessNoMultiplicityOnSubsetOfLoci(const int& Habitat, const std::vector<int>& LociSet, Iterator itHaplo0, Iterator itHaplo1, Iterator itHaplo0End, Iterator itHaplo1End)
 {
 #ifdef CALLENTRANCEFUNCTIONS
 std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
@@ -986,7 +1020,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
 
     if (SSP->additiveEffectAmongLoci)
     {
-        double r = 0.0;
+        fitnesstype r = 0.0;
 
         for (auto& locus : LociSet)
         {
@@ -1043,7 +1077,7 @@ std::cout << "Enters in 'CalculateT56FitnessNoMultiplicityOnSubsetOfLoci'\n";
         return r;
     } else
     {
-        double r = 1.0;
+        fitnesstype r = 1.0;
 
         for (auto& locus : LociSet)
         {

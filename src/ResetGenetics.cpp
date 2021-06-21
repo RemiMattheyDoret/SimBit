@@ -247,13 +247,14 @@ bool ResetGenetics::isEventBGeneration()
 
 void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
 {
+    size_t indexOfPatchIndex = 0;
     for (int& patch_index : event.patches)
     {
         assert(patch_index < GP->PatchNumber);
         Patch& patch = pop.getPatch(patch_index);
-        assert(event.individuals.size() > patch_index);
+        assert(event.individuals.size() > indexOfPatchIndex);
         assert(SSP->Habitats.size() > patch_index);
-        for (int& ind_index : event.individuals[patch_index])
+        for (int& ind_index : event.individuals[indexOfPatchIndex])
         {
             assert(ind_index < SSP->patchCapacity[patch_index]);
             if (ind_index < SSP->patchSize[patch_index])
@@ -439,6 +440,7 @@ void ResetGenetics::makeEventAHappen(ResetGeneticsEvent_A& event, Pop& pop)
                 }
             }
         }
+        ++indexOfPatchIndex;
     }
 }
 
