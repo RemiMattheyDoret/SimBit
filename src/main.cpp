@@ -201,7 +201,7 @@ typedef double fitnesstype;
 // SimBit Version
 std::string getSimBitVersionLogo()
 {
-    std::string VERSION("version 4.16.24");
+    std::string VERSION("version 4.16.25");
     std::string s;
     s.reserve(250);
     s += "\t  ____  _           ____  _ _   \n";

@@ -4099,7 +4099,7 @@ void SpeciesSpecificParameters::readT1_mutDirection(InputReader& input)
             T1_mutDirection = 2;
         } else
         {
-            std::cout << "For option --T1_mutDirection, only values '1to0', '0to1' and 'both' (or 'default') are accepted. Redeived " << s << "\n";
+            std::cout << "For option --T1_mutDirection, only values '1to0', '0to1' and 'both' (or 'default') are accepted. Received '" << s << "'\n";
             abort();
         }
     }
@@ -6187,7 +6187,14 @@ void SpeciesSpecificParameters::readStochasticGrowth(InputReader& input)
     std::cout << "Enters in SpeciesSpecificParameters::readStochasticGrowth\n";
     #endif  
 
-    stochasticGrowth = input.GetNextElementBool();
+    if (input.PeakNextElementString() == "default")
+    {
+        input.skipElement();
+        stochasticGrowth = true;
+    } else
+    {
+        stochasticGrowth = input.GetNextElementBool();
+    }
 }
 
 void SpeciesSpecificParameters::readadditiveEffectAmongLoci(InputReader& input)

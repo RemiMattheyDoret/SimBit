@@ -1338,7 +1338,7 @@ void AllParameters::setOptionToDefault(std::string& flag)
     }
     else if (flag == "stochasticGrowth")
     {
-        InputReader input(std::string("f"), "In Default value for --stochasticGrowth,");
+        InputReader input(std::string("default"), "In Default value for --stochasticGrowth,");
         wrapperOverSpecies(input, &SpeciesSpecificParameters::readStochasticGrowth);
     }
     else if (flag == "T1_fit")

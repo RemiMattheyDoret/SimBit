@@ -94,12 +94,12 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
             } else if (interaction.type == 'C')
             {
                 auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][SSP->speciesIndex];
-                sumOfAlphasProd_interaction += interaction.magnitude * recipientSpPS;
+                sumOfAlphasProd_interaction += interaction.magnitude / recipientSpPS;
             } else if (interaction.type == 'D') 
             {
                 auto causalSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][speciesIndex];
                 auto recipientSpPS = GP->allSpeciesPatchSizePreviousGeneration[patch_from][SSP->speciesIndex];
-                sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS * recipientSpPS;
+                sumOfAlphasProd_interaction += interaction.magnitude * causalSpPS / recipientSpPS;
             }
         }
 
@@ -108,7 +108,7 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
         if (SSP->growthK[patch_from] == -1.0) // exponential growth
         {
             nbOffs = rn_t;   // No competition possible when exponential growth
-        } else if (SSP->growthK[patch_from] == -2) // -2 means always at true carrying capacity
+        } else if (SSP->growthK[patch_from] == -2) // -2 means logistic growth using patchCapacity
         {
             if (r <= 1) // if decline
             {
@@ -117,7 +117,7 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
             {
                 nbOffs = n_t + (r-1) * n_t * (1 - sumOfAlphasProd_competition / SSP->patchCapacity[patch_from]);
             }
-        } else
+        } else // means logistic growth using growthK
         {
             if (r <= 1) // if decline
             {
@@ -138,8 +138,10 @@ double DispersalData::computeNbOffspringsProducedInPatch(const unsigned patch_fr
 
     if (SSP->stochasticGrowth)
     {
+        //std::cout << "nbOffs: " << nbOffs << " : ";
         std::poisson_distribution<> d(nbOffs);
         nbOffs = d(GP->rngw.getRNG());
+        //std::cout << nbOffs << "\n";
     }
 
     /*if (patch_from == 1003)
